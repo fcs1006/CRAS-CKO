@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&family=Montserrat:wght@600;700;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --primary: #2b7a78;
+  --primary-light: #3a8f8d;
+  --primary-dark: #17252a;
+  --accent: #2ec4b6;
+  --accent-light: #67e8f9;
+  --bg-light: #f3f9f9;
+  --bg-card: #ffffff;
+  --border-color: #def2f1;
+  --text-main: #17252a;
+  --text-muted: #6b7c85;
+  --success: #2ec4b6;
+  --danger: #e71d36;
+  --warning: #ff9f1c;
+  --info: #0077b6;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 2px 4px rgba(23, 37, 42, 0.05);
+  --shadow-md: 0 8px 16px rgba(23, 37, 42, 0.08);
+  --shadow-lg: 0 16px 32px rgba(23, 37, 42, 0.12);
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+input, select, textarea {
+  color: var(--text-main) !important;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ─── GLASSMORPHISM LOGIN CARD ─── */
+.login-card {
+  background: rgba(23, 37, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+  width: min(380px, 90vw);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.input-modern {
+  width: 100%;
+  border: 1.5px solid rgba(222, 242, 241, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08);
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+}
+
+.input-modern:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(46, 196, 182, 0.2);
+}
+
+.input-modern::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.label-modern {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  box-shadow: 0 4px 12px rgba(43, 122, 120, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(43, 122, 120, 0.35);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.status-err {
+  background: rgba(231, 29, 54, 0.12);
+  border: 1px solid rgba(231, 29, 54, 0.3);
+  color: #ff9eaf;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
