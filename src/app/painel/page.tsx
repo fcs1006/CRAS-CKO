@@ -69,13 +69,22 @@ export default function Painel() {
     uf: 'TO',
     telefone: '',
     outroContato: '',
-    moradiaTipo: 'Própria',
-    moradiaAgua: 'Rede Pública',
-    moradiaSanear: 'Rede Pública',
-    moradiaLixo: 'Coleta Pública',
+    moradiaTipo: 'Alvenaria com Revestimento',
+    moradiaAgua: 'Rede Geral',
+    moradiaSanear: 'Rede Geral',
+    moradiaLixo: 'Coletado',
     vulnerabilidades: [] as string[],
     paifAtivo: false,
-    paifMetas: ''
+    paifMetas: '',
+    
+    // Campos do Responsável Familiar (que vão para a tabela de membros com parentesco = 'Responsável')
+    dataNascimentoResponsavel: '',
+    rgResponsavel: 'Não Informado',
+    rendaResponsavel: '0',
+    ocupacaoResponsavel: '',
+    programaGovernoResponsavel: '',
+    programaGovernoResponsavelOutros: '',
+    escolaridadeResponsavel: ''
   })
 
   // Formulário Novo Membro
@@ -152,7 +161,7 @@ export default function Painel() {
       try {
         const { data: cfg } = await supabase.from('configuracoes').select('*').eq('id', 1).single()
         if (cfg) {
-          setSettings({
+          const cfgData = {
             municipio: cfg.municipio,
             secretaria: cfg.secretaria,
             crasUnidade: cfg.cras_unidade,
@@ -160,7 +169,9 @@ export default function Painel() {
             telefone: cfg.telefone,
             email: cfg.email,
             logoUrl: cfg.logo_url || ''
-          })
+          }
+          setSettings(cfgData)
+          localStorage.setItem('cras_settings', JSON.stringify(cfgData))
         }
 
         const { data: users } = await supabase.from('usuarios').select('*').eq('ativo', true)
@@ -264,10 +275,50 @@ export default function Painel() {
       paif_metas: famForm.paifMetas
     }
 
+    let familyId = famForm.id
     if (famForm.id) {
-      await supabase.from('familias').update(payload).eq('id', famForm.id)
+      const { error } = await supabase.from('familias').update(payload).eq('id', famForm.id)
+      if (error) { alert('Erro ao atualizar família: ' + error.message); return; }
     } else {
-      await supabase.from('familias').insert(payload)
+      const { data, error } = await supabase.from('familias').insert(payload).select().single()
+      if (error) { alert('Erro ao cadastrar família: ' + error.message); return; }
+      familyId = data.id
+    }
+
+    // Upsert do Responsável na tabela de membros_familia
+    const progGov = famForm.programaGovernoResponsavel === 'Outros'
+      ? famForm.programaGovernoResponsavelOutros
+      : famForm.programaGovernoResponsavel
+
+    const birthDate = new Date(famForm.dataNascimentoResponsavel)
+    const age = new Date().getFullYear() - birthDate.getFullYear()
+
+    const memberPayload = {
+      familia_id: familyId,
+      nome: famForm.responsavel.trim(),
+      parentesco: 'Responsável',
+      data_nascimento: famForm.dataNascimentoResponsavel,
+      idade: isNaN(age) ? 0 : age,
+      cpf: famForm.cpfResponsavel.trim(),
+      rg: famForm.rgResponsavel.trim() || 'Não Informado',
+      nis: famForm.nisResponsavel.trim(),
+      renda: parseFloat(famForm.rendaResponsavel) || 0,
+      escolaridade: famForm.escolaridadeResponsavel,
+      ocupacao: famForm.ocupacaoResponsavel.trim(),
+      programa_governo: progGov
+    }
+
+    const { data: existingResp } = await supabase
+      .from('membros_familia')
+      .select('id')
+      .eq('familia_id', familyId)
+      .eq('parentesco', 'Responsável')
+      .maybeSingle()
+
+    if (existingResp) {
+      await supabase.from('membros_familia').update(memberPayload).eq('id', existingResp.id)
+    } else {
+      await supabase.from('membros_familia').insert(memberPayload)
     }
     
     setShowFamilyModal(false)
@@ -621,6 +672,7 @@ export default function Painel() {
 
   function handleOpenFamilyModal(fam: any = null) {
     if (fam) {
+      const resp = fam.membros_familia?.find((m: any) => m.parentesco === 'Responsável') || {}
       setFamForm({
         id: fam.id,
         codFamiliar: fam.cod_familiar,
@@ -634,18 +686,27 @@ export default function Painel() {
         uf: fam.uf || 'TO',
         telefone: fam.telefone || '',
         outroContato: fam.outro_contato || '',
-        moradiaTipo: fam.moradia_tipo || 'Própria',
-        moradiaAgua: fam.moradia_agua || 'Rede Pública',
-        moradiaSanear: fam.moradia_sanear || 'Rede Pública',
-        moradiaLixo: fam.moradia_lixo || 'Coleta Pública',
+        moradiaTipo: fam.moradia_tipo || 'Alvenaria com Revestimento',
+        moradiaAgua: fam.moradia_agua || 'Rede Geral',
+        moradiaSanear: fam.moradia_sanear || 'Rede Geral',
+        moradiaLixo: fam.moradia_lixo || 'Coletado',
         vulnerabilidades: fam.vulnerabilidades || [],
         paifAtivo: fam.paif_ativo || false,
-        paifMetas: fam.paif_metas || ''
+        paifMetas: fam.paif_metas || '',
+        
+        // Novos campos
+        dataNascimentoResponsavel: resp.data_nascimento || '',
+        rgResponsavel: resp.rg || 'Não Informado',
+        rendaResponsavel: resp.renda ? resp.renda.toString() : '0',
+        ocupacaoResponsavel: resp.ocupacao || '',
+        programaGovernoResponsavel: resp.programa_governo || '',
+        programaGovernoResponsavelOutros: '',
+        escolaridadeResponsavel: resp.escolaridade || ''
       })
     } else {
       setFamForm({
         id: '',
-        codFamiliar: Math.floor(1000 + Math.random() * 9000).toString(),
+        codFamiliar: Math.floor(10000000 + Math.random() * 90000000).toString(),
         responsavel: '',
         cpfResponsavel: '',
         nisResponsavel: '',
@@ -656,13 +717,22 @@ export default function Painel() {
         uf: 'TO',
         telefone: '',
         outroContato: '',
-        moradiaTipo: 'Própria',
-        moradiaAgua: 'Rede Pública',
-        moradiaSanear: 'Rede Pública',
-        moradiaLixo: 'Coleta Pública',
+        moradiaTipo: 'Alvenaria com Revestimento',
+        moradiaAgua: 'Rede Geral',
+        moradiaSanear: 'Rede Geral',
+        moradiaLixo: 'Coletado',
         vulnerabilidades: [],
         paifAtivo: false,
-        paifMetas: ''
+        paifMetas: '',
+        
+        // Novos campos
+        dataNascimentoResponsavel: '',
+        rgResponsavel: 'Não Informado',
+        rendaResponsavel: '0',
+        ocupacaoResponsavel: '',
+        programaGovernoResponsavel: '',
+        programaGovernoResponsavelOutros: '',
+        escolaridadeResponsavel: ''
       })
     }
     setShowFamilyModal(true)
@@ -1152,8 +1222,20 @@ export default function Painel() {
                             const reader = new FileReader()
                             reader.onload = async (evt) => {
                               const b64 = evt.target?.result as string
-                              setSettings(prev => ({ ...prev, logoUrl: b64 }))
-                              await supabase.from('configuracoes').update({ logo_url: b64 }).eq('id', 1)
+                              setSettings(prev => {
+                                const newSettings = { ...prev, logoUrl: b64 }
+                                localStorage.setItem('cras_settings', JSON.stringify(newSettings))
+                                return newSettings
+                              })
+                              const res = await fetch('/api/configuracoes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ logo_url: b64 })
+                              })
+                              const result = await res.json()
+                              if (!result.ok) {
+                                alert('Erro ao salvar brasão: ' + result.error)
+                              }
                             }
                             reader.readAsDataURL(file)
                           }
@@ -1179,16 +1261,25 @@ export default function Painel() {
                     </div>
                     
                     <button className="btn-primary" style={{ width: 'fit-content' }} onClick={async () => {
-                      const { error } = await supabase.from('configuracoes').update({
-                        municipio: settings.municipio,
-                        secretaria: settings.secretaria,
-                        cras_unidade: settings.crasUnidade,
-                        endereco: settings.endereco,
-                        telefone: settings.telefone,
-                        email: settings.email
-                      }).eq('id', 1)
-                      if (error) alert('Erro ao atualizar configurações: ' + error.message)
-                      else alert('Configurações salvas no Supabase com sucesso!')
+                      const res = await fetch('/api/configuracoes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          municipio: settings.municipio,
+                          secretaria: settings.secretaria,
+                          cras_unidade: settings.crasUnidade,
+                          endereco: settings.endereco,
+                          telefone: settings.telefone,
+                          email: settings.email
+                        })
+                      })
+                      const result = await res.json()
+                      if (!result.ok) {
+                        alert('Erro ao atualizar configurações: ' + result.error)
+                      } else {
+                        localStorage.setItem('cras_settings', JSON.stringify(settings))
+                        alert('Configurações salvas no Supabase com sucesso!')
+                      }
                     }}>
                       Salvar Identidade
                     </button>
@@ -1227,54 +1318,207 @@ export default function Painel() {
       {/* ─── MODAL: NOVA FAMÍLIA / EDITAR FAMÍLIA ─── */}
       {showFamilyModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3>{famForm.id ? 'Editar Cadastro Familiar' : 'Cadastrar Nova Família'}</h3>
-            <form onSubmit={handleSaveFamily} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto', color: 'var(--text-main)' }}>
+            <h3 style={{ fontSize: '1.3rem', marginBottom: '20px', borderBottom: '2px solid #def2f1', paddingBottom: '10px' }}>
+              {famForm.id ? 'Editar Cadastro Familiar' : 'Cadastrar Nova Família - Prontuário SUAS'}
+            </h3>
+            
+            <form onSubmit={handleSaveFamily} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* SEÇÃO 1: INFORMAÇÕES DO RESPONSÁVEL */}
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nome do Responsável Familiar</label>
-                <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.responsavel} required onChange={(e) => setFamForm(f => ({ ...f, responsavel: e.target.value }))} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>CPF do Responsável</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.cpfResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, cpfResponsavel: e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>NIS do Responsável</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.nisResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, nisResponsavel: e.target.value }))} />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Logradouro (Rua/Av)</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.logradouro} required onChange={(e) => setFamForm(f => ({ ...f, logradouro: e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Número</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.numero} required onChange={(e) => setFamForm(f => ({ ...f, numero: e.target.value }))} />
-                </div>
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Bairro</label>
-                <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.bairro} required onChange={(e) => setFamForm(f => ({ ...f, bairro: e.target.value }))} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Telefone</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.telefone} onChange={(e) => setFamForm(f => ({ ...f, telefone: e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Acompanhamento PAIF?</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.paifAtivo ? 'Sim' : 'Não'} onChange={(e) => setFamForm(f => ({ ...f, paifAtivo: e.target.value === 'Sim' }))}>
-                    <option value="Não">Não</option>
-                    <option value="Sim">Sim</option>
-                  </select>
+                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+                  <i className="fa-solid fa-user" style={{ marginRight: '8px' }}></i> Informações do Responsável
+                </h4>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Nome Completo</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.responsavel} required onChange={(e) => setFamForm(f => ({ ...f, responsavel: e.target.value }))} placeholder="Nome do Responsável Familiar" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Data de Nascimento</label>
+                    <input className="input-modern" type="date" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.dataNascimentoResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, dataNascimentoResponsavel: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>RG</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.rgResponsavel} onChange={(e) => setFamForm(f => ({ ...f, rgResponsavel: e.target.value }))} placeholder="Ex: 00.000.000-00" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>CPF</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.cpfResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, cpfResponsavel: e.target.value }))} placeholder="000.000.000-00" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>NIS</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.nisResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, nisResponsavel: e.target.value }))} placeholder="000.00000.00-0" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Renda Mensal (R$)</label>
+                    <input className="input-modern" type="number" step="0.01" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.rendaResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, rendaResponsavel: e.target.value }))} placeholder="Ex: 0.00 ou 1320.00" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Ocupação</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.ocupacaoResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, ocupacaoResponsavel: e.target.value }))} placeholder="Digite a ocupação..." />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Telefone Principal</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.telefone} required onChange={(e) => setFamForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(71) 90000-0000" />
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Outro Contato / Tel. Alternativo</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.outroContato} onChange={(e) => setFamForm(f => ({ ...f, outroContato: e.target.value }))} placeholder="Ex: (71) 98888-8888 (Mãe Socorro)" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Beneficiário de Programa do Governo</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.programaGovernoResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, programaGovernoResponsavel: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      <option value="Nenhum">Nenhum</option>
+                      <option value="Bolsa Família">Bolsa Família</option>
+                      <option value="BPC (Benefício de Prestação Continuada)">BPC (Benefício de Prestação Continuada)</option>
+                      <option value="Bolsa Família + BPC">Bolsa Família + BPC</option>
+                      <option value="Outros">Outros</option>
+                    </select>
+                    {famForm.programaGovernoResponsavel === 'Outros' && (
+                      <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', marginTop: '8px' }} value={famForm.programaGovernoResponsavelOutros} onChange={(e) => setFamForm(f => ({ ...f, programaGovernoResponsavelOutros: e.target.value }))} placeholder="Especifique o programa..." />
+                    )}
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Escolaridade</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.escolaridadeResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, escolaridadeResponsavel: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      <option value="Sem Idade Escolar">Sem Idade Escolar</option>
+                      <option value="Fundamental Incompleto">Fundamental Incompleto</option>
+                      <option value="Fundamental Completo">Fundamental Completo</option>
+                      <option value="Médio Incompleto">Médio Incompleto</option>
+                      <option value="Médio Completo">Médio Completo</option>
+                      <option value="Superior Incompleto">Superior Incompleto</option>
+                      <option value="Superior Completo">Superior Completo</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
+              {/* SEÇÃO 2: ENDEREÇO E TERRITORIALIZAÇÃO */}
+              <div>
+                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+                  <i className="fa-solid fa-map" style={{ marginRight: '8px' }}></i> Endereço e Territorialização
+                </h4>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Rua/Logradouro</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.logradouro} required onChange={(e) => setFamForm(f => ({ ...f, logradouro: e.target.value }))} placeholder="Rua, Avenida, Travessa..." />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Número</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.numero} required onChange={(e) => setFamForm(f => ({ ...f, numero: e.target.value }))} placeholder="Ex: 45A ou S/N" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Bairro</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.bairro} required onChange={(e) => setFamForm(f => ({ ...f, bairro: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      <option value="Liberdade">Liberdade</option>
+                      <option value="Pero Vaz">Pero Vaz</option>
+                      <option value="Caixa d'Água">Caixa d'Água</option>
+                      <option value="Palestina">Palestina</option>
+                      <option value="Centro">Centro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Acompanhamento PAIF?</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.paifAtivo ? 'Sim' : 'Não'} onChange={(e) => setFamForm(f => ({ ...f, paifAtivo: e.target.value === 'Sim' }))}>
+                      <option value="Não">Não</option>
+                      <option value="Sim">Sim</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SEÇÃO 3: CONDIÇÕES HABITACIONAIS */}
+              <div>
+                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+                  <i className="fa-solid fa-house" style={{ marginRight: '8px' }}></i> Condições Habitacionais
+                </h4>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Tipo de Construção</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaTipo} required onChange={(e) => setFamForm(f => ({ ...f, moradiaTipo: e.target.value }))}>
+                      <option value="Alvenaria com Revestimento">Alvenaria com Revestimento</option>
+                      <option value="Alvenaria sem Revestimento">Alvenaria sem Revestimento</option>
+                      <option value="Madeira/Taipa">Madeira/Taipa</option>
+                      <option value="Material Aproveitado">Material Aproveitado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Abastecimento de Água</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaAgua} required onChange={(e) => setFamForm(f => ({ ...f, moradiaAgua: e.target.value }))}>
+                      <option value="Rede Geral">Rede Geral</option>
+                      <option value="Poço/Nascente">Poço/Nascente</option>
+                      <option value="Caminhão Pipa">Caminhão Pipa</option>
+                      <option value="Inexistente">Inexistente</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Escoamento Sanitário</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaSanear} required onChange={(e) => setFamForm(f => ({ ...f, moradiaSanear: e.target.value }))}>
+                      <option value="Rede Geral">Rede Geral</option>
+                      <option value="Fossa Séptica">Fossa Séptica</option>
+                      <option value="Fossa Rudimentar">Fossa Rudimentar</option>
+                      <option value="Céu Aberto">Céu Aberto</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Coleta de Lixo</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaLixo} required onChange={(e) => setFamForm(f => ({ ...f, moradiaLixo: e.target.value }))}>
+                      <option value="Coletado">Coletado</option>
+                      <option value="Depositado em caçamba">Depositado em caçamba</option>
+                      <option value="Queimado/Enterrado">Queimado/Enterrado</option>
+                      <option value="Descartado a céu aberto">Descartado a céu aberto</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SEÇÃO 4: VULNERABILIDADES SOCIAIS */}
+              <div>
+                <h4 style={{ color: 'var(--primary)', marginBottom: '10px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '8px' }}></i> Vulnerabilidades Sociais
+                </h4>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                  {[
+                    'Extrema Pobreza',
+                    'Habitação Precária',
+                    'Ausência de Saneamento',
+                    'Membro com Deficiência (PcD)',
+                    'Mãe / Pai Solo',
+                    'Crianças fora da escola',
+                    'Violência Doméstica Relatada',
+                    'Analfabetismo',
+                    'Família Atípica (Membro Neurodivergente/PCD)'
+                  ].map((vul, idx) => (
+                    <label key={idx} style={{ display: 'flex', gap: '8px', fontSize: '12px', cursor: 'pointer', alignItems: 'center' }}>
+                      <input type="checkbox" checked={famForm.vulnerabilidades.includes(vul)} onChange={() => {
+                        const exists = famForm.vulnerabilidades.includes(vul)
+                        setFamForm(prev => ({
+                          ...prev,
+                          vulnerabilidades: exists 
+                            ? prev.vulnerabilidades.filter(v => v !== vul)
+                            : [...prev.vulnerabilidades, vul]
+                        }))
+                      }} />
+                      {vul === 'Família Atípica (Membro Neurodivergente/PCD)' ? 'Família Atípica' : vul === 'Membro com Deficiência (PcD)' ? 'Membro com Deficiência' : vul === 'Violência Doméstica Relatada' ? 'Violência Doméstica' : vul}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px', borderTop: '1px solid #def2f1', paddingTop: '16px' }}>
                 <button type="button" onClick={() => setShowFamilyModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Salvar Cadastro</button>
+                <button type="submit" className="btn-primary">
+                  <i className="fa-solid fa-save" style={{ marginRight: '6px' }}></i> Salvar Prontuário
+                </button>
               </div>
             </form>
           </div>
