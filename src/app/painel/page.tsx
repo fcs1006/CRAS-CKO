@@ -159,7 +159,8 @@ export default function Painel() {
 
     async function loadData() {
       try {
-        const { data: cfg } = await supabase.from('configuracoes').select('*').eq('id', 1).single()
+        const { data: cfgList } = await supabase.from('configuracoes').select('*').limit(1)
+        const cfg = cfgList && cfgList.length > 0 ? cfgList[0] : null
         if (cfg) {
           const cfgData = {
             municipio: cfg.municipio,
