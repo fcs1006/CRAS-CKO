@@ -129,9 +129,9 @@ function FormLogin({ irPara }: { irPara: (t: Tela) => void }) {
       style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
     >
       <div>
-        <label className="label-modern">Usuário (CPF)</label>
+        <label className="login-label">Usuário (CPF)</label>
         <input
-          className="input-modern"
+          className="login-input"
           type="text"
           value={usuario}
           onChange={e => setUsuario(aplicarMascaraCPF(e.target.value))}
@@ -141,9 +141,9 @@ function FormLogin({ irPara }: { irPara: (t: Tela) => void }) {
         />
       </div>
       <div>
-        <label className="label-modern">Senha</label>
+        <label className="login-label">Senha</label>
         <input
-          className="input-modern"
+          className="login-input"
           type="password"
           value={senha}
           onChange={e => setSenha(e.target.value)}
@@ -250,22 +250,22 @@ function FormCadastro({ irPara }: { irPara: (t: Tela) => void }) {
       <p style={{ fontWeight: '700', fontSize: '14px', color: '#ffffff', margin: '0 0 4px' }}>Solicitar Acesso Técnico</p>
       
       <div>
-        <label className="label-modern">Nome Completo</label>
-        <input className="input-modern" value={form.nome} required
+        <label className="login-label">Nome Completo</label>
+        <input className="login-input" value={form.nome} required
           onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
           placeholder="Ex: Cláudia Santos" />
       </div>
 
       <div>
-        <label className="label-modern">CPF (será seu login)</label>
-        <input className="input-modern" value={form.cpf} inputMode="numeric" required
+        <label className="login-label">CPF (será seu login)</label>
+        <input className="login-input" value={form.cpf} inputMode="numeric" required
           onChange={e => setForm(f => ({ ...f, cpf: mascaraCPF(e.target.value) }))}
           placeholder="000.000.000-00" />
       </div>
 
       <div>
-        <label className="label-modern">Cargo / Função</label>
-        <select className="input-modern" value={form.cargo} required style={{ background: '#1e293b' }}
+        <label className="login-label">Cargo / Função</label>
+        <select className="login-input" value={form.cargo} required style={{ background: '#1e293b' }}
           onChange={e => setForm(f => ({ ...f, cargo: e.target.value }))}>
           <option value="" disabled>Selecione...</option>
           <option value="Assistente Social">Assistente Social</option>
@@ -278,36 +278,36 @@ function FormCadastro({ irPara }: { irPara: (t: Tela) => void }) {
       </div>
 
       <div>
-        <label className="label-modern">Registro/Conselho Profissional</label>
-        <input className="input-modern" value={form.conselho}
+        <label className="login-label">Registro/Conselho Profissional</label>
+        <input className="login-input" value={form.conselho}
           onChange={e => setForm(f => ({ ...f, conselho: e.target.value }))}
           placeholder="Ex: CRESS/TO 1234, CRP-23/5678" />
       </div>
 
       <div>
-        <label className="label-modern">Telefone</label>
-        <input className="input-modern" value={form.telefone} inputMode="numeric" required
+        <label className="login-label">Telefone</label>
+        <input className="login-input" value={form.telefone} inputMode="numeric" required
           onChange={e => setForm(f => ({ ...f, telefone: mascaraTel(e.target.value) }))}
           placeholder="(00) 00000-0000" />
       </div>
 
       <div>
-        <label className="label-modern">E-mail</label>
-        <input className="input-modern" type="email" value={form.email} required
+        <label className="login-label">E-mail</label>
+        <input className="login-input" type="email" value={form.email} required
           onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
           placeholder="exemplo@cras.gov.br" />
       </div>
 
       <div>
-        <label className="label-modern">Senha</label>
-        <input className="input-modern" type="password" value={form.senha} required
+        <label className="login-label">Senha</label>
+        <input className="login-input" type="password" value={form.senha} required
           onChange={e => setForm(f => ({ ...f, senha: e.target.value }))}
           placeholder="Mínimo 6 caracteres" />
       </div>
 
       <div>
-        <label className="label-modern">Confirmar Senha</label>
-        <input className="input-modern" type="password" value={form.confirmar} required
+        <label className="login-label">Confirmar Senha</label>
+        <input className="login-input" type="password" value={form.confirmar} required
           onChange={e => setForm(f => ({ ...f, confirmar: e.target.value }))}
           placeholder="Repita a senha" />
       </div>
@@ -425,8 +425,8 @@ function FormEsqueci({ irPara }: { irPara: (t: Tela) => void }) {
             Insira o seu CPF cadastrado. Na próxima etapa, você precisará confirmar seu e-mail ou telefone para redefinir.
           </p>
           <div>
-            <label className="label-modern">CPF do Técnico</label>
-            <input className="input-modern" value={form.cpf} inputMode="numeric" required
+            <label className="login-label">CPF do Técnico</label>
+            <input className="login-input" value={form.cpf} inputMode="numeric" required
               onChange={e => setForm(f => ({ ...f, cpf: mascaraCPF(e.target.value) }))}
               placeholder="000.000.000-00" />
           </div>
@@ -444,22 +444,22 @@ function FormEsqueci({ irPara }: { irPara: (t: Tela) => void }) {
           <p style={{ fontWeight: '700', fontSize: '14px', color: '#ffffff', margin: 0 }}>Validação de Segurança</p>
           
           <div>
-            <label className="label-modern">Confirme E-mail ou Telefone</label>
-            <input className="input-modern" value={form.codigo} required
+            <label className="login-label">Confirme E-mail ou Telefone</label>
+            <input className="login-input" value={form.codigo} required
               onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
               placeholder="Digite o email ou telefone cadastrado" />
           </div>
 
           <div>
-            <label className="label-modern">Nova Senha</label>
-            <input className="input-modern" type="password" value={form.senha} required
+            <label className="login-label">Nova Senha</label>
+            <input className="login-input" type="password" value={form.senha} required
               onChange={e => setForm(f => ({ ...f, senha: e.target.value }))}
               placeholder="Mínimo 6 caracteres" />
           </div>
 
           <div>
-            <label className="label-modern">Confirmar Nova Senha</label>
-            <input className="input-modern" type="password" value={form.confirmar} required
+            <label className="login-label">Confirmar Nova Senha</label>
+            <input className="login-input" type="password" value={form.confirmar} required
               onChange={e => setForm(f => ({ ...f, confirmar: e.target.value }))}
               placeholder="Repita a nova senha" />
           </div>

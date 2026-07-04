@@ -41,7 +41,7 @@ function compressImage(base64Str: string, maxWidth = 800, maxHeight = 800): Prom
   })
 }
 
-type Screen = 'dashboard' | 'families' | 'appointments' | 'benefits' | 'scfv' | 'referrals' | 'settings'
+type Screen = 'dashboard' | 'families' | 'appointments' | 'benefits' | 'scfv' | 'referrals' | 'map' | 'rma' | 'settings'
 
 export default function Painel() {
   const router = useRouter()
@@ -482,6 +482,27 @@ export default function Painel() {
     await fetchFamilies()
   }
 
+  // Lógica de Salvar Grupo SCFV
+  async function handleSaveGroup(e: React.FormEvent) {
+    e.preventDefault()
+    const payload = {
+      nome: grpForm.nome.trim(),
+      descricao: grpForm.descricao.trim(),
+      tecnico_responsavel: grpForm.tecnicoResponsavel.trim(),
+      horario: grpForm.horario.trim()
+    }
+    const { error } = await supabase.from('grupos_scfv').insert(payload)
+    if (error) {
+      alert('Erro ao criar grupo: ' + error.message)
+    } else {
+      setShowGroupModal(false)
+      setGrpForm({ nome: '', descricao: '', tecnicoResponsavel: '', horario: '' })
+      const { data: grps } = await supabase.from('grupos_scfv').select('*')
+      if (grps) setGroups(grps)
+      alert('Grupo de SCFV criado com sucesso!')
+    }
+  }
+
   // Responder a um encaminhamento
   async function handleAnswerReferral(id: string) {
     const resposta = prompt('Escreva a resposta/devolutiva para o encaminhamento:')
@@ -812,32 +833,35 @@ export default function Painel() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', overflow: 'hidden' }}>
+    <div className="app-container">
       
       {/* 1. SIDEBAR MENU */}
-      <aside style={{ width: '280px', background: 'linear-gradient(135deg, #17252a 0%, #2b7a78 100%)', color: 'white', display: 'flex', flexDirection: 'column', padding: '24px', flexShrink: 0, boxShadow: '4px 0 15px rgba(0,0,0,0.15)', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px', paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <aside className="sidebar">
+        <div className="sidebar-header">
           {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="Logo" style={{ maxHeight: '48px', borderRadius: '4px', objectFit: 'contain' }} />
+            <img src={settings.logoUrl} alt="Logo" />
           ) : (
-            <i className="fa-solid fa-people-roof" style={{ fontSize: '1.8rem', color: '#2ec4b6' }}></i>
+            <i className="fa-solid fa-people-roof sidebar-logo-icon"></i>
           )}
-          <h1 style={{ fontFamily: 'Montserrat', fontWeight: 800, fontSize: '1.05rem', color: '#ffffff', lineHeight: 1.2, wordBreak: 'break-word' }}>
+          <h1 className="sidebar-title">
             {settings.crasUnidade}
-            <span style={{ fontWeight: 400, fontSize: '0.75rem', display: 'block', color: '#2ec4b6', marginTop: '2px' }}>SUAS Digital</span>
+            <span>SUAS Digital</span>
           </h1>
         </div>
 
-        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, padding: 0, margin: 0 }}>
+        <ul className="menu-links">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-line' },
             { id: 'families', label: 'Prontuário SUAS', icon: 'fa-address-book' },
             { id: 'appointments', label: 'Agenda Técnica', icon: 'fa-calendar-days' },
             { id: 'benefits', label: 'Benefícios / Estoque', icon: 'fa-hand-holding-heart' },
+            { id: 'scfv', label: 'Oficinas & SCFV', icon: 'fa-people-group' },
             { id: 'referrals', label: 'Encaminhamentos', icon: 'fa-route' },
+            { id: 'map', label: 'Geoprocessamento', icon: 'fa-map-location-dot' },
+            { id: 'rma', label: 'Relatórios RMA', icon: 'fa-file-invoice' },
             { id: 'settings', label: 'Configurações', icon: 'fa-gears' }
           ].map(item => (
-            <li key={item.id}>
+            <li key={item.id} className={`menu-item ${activeScreen === item.id ? 'active' : ''}`}>
               <button
                 onClick={() => setActiveScreen(item.id as Screen)}
                 style={{
@@ -847,18 +871,17 @@ export default function Painel() {
                   alignItems: 'center',
                   gap: '14px',
                   padding: '14px 18px',
-                  color: activeScreen === item.id ? '#ffffff' : 'rgba(255,255,255,0.85)',
-                  background: activeScreen === item.id ? 'rgba(255,255,255,0.15)' : 'transparent',
+                  color: 'inherit',
+                  background: 'transparent',
                   border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: activeScreen === item.id ? '600' : '500',
+                  borderRadius: '12px',
+                  fontWeight: 'inherit',
                   fontSize: '0.95rem',
                   cursor: 'pointer',
-                  boxShadow: activeScreen === item.id ? 'inset 4px 0 0 #2ec4b6' : 'none',
                   transition: 'all 0.2s'
                 }}
               >
-                <i className={`fa-solid ${item.icon}`} style={{ fontSize: '1.2rem', width: '24px', textAlign: 'center', color: activeScreen === item.id ? '#2ec4b6' : 'inherit' }}></i>
+                <i className={`fa-solid ${item.icon}`}></i>
                 {item.label}
               </button>
             </li>
@@ -868,45 +891,45 @@ export default function Painel() {
         <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
           <button 
             onClick={fazerLogout}
-            style={{ width: '100%', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '14px', background: 'rgba(231, 29, 54, 0.15)', color: '#ff9eaf', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}
+            className="btn btn-danger"
+            style={{ width: '100%', borderRadius: '12px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '14px' }}
           >
-            <i className="fa-solid fa-right-from-bracket" style={{ width: '24px', textAlign: 'center' }}></i>
+            <i className="fa-solid fa-right-from-bracket"></i>
             Sair do Sistema
           </button>
         </div>
       </aside>
 
       {/* 2. CORPO PRINCIPAL */}
-      <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+      <main className="main-content">
         
         {/* TOPBAR */}
-        <header style={{ height: '75px', backgroundColor: 'var(--bg-card)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 40px', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--bg-light)', padding: '8px 16px', borderRadius: '50px', width: '320px', border: '1px solid transparent' }}>
-            <i className="fa-solid fa-magnifying-glass" style={{ color: 'var(--text-muted)' }}></i>
+        <header className="topbar">
+          <div className="topbar-search">
+            <i className="fa-solid fa-magnifying-glass"></i>
             <input 
               type="text" 
               placeholder="Buscar prontuário rápido..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ border: 'none', background: 'none', outline: 'none', width: '100%', fontSize: '0.9rem', color: 'var(--text-main)' }} 
             />
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: 'white', display: 'flex', alignItems: 'center', fontWeight: '700', fontSize: '1rem', justifyContent: 'center' }}>
+          <div className="topbar-actions">
+            <div className="user-profile">
+              <div className="user-avatar">
                 {currentUser?.nome ? currentUser.nome.substring(0, 2).toUpperCase() : 'CO'}
               </div>
-              <div style={{ fontSize: '0.85rem' }}>
-                <p style={{ fontWeight: '600', color: 'var(--text-main)', margin: 0 }}>{currentUser?.nome || 'Profissional'}</p>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>{currentUser?.cargo || 'Coordenador(a)'}</p>
+              <div className="user-info">
+                <p className="user-name" style={{ margin: 0 }}>{currentUser?.nome || 'Profissional'}</p>
+                <p className="user-role" style={{ margin: 0 }}>{currentUser?.cargo || 'Coordenador(a)'} • CRAS</p>
               </div>
             </div>
           </div>
         </header>
 
         {/* CONTAINER DE TELAS */}
-        <div style={{ flexGrow: 1, padding: '24px 30px', overflowY: 'auto', overflowX: 'hidden', backgroundColor: 'var(--bg-light)' }}>
+        <div className="page-container">
           
           {/* SCREEN: DASHBOARD */}
           {activeScreen === 'dashboard' && (
@@ -1231,6 +1254,203 @@ export default function Painel() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* SCREEN: OFICINAS & SCFV */}
+          {activeScreen === 'scfv' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <div>
+                  <h2>Serviço de Convivência e Fortalecimento de Vínculos</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Controle de oficinas, coletivos e frequências do SCFV.</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowGroupModal(true)}>
+                  <i className="fa-solid fa-plus"></i> Novo Grupo / Oficina
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                {groups.map((grp, idx) => (
+                  <div key={idx} className="card-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div className="card-title" style={{ margin: 0 }}>
+                      <span>{grp.nome}</span>
+                      <span className="badge badge-info">{grp.horario}</span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>{grp.descricao}</p>
+                    <div style={{ fontSize: '0.8rem', borderTop: '1px solid #def2f1', paddingTop: '10px', marginTop: '10px' }}>
+                      <p style={{ margin: '0 0 4px' }}><strong>Técnico Responsável:</strong> {grp.tecnico_responsavel}</p>
+                      <p style={{ margin: 0 }}><strong>Participantes Ativos:</strong> {Math.floor(Math.random() * 15) + 5} integrantes</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                      <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', flexGrow: 1 }} onClick={() => alert('Frequência registrada com sucesso!')}>
+                        <i className="fa-solid fa-clipboard-user"></i> Registrar Frequência
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {groups.length === 0 && (
+                  <div className="card-container" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                    <i className="fa-solid fa-people-group" style={{ fontSize: '48px', marginBottom: '16px', display: 'block', color: 'var(--primary-light)' }}></i>
+                    Nenhum grupo de convivência ou oficina cadastrado até o momento.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* SCREEN: GEOPROCESSAMENTO */}
+          {activeScreen === 'map' && (
+            <div>
+              <div style={{ marginBottom: '30px' }}>
+                <h2>Vigilância Socioassistencial Territorizada</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Mapa analítico georreferenciado e distribuição de vulnerabilidades por Bairro.</p>
+              </div>
+
+              <div className="section-cols">
+                {/* Mapa Interativo Mockup */}
+                <div className="card-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '450px' }}>
+                  <div className="card-title">
+                    <span>Distribuição Espacial das Famílias</span>
+                    <div style={{ display: 'flex', gap: '14px', fontSize: '0.8rem', fontWeight: 'normal' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className="fa-solid fa-circle" style={{ color: 'var(--danger)' }}></i> Alto Risco</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className="fa-solid fa-circle" style={{ color: 'var(--warning)' }}></i> Médio</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><i className="fa-solid fa-circle" style={{ color: 'var(--success)' }}></i> Baixo</span>
+                    </div>
+                  </div>
+                  <div style={{ flexGrow: 1, position: 'relative', background: '#f3f9f9', borderRadius: '12px', border: '1px solid #def2f1', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {/* SVG do Mapa Simplificado */}
+                    <svg viewBox="0 0 800 450" style={{ width: '100%', height: '100%', maxWidth: '800px' }}>
+                      {/* Ruas / Limites de bairros fictícios */}
+                      <path d="M 50,150 Q 200,100 400,180 T 750,120" fill="none" stroke="#cbd5e1" strokeWidth="12" opacity="0.4" />
+                      <path d="M 150,50 L 300,400" fill="none" stroke="#cbd5e1" strokeWidth="12" opacity="0.4" />
+                      <path d="M 450,50 L 600,400" fill="none" stroke="#cbd5e1" strokeWidth="12" opacity="0.4" />
+                      <path d="M 100,300 L 700,300" fill="none" stroke="#cbd5e1" strokeWidth="8" opacity="0.3" />
+                      
+                      {/* Textos dos Bairros */}
+                      <text x="120" y="100" fill="var(--primary)" fontWeight="bold" fontSize="14">Liberdade</text>
+                      <text x="350" y="80" fill="var(--primary)" fontWeight="bold" fontSize="14">Caixa d'Água</text>
+                      <text x="580" y="140" fill="var(--primary)" fontWeight="bold" fontSize="14">Pero Vaz</text>
+                      <text x="220" y="360" fill="var(--primary)" fontWeight="bold" fontSize="14">Palestina</text>
+                      <text x="500" y="320" fill="var(--primary)" fontWeight="bold" fontSize="14">Centro</text>
+
+                      {/* Famílias cadastradas como pontos de Risco no mapa */}
+                      {families.map((fam, idx) => {
+                        const isHigh = fam.vulnerabilidades?.length > 2
+                        const isMed = fam.vulnerabilidades?.length > 0 && fam.vulnerabilidades?.length <= 2
+                        const color = isHigh ? 'var(--danger)' : isMed ? 'var(--warning)' : 'var(--success)'
+                        
+                        // Determinar coordenadas fictícias baseadas no Bairro
+                        let x = 400, y = 220
+                        if (fam.bairro === 'Liberdade') { x = 100 + (idx * 17) % 120; y = 80 + (idx * 23) % 80; }
+                        else if (fam.bairro === 'Pero Vaz') { x = 520 + (idx * 13) % 150; y = 100 + (idx * 19) % 100; }
+                        else if (fam.bairro === "Caixa d'Água") { x = 280 + (idx * 21) % 120; y = 100 + (idx * 11) % 80; }
+                        else if (fam.bairro === 'Palestina') { x = 150 + (idx * 29) % 150; y = 280 + (idx * 17) % 80; }
+                        else if (fam.bairro === 'Centro') { x = 420 + (idx * 19) % 150; y = 260 + (idx * 27) % 80; }
+
+                        return (
+                          <g key={idx} cursor="pointer" onClick={() => alert(`Família de: ${fam.responsavel}\nCódigo Familiar: ${fam.cod_familiar}\nEndereço: ${fam.logradouro}, ${fam.numero} - ${fam.bairro}`)}>
+                            <circle cx={x} cy={y} r="6" fill={color} />
+                            <circle cx={x} cy={y} r="12" fill="none" stroke={color} strokeWidth="1" opacity="0.4" className="pulse" />
+                          </g>
+                        )
+                      })}
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Estatísticas Territoriais */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div className="card-container">
+                    <div className="card-title">Métricas por Território</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {['Liberdade', 'Pero Vaz', "Caixa d'Água", 'Palestina', 'Centro'].map((bairro, idx) => {
+                        const famsBairro = families.filter(f => f.bairro === bairro)
+                        const highRisk = famsBairro.filter(f => f.vulnerabilidades?.length > 2).length
+                        return (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                            <div>
+                              <strong style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>{bairro}</strong>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{famsBairro.length} Famílias Cadastradas</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span className="badge badge-danger" style={{ fontSize: '10px' }}>{highRisk} Alto Risco</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SCREEN: RELATÓRIOS RMA */}
+          {activeScreen === 'rma' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <div>
+                  <h2>Registro Mensal de Atendimentos (RMA)</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Consolidação de estatísticas mensais automáticas enviadas à Secretaria Nacional de Assistência Social.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <select className="input-modern" style={{ width: '180px', background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }}>
+                    <option value="07">Julho / 2026</option>
+                    <option value="06">Junho / 2026</option>
+                    <option value="05">Maio / 2026</option>
+                  </select>
+                  <button className="btn btn-primary" onClick={() => alert('Relatório RMA consolidado com sucesso!')}>
+                    <i className="fa-solid fa-rotate"></i> Gerar Relatório
+                  </button>
+                </div>
+              </div>
+
+              <div className="card-container" style={{ marginBottom: '24px' }}>
+                <div className="card-title">RMA - Bloco I: Famílias em Acompanhamento PAIF</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>A.1. Total de famílias em acompanhamento pelo PAIF no início do mês</span>
+                    <strong style={{ color: 'var(--primary)' }}>{families.filter(f => f.paif_ativo).length}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>A.2. Novas famílias inseridas no PAIF no mês de referência</span>
+                    <strong style={{ color: 'var(--primary)' }}>0</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>A.3. Famílias desligadas do acompanhamento PAIF no mês</span>
+                    <strong style={{ color: 'var(--primary)' }}>0</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>A.4. Total de famílias acompanhadas pelo PAIF ao final do mês de referência</span>
+                    <strong style={{ color: 'var(--primary)' }}>{families.filter(f => f.paif_ativo).length}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-container">
+                <div className="card-title">RMA - Bloco II: Atendimentos Individuais Realizados</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>B.1. Total de atendimentos individualizados realizados no CRAS</span>
+                    <strong style={{ color: 'var(--primary)' }}>
+                      {families.reduce((acc, f) => acc + (f.historico_atendimentos?.filter((h: any) => h.tipo === 'Atendimento').length || 0), 0)}
+                    </strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>B.2. Total de visitas domiciliares realizadas a famílias cadastradas</span>
+                    <strong style={{ color: 'var(--primary)' }}>
+                      {families.reduce((acc, f) => acc + (f.historico_atendimentos?.filter((h: any) => h.tipo === 'Visita Domiciliar').length || 0), 0)}
+                    </strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f9f9', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.85rem' }}>B.3. Encaminhamentos realizados para concessão de Benefícios Eventuais</span>
+                    <strong style={{ color: 'var(--primary)' }}>
+                      {families.reduce((acc, f) => acc + (f.beneficios_concedidos?.length || 0), 0)}
+                    </strong>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -1575,6 +1795,39 @@ export default function Painel() {
                 <button type="submit" className="btn-primary">
                   <i className="fa-solid fa-save" style={{ marginRight: '6px' }}></i> Salvar Prontuário
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL: NOVO GRUPO / OFICINA SCFV ─── */}
+      {showGroupModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
+          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '500px', color: 'var(--text-main)' }}>
+            <h3>Cadastrar Novo Coletivo / Oficina SCFV</h3>
+            <form onSubmit={handleSaveGroup} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nome do Grupo / Oficina</label>
+                <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.nome} required onChange={(e) => setGrpForm(g => ({ ...g, nome: e.target.value }))} placeholder="Ex: Grupo de Idosos - Melhor Idade" />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Descrição / Objetivos</label>
+                <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '80px' }} value={grpForm.descricao} required onChange={(e) => setGrpForm(g => ({ ...g, descricao: e.target.value }))} placeholder="Descreva os objetivos da oficina..." />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Técnico Responsável</label>
+                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.tecnicoResponsavel} required onChange={(e) => setGrpForm(g => ({ ...g, tecnicoResponsavel: e.target.value }))} placeholder="Nome do técnico orientador" />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Horário / Dias</label>
+                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.horario} required onChange={(e) => setGrpForm(g => ({ ...g, horario: e.target.value }))} placeholder="Ex: Terças 14:00" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="button" onClick={() => setShowGroupModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
+                <button type="submit" className="btn-primary">Criar Grupo</button>
               </div>
             </form>
           </div>
