@@ -4,6 +4,43 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+function compressImage(base64Str: string, maxWidth = 800, maxHeight = 800): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.src = base64Str
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let width = img.width
+      let height = img.height
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+      } else {
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height)
+          height = maxHeight
+        }
+      }
+
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.8))
+      } else {
+        resolve(base64Str)
+      }
+    }
+    img.onerror = () => {
+      resolve(base64Str)
+    }
+  })
+}
+
 type Screen = 'dashboard' | 'families' | 'appointments' | 'benefits' | 'scfv' | 'referrals' | 'settings'
 
 export default function Painel() {
@@ -1222,20 +1259,38 @@ export default function Painel() {
                           if (file) {
                             const reader = new FileReader()
                             reader.onload = async (evt) => {
-                              const b64 = evt.target?.result as string
-                              setSettings(prev => {
-                                const newSettings = { ...prev, logoUrl: b64 }
-                                localStorage.setItem('cras_settings', JSON.stringify(newSettings))
-                                return newSettings
-                              })
-                              const res = await fetch('/api/configuracoes', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ logo_url: b64 })
-                              })
-                              const result = await res.json()
-                              if (!result.ok) {
-                                alert('Erro ao salvar brasão: ' + result.error)
+                              try {
+                                const originalB64 = evt.target?.result as string
+                                // Redimensionar e comprimir para evitar payload excessivo no banco de dados e na Vercel
+                                const compressedB64 = await compressImage(originalB64, 600, 600)
+                                
+                                setSettings(prev => {
+                                  const newSettings = { ...prev, logoUrl: compressedB64 }
+                                  localStorage.setItem('cras_settings', JSON.stringify(newSettings))
+                                  return newSettings
+                                })
+
+                                const res = await fetch('/api/configuracoes', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ logo_url: compressedB64 })
+                                })
+                                
+                                if (!res.ok) {
+                                  const text = await res.text()
+                                  alert('Erro ao salvar no servidor (HTTP ' + res.status + '): ' + text)
+                                  return
+                                }
+
+                                const result = await res.json()
+                                if (!result.ok) {
+                                  alert('Erro ao salvar brasão: ' + result.error)
+                                } else {
+                                  alert('Brasão atualizado e salvo com sucesso!')
+                                }
+                              } catch (err: any) {
+                                console.error('Erro no upload do brasão:', err)
+                                alert('Erro ao processar imagem: ' + err.message)
                               }
                             }
                             reader.readAsDataURL(file)
