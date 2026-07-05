@@ -196,8 +196,9 @@ export default function Painel() {
 
     async function loadData() {
       try {
-        const { data: cfgList } = await supabase.from('configuracoes').select('*').limit(1)
-        const cfg = cfgList && cfgList.length > 0 ? cfgList[0] : null
+        const resCfg = await fetch('/api/configuracoes')
+        const dataCfg = await resCfg.json()
+        const cfg = dataCfg.ok ? dataCfg.data : null
         if (cfg) {
           const cfgData = {
             municipio: cfg.municipio,
@@ -932,86 +933,195 @@ export default function Painel() {
         <div className="page-container">
           
           {/* SCREEN: DASHBOARD */}
-          {activeScreen === 'dashboard' && (
-            <div>
-              <div style={{ marginBottom: '30px' }}>
-                <h2>Painel Geral</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Visão geral da proteção social básica e acompanhamentos ativos.</p>
-              </div>
+          {activeScreen === 'dashboard' && (() => {
+            // Calcular dados das vulnerabilidades dinamicamente
+            const vulCounts: { [key: string]: number } = {}
+            families.forEach(f => {
+              if (f.vulnerabilidades) {
+                f.vulnerabilidades.forEach((v: string) => {
+                  vulCounts[v] = (vulCounts[v] || 0) + 1
+                })
+              }
+            })
+            const sortedVuls = Object.entries(vulCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
 
-              {/* Grid Estatístico */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '35px' }}>
-                {[
-                  { label: 'Famílias Cadastradas', val: stats.families, icon: 'fa-house-chimney', colorClass: '' },
-                  { label: 'Acompanhados no PAIF', val: stats.paif, icon: 'fa-user-shield', colorClass: 'success' },
-                  { label: 'Benefícios Entregues', val: stats.benefits, icon: 'fa-hand-holding-heart', colorClass: 'info' },
-                  { label: 'Encaminhamentos Pendentes', val: stats.referrals, icon: 'fa-route', colorClass: 'warning' }
-                ].map((st, i) => (
-                  <div key={i} style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-md)', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-color)', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ zIndex: 1 }}>
-                      <h3 style={{ fontSize: '2.2rem', fontWeight: '800', color: 'var(--primary)', margin: '0 0 4px' }}>{st.val}</h3>
-                      <p style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>{st.label}</p>
+            // Calcular dados dos bairros dinamicamente
+            const neighborhoodCounts: { [key: string]: number } = {}
+            families.forEach(f => {
+              if (f.bairro) {
+                neighborhoodCounts[f.bairro] = (neighborhoodCounts[f.bairro] || 0) + 1
+              }
+            })
+            const sortedNeighborhoods = Object.entries(neighborhoodCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+            const maxNeighborhoodCount = Math.max(...Object.values(neighborhoodCounts), 1)
+
+            return (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                  <div>
+                    <h2>Painel Geral</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Visão geral da proteção social básica e acompanhamentos ativos.</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => handleOpenFamilyModal()}>
+                    <i className="fa-solid fa-plus"></i> Novo Prontuário
+                  </button>
+                </div>
+
+                {/* Grid Estatístico */}
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-data">
+                      <h3>{stats.families}</h3>
+                      <p>Famílias Cadastradas</p>
                     </div>
-                    <div style={{ fontSize: '2.5rem', color: 'rgba(43, 122, 120, 0.15)', zIndex: 0 }}><i className={`fa-solid ${st.icon}`}></i></div>
+                    <div className="stat-icon"><i className="fa-solid fa-house-chimney"></i></div>
                   </div>
-                ))}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.65fr 1.35fr', gap: '24px' }}>
-                
-                {/* Atendimentos Recentes */}
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #def2f1', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                  <h3 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Últimas Evoluções do Prontuário</h3>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '2px solid #def2f1', textAlign: 'left' }}>
-                          <th style={{ padding: '12px' }}>Data</th>
-                          <th style={{ padding: '12px' }}>Família</th>
-                          <th style={{ padding: '12px' }}>Técnico</th>
-                          <th style={{ padding: '12px' }}>Ação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {families.flatMap(f => (f.historico_atendimentos || []).map((at: any) => ({ ...at, responsavel: f.responsavel }))).sort((a,b) => new Date(b.data).getTime() - new Date(a.data).getTime()).slice(0, 5).map((at, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid #f3f9f9' }}>
-                            <td style={{ padding: '12px' }}>{at.data}</td>
-                            <td style={{ padding: '12px' }}><strong>{at.responsavel}</strong></td>
-                            <td style={{ padding: '12px' }}>{at.tecnico}</td>
-                            <td style={{ padding: '12px' }}><span style={{ fontSize: '11px', padding: '4px 8px', borderRadius: '20px', background: 'rgba(46, 196, 182, 0.1)', color: '#2ec4b6', fontWeight: 600 }}>{at.tipo}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="stat-card success">
+                    <div className="stat-data">
+                      <h3>{stats.paif}</h3>
+                      <p>Em Acompanhamento (PAIF)</p>
+                    </div>
+                    <div className="stat-icon"><i className="fa-solid fa-user-check"></i></div>
+                  </div>
+                  <div className="stat-card warning">
+                    <div className="stat-data">
+                      <h3>{stats.benefits}</h3>
+                      <p>Benefícios Concedidos</p>
+                    </div>
+                    <div className="stat-icon"><i className="fa-solid fa-box-tissue"></i></div>
+                  </div>
+                  <div className="stat-card info">
+                    <div className="stat-data">
+                      <h3>{stats.referrals}</h3>
+                      <p>Encaminhamentos Ativos</p>
+                    </div>
+                    <div className="stat-icon"><i className="fa-solid fa-paper-plane"></i></div>
                   </div>
                 </div>
 
-                {/* Almoxarifado / Estoque Rápido */}
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #def2f1', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                  <h3 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Estoque do Almoxarifado</h3>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '2px solid #def2f1', textAlign: 'left' }}>
-                          <th style={{ padding: '12px' }}>Item Benefício</th>
-                          <th style={{ padding: '12px' }}>Saldo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stock.map((item, idx) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid #f3f9f9' }}>
-                            <td style={{ padding: '12px' }}><strong>{item.tipo}</strong></td>
-                            <td style={{ padding: '12px' }}><span style={{ fontWeight: 700, color: item.saldo < 10 ? '#e71d36' : '#2b7a78' }}>{item.saldo} {item.unidade}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {/* Grid de Gráficos Reconstruído */}
+                <div className="charts-grid">
+                  <div className="chart-card">
+                    <div className="chart-header">
+                      <h3>Vulnerabilidades Identificadas</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'center' }}>
+                      {sortedVuls.map(([vul, count], idx) => {
+                        const colors = ['#e71d36', '#ff9f1c', '#2ec4b6', '#0077b6', '#9bc53d', '#7209b7', '#f72585', '#4cc9f0']
+                        const pct = Math.round((count / (families.length || 1)) * 100)
+                        return (
+                          <div key={idx}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>
+                              <span style={{ color: 'var(--text-main)' }}>{vul}</span>
+                              <span style={{ color: 'var(--text-muted)' }}>{count} fam. ({pct}%)</span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', backgroundColor: colors[idx % colors.length], borderRadius: '4px' }}></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {sortedVuls.length === 0 && (
+                        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Nenhuma vulnerabilidade registrada.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="chart-card">
+                    <div className="chart-header">
+                      <h3>Famílias por Bairro</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flexGrow: 1, justifyContent: 'center' }}>
+                      {sortedNeighborhoods.map(([bairro, count], idx) => {
+                        const pct = Math.round((count / maxNeighborhoodCount) * 100)
+                        return (
+                          <div key={idx}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px', fontWeight: 600 }}>
+                              <span style={{ color: 'var(--text-main)' }}>{bairro}</span>
+                              <span style={{ color: 'var(--text-muted)' }}>{count} fam.</span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', backgroundColor: 'var(--primary-light)', borderRadius: '4px' }}></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {sortedNeighborhoods.length === 0 && (
+                        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Nenhuma família cadastrada.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
+                {/* Tabelas de Histórico e Oficinas */}
+                <div className="section-cols">
+                  <div className="card-container">
+                    <div className="card-title">Histórico Recente de Atendimentos</div>
+                    <div className="table-responsive">
+                      <table className="cras-table">
+                        <thead>
+                          <tr>
+                            <th>Data</th>
+                            <th>Responsável Familiar</th>
+                            <th>Técnico</th>
+                            <th>Tipo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {families.flatMap(f => (f.historico_atendimentos || []).map((at: any) => ({ ...at, responsavel: f.responsavel }))).sort((a, b) => new Date(b.data || b.created_at).getTime() - new Date(a.data || a.created_at).getTime()).slice(0, 5).map((at, idx) => (
+                            <tr key={idx}>
+                              <td>{at.data || new Date(at.created_at).toLocaleDateString('pt-BR')}</td>
+                              <td><strong>{at.responsavel}</strong></td>
+                              <td>{at.tecnico}</td>
+                              <td>
+                                <span style={{ padding: '4px 8px', borderRadius: '20px', background: 'rgba(46, 196, 182, 0.1)', color: '#2ec4b6', fontSize: '11px', fontWeight: 600 }}>
+                                  {at.tipo}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                          {families.flatMap(f => f.historico_atendimentos || []).length === 0 && (
+                            <tr>
+                              <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>Nenhum atendimento recente registrado.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="card-container">
+                    <div className="card-title">Oficinas Ativas (SCFV)</div>
+                    <div className="table-responsive">
+                      <table className="cras-table">
+                        <thead>
+                          <tr>
+                            <th>Grupo / Oficina</th>
+                            <th>Orientador / Técnico</th>
+                            <th>Horário / Dias</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groups.map((grp, idx) => (
+                            <tr key={idx}>
+                              <td><strong>{grp.nome}</strong></td>
+                              <td>{grp.tecnico_responsavel}</td>
+                              <td><span className="badge badge-info">{grp.horario}</span></td>
+                            </tr>
+                          ))}
+                          {groups.length === 0 && (
+                            <tr>
+                              <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>Nenhuma oficina ativa cadastrada.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* SCREEN: FAMILIES (PRONTUÁRIO SUAS) */}
           {activeScreen === 'families' && (
@@ -1027,35 +1137,35 @@ export default function Painel() {
               </div>
 
               {/* Tabela de Famílias */}
-              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #def2f1', boxShadow: 'var(--shadow-md)', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="card-container table-responsive">
+                <table className="cras-table">
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #def2f1', textAlign: 'left', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '11px' }}>
-                      <th style={{ padding: '12px 16px' }}>Cód.</th>
-                      <th style={{ padding: '12px 16px' }}>Responsável</th>
-                      <th style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>CPF/NIS</th>
-                      <th style={{ padding: '12px 16px' }}>Endereço</th>
-                      <th style={{ padding: '12px 16px' }}>Ações de Acompanhamento</th>
+                    <tr>
+                      <th>Cód.</th>
+                      <th>Responsável</th>
+                      <th style={{ whiteSpace: 'nowrap' }}>CPF/NIS</th>
+                      <th>Endereço</th>
+                      <th>Ações de Acompanhamento</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredFamilies.map((fam, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #f3f9f9' }}>
-                        <td style={{ padding: '12px 16px' }}><code>{fam.cod_familiar}</code></td>
-                        <td style={{ padding: '12px 16px' }}><strong>{fam.responsavel}</strong></td>
-                        <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                      <tr key={idx}>
+                        <td><code>{fam.cod_familiar}</code></td>
+                        <td><strong>{fam.responsavel}</strong></td>
+                        <td style={{ whiteSpace: 'nowrap' }}>
                           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{fam.cpf_responsavel}</span><br />
                           <span style={{ fontSize: '0.75rem', color: 'var(--primary-light)' }}>{fam.nis_responsavel}</span>
                         </td>
-                        <td style={{ padding: '12px 16px' }}>{fam.logradouro}, {fam.numero} - {fam.bairro}</td>
-                        <td style={{ padding: '12px 16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          <button onClick={() => handlePrintDossie(fam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #def2f1', background: '#ffffff', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <td>{fam.logradouro}, {fam.numero} - {fam.bairro}</td>
+                        <td style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button onClick={() => handlePrintDossie(fam)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <i className="fa-solid fa-print"></i> Dossiê
                           </button>
-                          <button onClick={() => handleOpenMemberModal(fam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #def2f1', background: '#ffffff', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button onClick={() => handleOpenMemberModal(fam)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <i className="fa-solid fa-users"></i> Membros ({fam.membros_familia?.length || 1})
                           </button>
-                          <button onClick={() => handleOpenEvolutionModal(fam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #def2f1', background: '#ffffff', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button onClick={() => handleOpenEvolutionModal(fam)} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <i className="fa-solid fa-file-waveform"></i> Registrar Ação
                           </button>
                         </td>
@@ -1095,25 +1205,25 @@ export default function Painel() {
               </div>
 
               {/* Tabela de Agenda */}
-              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #def2f1', boxShadow: 'var(--shadow-md)', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="card-container table-responsive">
+                <table className="cras-table">
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #def2f1', textAlign: 'left', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '11px' }}>
-                      <th style={{ padding: '12px 16px' }}>Data/Hora</th>
-                      <th style={{ padding: '12px 16px' }}>Usuário / Família</th>
-                      <th style={{ padding: '12px 16px' }}>Ação</th>
-                      <th style={{ padding: '12px 16px' }}>Técnico Agendado</th>
-                      <th style={{ padding: '12px 16px' }}>Ações Rápidas</th>
+                    <tr>
+                      <th>Data/Hora</th>
+                      <th>Usuário / Família</th>
+                      <th>Ação</th>
+                      <th>Técnico Agendado</th>
+                      <th>Ações Rápidas</th>
                     </tr>
                   </thead>
                   <tbody>
                     {agenda.map((item, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #f3f9f9' }}>
-                        <td style={{ padding: '12px 16px' }}><strong>{item.data}</strong> às {item.hora}</td>
-                        <td style={{ padding: '12px 16px' }}><strong>{item.responsavel}</strong></td>
-                        <td style={{ padding: '12px 16px' }}><span style={{ padding: '4px 8px', borderRadius: '20px', background: 'rgba(0, 119, 182, 0.1)', color: '#0077b6', fontSize: '11px', fontWeight: 600 }}>{item.tipo}</span></td>
-                        <td style={{ padding: '12px 16px' }}>{item.tecnico}</td>
-                        <td style={{ padding: '12px 16px', display: 'flex', gap: '8px' }}>
+                      <tr key={idx}>
+                        <td><strong>{item.data}</strong> às {item.hora}</td>
+                        <td><strong>{item.responsavel}</strong></td>
+                        <td><span style={{ padding: '4px 8px', borderRadius: '20px', background: 'rgba(0, 119, 182, 0.1)', color: '#0077b6', fontSize: '11px', fontWeight: 600 }}>{item.tipo}</span></td>
+                        <td>{item.tecnico}</td>
+                        <td style={{ display: 'flex', gap: '8px' }}>
                           <button onClick={() => {
                             const fam = families.find(f => f.id === item.familia_id)
                             if (fam) {
@@ -1131,13 +1241,13 @@ export default function Painel() {
                               })
                               setShowEvolutionModal(true)
                             }
-                          }} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+                          }} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 600 }}>
                             Realizado
                           </button>
-                          <button onClick={() => handleAgendaStatusChange(item, 'Não Compareceu')} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e71d36', background: 'transparent', color: '#e71d36', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+                          <button onClick={() => handleAgendaStatusChange(item, 'Não Compareceu')} className="btn btn-secondary" style={{ padding: '6px 12px', border: '1px solid #e71d36', color: '#e71d36', fontSize: '11px', fontWeight: 600 }}>
                             Falta
                           </button>
-                          <button onClick={() => handleAgendaStatusChange(item, 'Cancelado')} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #6b7c85', background: 'transparent', color: '#6b7c85', cursor: 'pointer', fontSize: '11px' }}>
+                          <button onClick={() => handleAgendaStatusChange(item, 'Cancelado')} className="btn btn-secondary" style={{ padding: '6px 12px', border: '1px solid #6b7c85', color: '#6b7c85', fontSize: '11px' }}>
                             Cancelar
                           </button>
                         </td>
@@ -1170,23 +1280,23 @@ export default function Painel() {
               </div>
 
               {/* Tabela de Almoxarifado */}
-              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #def2f1', boxShadow: 'var(--shadow-md)', marginBottom: '30px' }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Estoque do Almoxarifado</h3>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="card-container">
+                <div className="card-title">Estoque do Almoxarifado</div>
+                <div className="table-responsive">
+                  <table className="cras-table">
                     <thead>
-                      <tr style={{ borderBottom: '2px solid #def2f1', textAlign: 'left', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '11px' }}>
-                        <th style={{ padding: '12px 16px' }}>Insumo / Benefício</th>
-                        <th style={{ padding: '12px 16px' }}>Unidade</th>
-                        <th style={{ padding: '12px 16px' }}>Saldo Atual</th>
+                      <tr>
+                        <th>Insumo / Benefício</th>
+                        <th>Unidade</th>
+                        <th>Saldo Atual</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stock.map((item, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #f3f9f9' }}>
-                          <td style={{ padding: '12px 16px' }}><strong>{item.tipo}</strong></td>
-                          <td style={{ padding: '12px 16px' }}>{item.unidade}</td>
-                          <td style={{ padding: '12px 16px' }}><span style={{ fontWeight: 700, color: item.saldo < 10 ? '#e71d36' : '#2b7a78' }}>{item.saldo}</span></td>
+                        <tr key={idx}>
+                          <td><strong>{item.tipo}</strong></td>
+                          <td>{item.unidade}</td>
+                          <td><span style={{ fontWeight: 700, color: item.saldo < 10 ? '#e71d36' : '#2b7a78' }}>{item.saldo}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -1223,29 +1333,29 @@ export default function Painel() {
               </div>
 
               {/* Tabela de Encaminhamentos */}
-              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', border: '1px solid #def2f1', boxShadow: 'var(--shadow-md)', overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <div className="card-container table-responsive">
+                <table className="cras-table">
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #def2f1', textAlign: 'left', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '11px' }}>
-                      <th style={{ padding: '12px 16px' }}>Data</th>
-                      <th style={{ padding: '12px 16px' }}>Usuário / Membro</th>
-                      <th style={{ padding: '12px 16px' }}>Encaminhado Para</th>
-                      <th style={{ padding: '12px 16px' }}>Motivo</th>
-                      <th style={{ padding: '12px 16px' }}>Status</th>
-                      <th style={{ padding: '12px 16px' }}>Ações</th>
+                    <tr>
+                      <th>Data</th>
+                      <th>Usuário / Membro</th>
+                      <th>Encaminhado Para</th>
+                      <th>Motivo</th>
+                      <th>Status</th>
+                      <th>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {referrals.map((ref, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #f3f9f9' }}>
-                        <td style={{ padding: '12px 16px' }}>{new Date(ref.data_envio).toLocaleDateString('pt-BR')}</td>
-                        <td style={{ padding: '12px 16px' }}><strong>{ref.beneficiario}</strong></td>
-                        <td style={{ padding: '12px 16px' }}>{ref.destino}</td>
-                        <td style={{ padding: '12px 16px' }}>{ref.motivo}</td>
-                        <td style={{ padding: '12px 16px' }}><span style={{ padding: '4px 8px', borderRadius: '20px', background: ref.status === 'Pendente' ? 'rgba(255, 159, 28, 0.1)' : 'rgba(46, 196, 182, 0.1)', color: ref.status === 'Pendente' ? '#ff9f1c' : '#2ec4b6', fontSize: '11px', fontWeight: 600 }}>{ref.status}</span></td>
-                        <td style={{ padding: '12px 16px' }}>
+                      <tr key={idx}>
+                        <td>{new Date(ref.data_envio).toLocaleDateString('pt-BR')}</td>
+                        <td><strong>{ref.beneficiario}</strong></td>
+                        <td>{ref.destino}</td>
+                        <td>{ref.motivo}</td>
+                        <td><span style={{ padding: '4px 8px', borderRadius: '20px', background: ref.status === 'Pendente' ? 'rgba(255, 159, 28, 0.1)' : 'rgba(46, 196, 182, 0.1)', color: ref.status === 'Pendente' ? '#ff9f1c' : '#2ec4b6', fontSize: '11px', fontWeight: 600 }}>{ref.status}</span></td>
+                        <td>
                           {ref.status === 'Pendente' && (
-                            <button onClick={() => handleAnswerReferral(ref.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}>
+                            <button onClick={() => handleAnswerReferral(ref.id)} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 600 }}>
                               Responder
                             </button>
                           )}
@@ -1546,7 +1656,8 @@ export default function Painel() {
                           cras_unidade: settings.crasUnidade,
                           endereco: settings.endereco,
                           telefone: settings.telefone,
-                          email: settings.email
+                          email: settings.email,
+                          logo_url: settings.logoUrl
                         })
                       })
                       const result = await res.json()
