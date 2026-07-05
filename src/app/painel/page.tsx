@@ -1131,7 +1131,7 @@ export default function Painel() {
                   <h2>Prontuário SUAS (Famílias)</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Base de dados para acompanhamento das famílias e geração de dossiês.</p>
                 </div>
-                <button className="btn-primary" onClick={() => handleOpenFamilyModal()}>
+                <button className="btn btn-primary" onClick={() => handleOpenFamilyModal()}>
                   <i className="fa-solid fa-plus"></i> Nova Família
                 </button>
               </div>
@@ -1185,7 +1185,7 @@ export default function Painel() {
                   <h2>Agenda Técnica de Visitas & Atendimentos</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Compromissos agendados pelo corpo técnico e assistentes sociais.</p>
                 </div>
-                <button className="btn-primary" onClick={() => {
+                <button className="btn btn-primary" onClick={() => {
                   if (families.length === 0) {
                     alert('Cadastre uma família primeiro!')
                     return
@@ -1267,7 +1267,7 @@ export default function Painel() {
                   <h2>Benefícios Eventuais & Almoxarifado</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Controle de estoque e liberação de insumos de assistência social.</p>
                 </div>
-                <button className="btn-primary" onClick={() => {
+                <button className="btn btn-primary" onClick={() => {
                   if (families.length === 0) {
                     alert('Cadastre uma família primeiro!')
                     return
@@ -1314,7 +1314,7 @@ export default function Painel() {
                   <h2>Rede de Serviços / Encaminhamentos</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>Referência e contra-referência para serviços setoriais externos.</p>
                 </div>
-                <button className="btn-primary" onClick={() => {
+                <button className="btn btn-primary" onClick={() => {
                   if (families.length === 0) {
                     alert('Cadastre uma família primeiro!')
                     return
@@ -1646,7 +1646,7 @@ export default function Painel() {
                       <input className="input-modern" style={{ color: 'var(--text-main) !important', background: '#ffffff', borderColor: '#def2f1' }} value={settings.endereco} onChange={(e) => setSettings(prev => ({ ...prev, endereco: e.target.value }))} />
                     </div>
                     
-                    <button className="btn-primary" style={{ width: 'fit-content' }} onClick={async () => {
+                    <button className="btn btn-primary" style={{ width: 'fit-content' }} onClick={async () => {
                       const res = await fetch('/api/configuracoes', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1704,104 +1704,90 @@ export default function Painel() {
 
       {/* ─── MODAL: NOVA FAMÍLIA / EDITAR FAMÍLIA ─── */}
       {showFamilyModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto', color: 'var(--text-main)' }}>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '20px', borderBottom: '2px solid #def2f1', paddingBottom: '10px' }}>
-              {famForm.id ? 'Editar Cadastro Familiar' : 'Cadastrar Nova Família - Prontuário SUAS'}
-            </h3>
-            
-            <form onSubmit={handleSaveFamily} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* SEÇÃO 1: INFORMAÇÕES DO RESPONSÁVEL */}
-              <div>
-                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '850px' }}>
+            <header className="modal-header">
+              <h3>{famForm.id ? 'Editar Cadastro Familiar' : 'Cadastrar Nova Família - Prontuário SUAS'}</h3>
+              <button onClick={() => setShowFamilyModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <form onSubmit={handleSaveFamily}>
+                
+                {/* SEÇÃO 1: INFORMAÇÕES DO RESPONSÁVEL */}
+                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem', fontWeight: 'bold' }}>
                   <i className="fa-solid fa-user" style={{ marginRight: '8px' }}></i> Informações do Responsável
                 </h4>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Nome Completo</label>
+                <div className="form-grid">
+                  <div className="form-group full-width">
+                    <label>Nome Completo</label>
                     <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.responsavel} required onChange={(e) => setFamForm(f => ({ ...f, responsavel: e.target.value }))} placeholder="Nome do Responsável Familiar" />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Data de Nascimento</label>
+                  <div className="form-group">
+                    <label>Data de Nascimento</label>
                     <input className="input-modern" type="date" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.dataNascimentoResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, dataNascimentoResponsavel: e.target.value }))} />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>RG</label>
+                  <div className="form-group">
+                    <label>RG</label>
                     <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.rgResponsavel} onChange={(e) => setFamForm(f => ({ ...f, rgResponsavel: e.target.value }))} placeholder="Ex: 00.000.000-00" />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>CPF</label>
+                  <div className="form-group">
+                    <label>CPF</label>
                     <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.cpfResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, cpfResponsavel: e.target.value }))} placeholder="000.000.000-00" />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>NIS</label>
+                  <div className="form-group">
+                    <label>NIS</label>
                     <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.nisResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, nisResponsavel: e.target.value }))} placeholder="000.00000.00-0" />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Renda Mensal (R$)</label>
+                  <div className="form-group">
+                    <label>Renda Mensal (R$)</label>
                     <input className="input-modern" type="number" step="0.01" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.rendaResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, rendaResponsavel: e.target.value }))} placeholder="Ex: 0.00 ou 1320.00" />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Ocupação</label>
+                  <div className="form-group">
+                    <label>Ocupação</label>
                     <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.ocupacaoResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, ocupacaoResponsavel: e.target.value }))} placeholder="Digite a ocupação..." />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Telefone Principal</label>
-                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.telefone} required onChange={(e) => setFamForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(71) 90000-0000" />
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Outro Contato / Tel. Alternativo</label>
-                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.outroContato} onChange={(e) => setFamForm(f => ({ ...f, outroContato: e.target.value }))} placeholder="Ex: (71) 98888-8888 (Mãe Socorro)" />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Beneficiário de Programa do Governo</label>
+                  <div className="form-group">
+                    <label>Programa Social do Governo</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.programaGovernoResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, programaGovernoResponsavel: e.target.value }))}>
                       <option value="" disabled>Selecione...</option>
-                      <option value="Nenhum">Nenhum</option>
                       <option value="Bolsa Família">Bolsa Família</option>
-                      <option value="BPC (Benefício de Prestação Continuada)">BPC (Benefício de Prestação Continuada)</option>
-                      <option value="Bolsa Família + BPC">Bolsa Família + BPC</option>
+                      <option value="BPC (Benefício de Prestação Continuada)">BPC</option>
+                      <option value="Tarifa Social de Energia Elétrica">Tarifa Social</option>
+                      <option value="Nenhum">Nenhum</option>
                       <option value="Outros">Outros</option>
                     </select>
-                    {famForm.programaGovernoResponsavel === 'Outros' && (
-                      <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', marginTop: '8px' }} value={famForm.programaGovernoResponsavelOutros} onChange={(e) => setFamForm(f => ({ ...f, programaGovernoResponsavelOutros: e.target.value }))} placeholder="Especifique o programa..." />
-                    )}
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Escolaridade</label>
+                  <div className="form-group">
+                    <label>Escolaridade</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.escolaridadeResponsavel} required onChange={(e) => setFamForm(f => ({ ...f, escolaridadeResponsavel: e.target.value }))}>
                       <option value="" disabled>Selecione...</option>
-                      <option value="Sem Idade Escolar">Sem Idade Escolar</option>
+                      <option value="Sem Instrução">Sem Instrução</option>
                       <option value="Fundamental Incompleto">Fundamental Incompleto</option>
                       <option value="Fundamental Completo">Fundamental Completo</option>
                       <option value="Médio Incompleto">Médio Incompleto</option>
                       <option value="Médio Completo">Médio Completo</option>
-                      <option value="Superior Incompleto">Superior Incompleto</option>
                       <option value="Superior Completo">Superior Completo</option>
                     </select>
                   </div>
                 </div>
-              </div>
 
-              {/* SEÇÃO 2: ENDEREÇO E TERRITORIALIZAÇÃO */}
-              <div>
-                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
-                  <i className="fa-solid fa-map" style={{ marginRight: '8px' }}></i> Endereço e Territorialização
+                {/* SEÇÃO 2: ENDEREÇO & TERRITORIALIZAÇÃO */}
+                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem', fontWeight: 'bold', marginTop: '20px' }}>
+                  <i className="fa-solid fa-map-location-dot" style={{ marginRight: '8px' }}></i> Endereço e Territorialização
                 </h4>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Rua/Logradouro</label>
-                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.logradouro} required onChange={(e) => setFamForm(f => ({ ...f, logradouro: e.target.value }))} placeholder="Rua, Avenida, Travessa..." />
+                <div className="form-grid">
+                  <div className="form-group full-width">
+                    <label>Rua/Logradouro</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.logradouro} required onChange={(e) => setFamForm(f => ({ ...f, logradouro: e.target.value }))} placeholder="Ex: Rua, Avenida, Travessa..." />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Número</label>
-                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.numero} required onChange={(e) => setFamForm(f => ({ ...f, numero: e.target.value }))} placeholder="Ex: 45A ou S/N" />
+                  <div className="form-group">
+                    <label>Número</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.numero} required onChange={(e) => setFamForm(f => ({ ...f, numero: e.target.value }))} placeholder="Ex: 123 ou S/N" />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Bairro</label>
+                  <div className="form-group">
+                    <label>Bairro</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.bairro} required onChange={(e) => setFamForm(f => ({ ...f, bairro: e.target.value }))}>
                       <option value="" disabled>Selecione...</option>
                       <option value="Liberdade">Liberdade</option>
@@ -1811,43 +1797,53 @@ export default function Painel() {
                       <option value="Centro">Centro</option>
                     </select>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Acompanhamento PAIF?</label>
-                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.paifAtivo ? 'Sim' : 'Não'} onChange={(e) => setFamForm(f => ({ ...f, paifAtivo: e.target.value === 'Sim' }))}>
+                  <div className="form-group">
+                    <label>Acompanhamento PAIF?</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.paifAtivo ? 'Sim' : 'Não'} required onChange={(e) => setFamForm(f => ({ ...f, paifAtivo: e.target.value === 'Sim' }))}>
                       <option value="Não">Não</option>
                       <option value="Sim">Sim</option>
                     </select>
                   </div>
+                  <div className="form-group">
+                    <label>Telefone Principal</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.telefone} required onChange={(e) => setFamForm(f => ({ ...f, telefone: e.target.value }))} placeholder="(00) 00000-0000" />
+                  </div>
+                  <div className="form-group">
+                    <label>Contato Alternativo</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.outroContato} onChange={(e) => setFamForm(f => ({ ...f, outroContato: e.target.value }))} placeholder="Nome e telefone de contato" />
+                  </div>
+                  <div className="form-group full-width">
+                    <label>Metas do Acompanhamento Familiar (PAIF)</label>
+                    <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '60px' }} value={famForm.paifMetas} onChange={(e) => setFamForm(f => ({ ...f, paifMetas: e.target.value }))} placeholder="Metas e objetivos a serem trabalhados com a família..." />
+                  </div>
                 </div>
-              </div>
 
-              {/* SEÇÃO 3: CONDIÇÕES HABITACIONAIS */}
-              <div>
-                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+                {/* SEÇÃO 3: CONDIÇÕES HABITACIONAIS */}
+                <h4 style={{ color: 'var(--primary)', marginBottom: '15px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem', fontWeight: 'bold', marginTop: '20px' }}>
                   <i className="fa-solid fa-house" style={{ marginRight: '8px' }}></i> Condições Habitacionais
                 </h4>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Tipo de Construção</label>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Tipo de Construção</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaTipo} required onChange={(e) => setFamForm(f => ({ ...f, moradiaTipo: e.target.value }))}>
                       <option value="Alvenaria com Revestimento">Alvenaria com Revestimento</option>
                       <option value="Alvenaria sem Revestimento">Alvenaria sem Revestimento</option>
-                      <option value="Madeira/Taipa">Madeira/Taipa</option>
+                      <option value="Madeira / Taipa">Madeira / Taipa</option>
                       <option value="Material Aproveitado">Material Aproveitado</option>
                     </select>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Abastecimento de Água</label>
+                  <div className="form-group">
+                    <label>Abastecimento de Água</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaAgua} required onChange={(e) => setFamForm(f => ({ ...f, moradiaAgua: e.target.value }))}>
                       <option value="Rede Geral">Rede Geral</option>
-                      <option value="Poço/Nascente">Poço/Nascente</option>
-                      <option value="Caminhão Pipa">Caminhão Pipa</option>
-                      <option value="Inexistente">Inexistente</option>
+                      <option value="Poço / Nascente">Poço / Nascente</option>
+                      <option value="Cisterna">Cisterna</option>
+                      <option value="Carro-Pipa">Carro-Pipa</option>
                     </select>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Escoamento Sanitário</label>
+                  <div className="form-group">
+                    <label>Escoamento Sanitário</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaSanear} required onChange={(e) => setFamForm(f => ({ ...f, moradiaSanear: e.target.value }))}>
                       <option value="Rede Geral">Rede Geral</option>
                       <option value="Fossa Séptica">Fossa Séptica</option>
@@ -1855,8 +1851,8 @@ export default function Painel() {
                       <option value="Céu Aberto">Céu Aberto</option>
                     </select>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Coleta de Lixo</label>
+                  <div className="form-group">
+                    <label>Coleta de Lixo</label>
                     <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={famForm.moradiaLixo} required onChange={(e) => setFamForm(f => ({ ...f, moradiaLixo: e.target.value }))}>
                       <option value="Coletado">Coletado</option>
                       <option value="Depositado em caçamba">Depositado em caçamba</option>
@@ -1865,15 +1861,13 @@ export default function Painel() {
                     </select>
                   </div>
                 </div>
-              </div>
 
-              {/* SEÇÃO 4: VULNERABILIDADES SOCIAIS */}
-              <div>
-                <h4 style={{ color: 'var(--primary)', marginBottom: '10px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem' }}>
+                {/* SEÇÃO 4: VULNERABILIDADES SOCIAIS */}
+                <h4 style={{ color: 'var(--primary)', marginBottom: '10px', borderBottom: '1px solid #def2f1', paddingBottom: '6px', fontSize: '0.95rem', fontWeight: 'bold', marginTop: '20px' }}>
                   <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '8px' }}></i> Vulnerabilidades Sociais
                 </h4>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                <div className="checkbox-grid">
                   {[
                     'Extrema Pobreza',
                     'Habitação Precária',
@@ -1885,7 +1879,7 @@ export default function Painel() {
                     'Analfabetismo',
                     'Família Atípica (Membro Neurodivergente/PCD)'
                   ].map((vul, idx) => (
-                    <label key={idx} style={{ display: 'flex', gap: '8px', fontSize: '12px', cursor: 'pointer', alignItems: 'center' }}>
+                    <label key={idx} className="checkbox-label">
                       <input type="checkbox" checked={famForm.vulnerabilidades.includes(vul)} onChange={() => {
                         const exists = famForm.vulnerabilidades.includes(vul)
                         setFamForm(prev => ({
@@ -1899,308 +1893,325 @@ export default function Painel() {
                     </label>
                   ))}
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px', borderTop: '1px solid #def2f1', paddingTop: '16px' }}>
-                <button type="button" onClick={() => setShowFamilyModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">
-                  <i className="fa-solid fa-save" style={{ marginRight: '6px' }}></i> Salvar Prontuário
-                </button>
-              </div>
-            </form>
+                <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                  <button type="button" onClick={() => setShowFamilyModal(false)} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary">
+                    <i className="fa-solid fa-save" style={{ marginRight: '6px' }}></i> Salvar Prontuário
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
-      )}
-
-      {/* ─── MODAL: NOVO GRUPO / OFICINA SCFV ─── */}
+      )}{/* ─── MODAL: NOVO GRUPO / OFICINA SCFV ─── */}
       {showGroupModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '500px', color: 'var(--text-main)' }}>
-            <h3>Cadastrar Novo Coletivo / Oficina SCFV</h3>
-            <form onSubmit={handleSaveGroup} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nome do Grupo / Oficina</label>
-                <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.nome} required onChange={(e) => setGrpForm(g => ({ ...g, nome: e.target.value }))} placeholder="Ex: Grupo de Idosos - Melhor Idade" />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Descrição / Objetivos</label>
-                <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '80px' }} value={grpForm.descricao} required onChange={(e) => setGrpForm(g => ({ ...g, descricao: e.target.value }))} placeholder="Descreva os objetivos da oficina..." />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Técnico Responsável</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.tecnicoResponsavel} required onChange={(e) => setGrpForm(g => ({ ...g, tecnicoResponsavel: e.target.value }))} placeholder="Nome do técnico orientador" />
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '500px' }}>
+            <header className="modal-header">
+              <h3>Cadastrar Novo Coletivo / Oficina SCFV</h3>
+              <button onClick={() => setShowGroupModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <form onSubmit={handleSaveGroup}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Nome do Grupo / Oficina</label>
+                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.nome} required onChange={(e) => setGrpForm(g => ({ ...g, nome: e.target.value }))} placeholder="Ex: Grupo de Idosos - Melhor Idade" />
                 </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Horário / Dias</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.horario} required onChange={(e) => setGrpForm(g => ({ ...g, horario: e.target.value }))} placeholder="Ex: Terças 14:00" />
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Descrição / Objetivos</label>
+                  <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '80px' }} value={grpForm.descricao} required onChange={(e) => setGrpForm(g => ({ ...g, descricao: e.target.value }))} placeholder="Descreva os objetivos da oficina..." />
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" onClick={() => setShowGroupModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Criar Grupo</button>
-              </div>
-            </form>
+                <div className="form-grid" style={{ marginBottom: '0' }}>
+                  <div className="form-group">
+                    <label>Técnico Responsável</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.tecnicoResponsavel} required onChange={(e) => setGrpForm(g => ({ ...g, tecnicoResponsavel: e.target.value }))} placeholder="Nome do técnico orientador" />
+                  </div>
+                  <div className="form-group">
+                    <label>Horário / Dias</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={grpForm.horario} required onChange={(e) => setGrpForm(g => ({ ...g, horario: e.target.value }))} placeholder="Ex: Terças 14:00" />
+                  </div>
+                </div>
+                <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                  <button type="button" onClick={() => setShowGroupModal(false)} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Criar Grupo</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* ─── MODAL: COMPOSIÇÃO FAMILIAR / MEMBROS ─── */}
       {showMemberModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '500px' }}>
-            <h3>Integrantes da Família</h3>
-            <form onSubmit={handleSaveMember} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Nome Completo</label>
-                <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.nome} required onChange={(e) => setMemForm(m => ({ ...m, nome: e.target.value }))} />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Parentesco</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.parentesco} required onChange={(e) => setMemForm(m => ({ ...m, parentesco: e.target.value }))}>
-                    <option value="" disabled>Selecione...</option>
-                    <option value="Filho(a)">Filho(a)</option>
-                    <option value="Cônjuge">Cônjuge</option>
-                    <option value="Mãe">Mãe</option>
-                    <option value="Pai">Pai</option>
-                    <option value="Irmão(ã)">Irmão(ã)</option>
-                    <option value="Outro Parente">Outro Parente</option>
-                  </select>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '500px' }}>
+            <header className="modal-header">
+              <h3>Integrantes da Família</h3>
+              <button onClick={() => setShowMemberModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <form onSubmit={handleSaveMember}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Nome Completo</label>
+                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.nome} required onChange={(e) => setMemForm(m => ({ ...m, nome: e.target.value }))} />
                 </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Data de Nascimento</label>
-                  <input className="input-modern" type="date" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.dataNascimento} required onChange={(e) => setMemForm(m => ({ ...m, dataNascimento: e.target.value }))} />
+                <div className="form-grid" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label>Parentesco</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.parentesco} required onChange={(e) => setMemForm(m => ({ ...m, parentesco: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      <option value="Filho(a)">Filho(a)</option>
+                      <option value="Cônjuge">Cônjuge</option>
+                      <option value="Mãe">Mãe</option>
+                      <option value="Pai">Pai</option>
+                      <option value="Irmão(ã)">Irmão(ã)</option>
+                      <option value="Outro Parente">Outro Parente</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Data de Nascimento</label>
+                    <input className="input-modern" type="date" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.dataNascimento} required onChange={(e) => setMemForm(m => ({ ...m, dataNascimento: e.target.value }))} />
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Escolaridade</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.escolaridade} required onChange={(e) => setMemForm(m => ({ ...m, escolaridade: e.target.value }))}>
-                    <option value="" disabled>Selecione...</option>
-                    <option value="Sem Idade Escolar">Sem Idade Escolar</option>
-                    <option value="Fundamental Incompleto">Fundamental Incompleto</option>
-                    <option value="Fundamental Completo">Fundamental Completo</option>
-                    <option value="Médio Incompleto">Médio Incompleto</option>
-                    <option value="Médio Completo">Médio Completo</option>
-                    <option value="Superior Incompleto">Superior Incompleto</option>
-                    <option value="Superior Completo">Superior Completo</option>
-                  </select>
+                <div className="form-grid" style={{ marginBottom: '0' }}>
+                  <div className="form-group">
+                    <label>Escolaridade</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.escolaridade} required onChange={(e) => setMemForm(m => ({ ...m, escolaridade: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      <option value="Sem Idade Escolar">Sem Idade Escolar</option>
+                      <option value="Fundamental Incompleto">Fundamental Incompleto</option>
+                      <option value="Fundamental Completo">Fundamental Completo</option>
+                      <option value="Médio Incompleto">Médio Incompleto</option>
+                      <option value="Médio Completo">Médio Completo</option>
+                      <option value="Superior Incompleto">Superior Incompleto</option>
+                      <option value="Superior Completo">Superior Completo</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Ocupação</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.ocupacao} required onChange={(e) => setMemForm(m => ({ ...m, ocupacao: e.target.value }))} placeholder="Ex: Agricultor, Dona de Casa" />
+                  </div>
                 </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Ocupação</label>
-                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={memForm.ocupacao} required onChange={(e) => setMemForm(m => ({ ...m, ocupacao: e.target.value }))} placeholder="Ex: Agricultor, Dona de Casa" />
+                <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                  <button type="button" onClick={() => setShowMemberModal(false)} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Adicionar Integrante</button>
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" onClick={() => setShowMemberModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Adicionar Integrante</button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
-
-      {/* ─── MODAL: REGISTRAR EVOLUÇÃO (AÇÃO TÉCNICA) ─── */}
+{/* ─── MODAL: REGISTRAR EVOLUÇÃO (AÇÃO TÉCNICA) ─── */}
       {showEvolutionModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3>Registrar Ação Técnica / Evolução</h3>
-            <form onSubmit={handleSaveEvolution} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Tipo de Ação</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.tipo} onChange={(e) => setEvoForm(ev => ({ ...ev, tipo: e.target.value }))}>
-                    <option value="Atendimento">Atendimento Individual</option>
-                    <option value="Visita Domiciliar">Visita Domiciliar</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Técnico Responsável</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.tecnico} required onChange={(e) => setEvoForm(ev => ({ ...ev, tecnico: e.target.value }))}>
-                    <option value="" disabled>Selecione...</option>
-                    {professionals.map((p, idx) => (
-                      <option key={idx} value={p.nome}>{p.nome}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {evoForm.tipo === 'Atendimento' ? (
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Membro Atendido</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.usuarioVisitado} required onChange={(e) => setEvoForm(ev => ({ ...ev, usuarioVisitado: e.target.value }))}>
-                    <option value="" disabled>Selecione...</option>
-                    <option value={selectedFamily.responsavel}>{selectedFamily.responsavel} (Responsável)</option>
-                    {(selectedFamily.membros_familia || []).map((m: any, idx: number) => (
-                      <option key={idx} value={m.nome}>{m.nome}</option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Membros Presentes (Visita)</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '100px', overflowY: 'auto', border: '1px solid #def2f1', padding: '8px', borderRadius: '8px' }}>
-                    <label style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                      <input type="checkbox" checked={evoForm.participantesFamiliares.includes(selectedFamily.responsavel)} onChange={(e) => {
-                        const checked = e.target.checked
-                        setEvoForm(ev => ({
-                          ...ev,
-                          participantesFamiliares: checked 
-                            ? [...ev.participantesFamiliares, selectedFamily.responsavel]
-                            : ev.participantesFamiliares.filter(n => n !== selectedFamily.responsavel)
-                        }))
-                      }} />
-                      {selectedFamily.responsavel} (Responsável)
-                    </label>
-                    {(selectedFamily.membros_familia || []).map((m: any, idx: number) => (
-                      <label key={idx} style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                        <input type="checkbox" checked={evoForm.participantesFamiliares.includes(m.nome)} onChange={(e) => {
-                          const checked = e.target.checked
-                          setEvoForm(ev => ({
-                            ...ev,
-                            participantesFamiliares: checked 
-                              ? [...ev.participantesFamiliares, m.nome]
-                              : ev.participantesFamiliares.filter(n => n !== m.nome)
-                          }))
-                        }} />
-                        {m.nome}
-                      </label>
-                    ))}
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '600px' }}>
+            <header className="modal-header">
+              <h3>Registrar Ação Técnica / Evolução</h3>
+              <button onClick={() => setShowEvolutionModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <form onSubmit={handleSaveEvolution}>
+                <div className="form-grid" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label>Tipo de Ação</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.tipo} onChange={(e) => setEvoForm(ev => ({ ...ev, tipo: e.target.value }))}>
+                      <option value="Atendimento">Atendimento no CRAS</option>
+                      <option value="Visita Domiciliar">Visita Domiciliar</option>
+                      <option value="Oficina SCFV">Oficina / SCFV</option>
+                      <option value="Encaminhamento">Encaminhamento</option>
+                      <option value="Benefício">Concessão de Benefício</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Usuário Principal Visitado</label>
+                    <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.usuarioVisitado} required onChange={(e) => setEvoForm(ev => ({ ...ev, usuarioVisitado: e.target.value }))} />
                   </div>
                 </div>
-              )}
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Visita Compartilhada?</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.compartilhada} onChange={(e) => setEvoForm(ev => ({ ...ev, compartilhada: e.target.value }))}>
-                    <option value="Não">Não</option>
-                    <option value="Sim">Sim</option>
-                  </select>
+
+                <div className="form-grid" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label>Local do Atendimento</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.local} onChange={(e) => setEvoForm(ev => ({ ...ev, local: e.target.value }))}>
+                      <option value="CRAS">CRAS (Sede)</option>
+                      <option value="Domicílio">Domicílio do Usuário</option>
+                      <option value="Espaço Comunitário">Espaço Comunitário</option>
+                      <option value="Outro Orgão">Outro Orgão da Rede</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Técnico Responsável</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.tecnico} required onChange={(e) => setEvoForm(ev => ({ ...ev, tecnico: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      {professionals.map((p, idx) => (
+                        <option key={idx} value={p.nome}>{p.nome}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                {evoForm.compartilhada === 'Sim' && (
-                  <div>
-                    <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Co-visitante(s)</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '100px', overflowY: 'auto', border: '1px solid #def2f1', padding: '8px', borderRadius: '8px' }}>
-                      {professionals.filter(p => p.nome !== evoForm.tecnico).map((p, idx) => (
-                        <label key={idx} style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                          <input type="checkbox" checked={evoForm.profissionaisParticipantes.includes(p.nome)} onChange={(e) => {
-                            const checked = e.target.checked
+
+                <div className="form-grid" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label>Atendimento Compartilhado?</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={evoForm.compartilhada} onChange={(e) => setEvoForm(ev => ({ ...ev, compartilhada: e.target.value }))}>
+                      <option value="Não">Não</option>
+                      <option value="Sim">Sim</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Participantes Familiares</label>
+                    <div style={{ maxHeight: '100px', overflowY: 'auto', border: '1px solid #def2f1', padding: '8px', borderRadius: '6px', background: '#f3f9f9' }}>
+                      {(selectedFamily?.membros_familia || []).map((m: any, idx: number) => (
+                        <label key={idx} style={{ display: 'flex', gap: '8px', fontSize: '11px', cursor: 'pointer', marginBottom: '4px' }}>
+                          <input type="checkbox" checked={evoForm.participantesFamiliares.includes(m.nome)} onChange={() => {
+                            const exists = evoForm.participantesFamiliares.includes(m.nome)
                             setEvoForm(ev => ({
                               ...ev,
-                              profissionaisParticipantes: checked 
-                                ? [...ev.profissionaisParticipantes, p.nome]
-                                : ev.profissionaisParticipantes.filter(n => n !== p.nome)
+                              participantesFamiliares: exists 
+                                ? ev.participantesFamiliares.filter(n => n !== m.nome)
+                                : [...ev.participantesFamiliares, m.nome]
                             }))
                           }} />
-                          {p.nome}
+                          {m.nome} ({m.parentesco})
                         </label>
                       ))}
+                      {(selectedFamily?.membros_familia || []).length === 0 && (
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Nenhum outro membro cadastrado.</span>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Relato Técnico da Ação</label>
-                <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '120px' }} value={evoForm.relato} required onChange={(e) => setEvoForm(ev => ({ ...ev, relato: e.target.value }))}></textarea>
-              </div>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  {evoForm.compartilhada === 'Sim' && (
+                    <div className="form-group">
+                      <label>Profissionais Participantes</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '100px', overflowY: 'auto', border: '1px solid #def2f1', padding: '8px', borderRadius: '6px', background: '#f3f9f9' }}>
+                        {professionals.filter((p: any) => p.nome !== evoForm.tecnico).map((p: any, idx: number) => (
+                          <label key={idx} style={{ display: 'flex', gap: '6px', fontSize: '11px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={evoForm.profissionaisParticipantes.includes(p.nome)} onChange={() => {
+                              const exists = evoForm.profissionaisParticipantes.includes(p.nome)
+                              setEvoForm(ev => ({
+                                ...ev,
+                                profissionaisParticipantes: exists 
+                                  ? ev.profissionaisParticipantes.filter(n => n !== p.nome)
+                                  : [...ev.profissionaisParticipantes, p.nome]
+                              }))
+                            }} />
+                            {p.nome}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Providências / Encaminhamentos</label>
-                <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '60px' }} value={evoForm.providencias} onChange={(e) => setEvoForm(ev => ({ ...ev, providencias: e.target.value }))}></textarea>
-              </div>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Relato Técnico da Ação</label>
+                  <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '120px' }} value={evoForm.relato} required onChange={(e) => setEvoForm(ev => ({ ...ev, relato: e.target.value }))}></textarea>
+                </div>
 
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" onClick={() => setShowEvolutionModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Registrar e Imprimir</button>
-              </div>
-            </form>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Providências / Encaminhamentos</label>
+                  <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '60px' }} value={evoForm.providencias} onChange={(e) => setEvoForm(ev => ({ ...ev, providencias: e.target.value }))}></textarea>
+                </div>
+
+                <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                  <button type="button" onClick={() => setShowEvolutionModal(false)} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Registrar e Imprimir</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
-
-      {/* ─── MODAL: NOVO AGENDAMENTO (AGENDA TÉCNICA) ─── */}
+{/* ─── MODAL: NOVO AGENDAMENTO (AGENDA TÉCNICA) ─── */}
       {showAgendaModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '500px' }}>
-            <h3>Agendar Novo Compromisso</h3>
-            <form onSubmit={handleSaveAgenda} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Família Selecionada</label>
-                <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={selectedFamily?.id} required onChange={(e) => {
-                  const fam = families.find(f => f.id === e.target.value)
-                  if (fam) setSelectedFamily(fam)
-                }}>
-                  {families.map((f, idx) => (
-                    <option key={idx} value={f.id}>{f.responsavel}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Data</label>
-                  <input className="input-modern" type="date" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.data} required onChange={(e) => setAgeForm(ag => ({ ...ag, data: e.target.value }))} />
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Hora</label>
-                  <input className="input-modern" type="time" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.hora} required onChange={(e) => setAgeForm(ag => ({ ...ag, hora: e.target.value }))} />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Tipo</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.tipo} onChange={(e) => setAgeForm(ag => ({ ...ag, tipo: e.target.value }))}>
-                    <option value="Atendimento">Atendimento</option>
-                    <option value="Visita Domiciliar">Visita Domiciliar</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Técnico Agendado</label>
-                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.tecnico} required onChange={(e) => setAgeForm(ag => ({ ...ag, tecnico: e.target.value }))}>
-                    <option value="" disabled>Selecione...</option>
-                    {professionals.map((p, idx) => (
-                      <option key={idx} value={p.nome}>{p.nome}</option>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '500px' }}>
+            <header className="modal-header">
+              <h3>Agendar Novo Compromisso</h3>
+              <button onClick={() => setShowAgendaModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <form onSubmit={handleSaveAgenda}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Família Selecionada</label>
+                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={selectedFamily?.id} required onChange={(e) => {
+                    const fam = families.find(f => f.id === e.target.value)
+                    if (fam) setSelectedFamily(fam)
+                  }}>
+                    {families.map((f, idx) => (
+                      <option key={idx} value={f.id}>{f.responsavel} (NIS: {f.nis_responsavel})</option>
                     ))}
                   </select>
                 </div>
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Descrição / Observações</label>
-                <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '60px' }} value={ageForm.descricao} onChange={(e) => setAgeForm(ag => ({ ...ag, descricao: e.target.value }))}></textarea>
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" onClick={() => setShowAgendaModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Criar Agendamento</button>
-              </div>
-            </form>
+                <div className="form-grid" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label>Data</label>
+                    <input className="input-modern" type="date" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.data} required onChange={(e) => setAgeForm(ag => ({ ...ag, data: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label>Horário</label>
+                    <input className="input-modern" type="time" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.hora} required onChange={(e) => setAgeForm(ag => ({ ...ag, hora: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="form-grid" style={{ marginBottom: '16px' }}>
+                  <div className="form-group">
+                    <label>Tipo de Compromisso</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.tipo} onChange={(e) => setAgeForm(ag => ({ ...ag, tipo: e.target.value }))}>
+                      <option value="Atendimento">Atendimento</option>
+                      <option value="Visita Domiciliar">Visita Domiciliar</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Técnico Agendado</label>
+                    <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={ageForm.tecnico} required onChange={(e) => setAgeForm(ag => ({ ...ag, tecnico: e.target.value }))}>
+                      <option value="" disabled>Selecione...</option>
+                      {professionals.map((p: any, idx: number) => (
+                        <option key={idx} value={p.nome}>{p.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Descrição / Observações</label>
+                  <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '60px' }} value={ageForm.descricao} onChange={(e) => setAgeForm(ag => ({ ...ag, descricao: e.target.value }))}></textarea>
+                </div>
+                <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                  <button type="button" onClick={() => setShowAgendaModal(false)} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Criar Agendamento</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
-
-      {/* ─── MODAL: CONCEDER BENEFÍCIO EVENTUAL ─── */}
+{/* ─── MODAL: CONCEDER BENEFÍCIO EVENTUAL ─── */}
       {showBenefitModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '450px' }}>
-            <h3>Conceder Benefício Eventual</h3>
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>Família Beneficiária</label>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '450px' }}>
+            <header className="modal-header">
+              <h3>Conceder Benefício Eventual</h3>
+              <button onClick={() => setShowBenefitModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label>Família Beneficiária</label>
                 <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={selectedFamily?.id} onChange={(e) => {
                   const fam = families.find(f => f.id === e.target.value)
                   if (fam) setSelectedFamily(fam)
                 }}>
-                  {families.map((f, idx) => (
+                  {families.map((f: any, idx: number) => (
                     <option key={idx} value={f.id}>{f.responsavel}</option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Selecione o Insumo no Estoque:</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {stock.map((item, idx) => (
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label>Selecione o Insumo no Estoque:</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+                  {stock.map((item: any, idx: number) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '8px', border: '1px solid #def2f1', background: '#f3f9f9' }}>
                       <div>
                         <strong>{item.tipo}</strong>
@@ -2208,8 +2219,9 @@ export default function Painel() {
                       </div>
                       <button 
                         onClick={(e) => handleGrantBenefit(e, item)} 
-                        disabled={item.saldo <= 0}
-                        style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: item.saldo > 0 ? 'var(--primary)' : '#6b7c85', color: 'white', cursor: item.saldo > 0 ? 'pointer' : 'not-allowed', fontSize: '11px', fontWeight: 600 }}
+                        disabled={item.saldo <= 0} 
+                        className={`btn ${item.saldo > 0 ? "btn-primary" : "btn-secondary"}`} 
+                        style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 600 }}
                       >
                         Entregar
                       </button>
@@ -2218,60 +2230,64 @@ export default function Painel() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <button onClick={() => setShowBenefitModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Fechar</button>
+              <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                <button onClick={() => setShowBenefitModal(false)} className="btn btn-secondary">Fechar</button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* ─── MODAL: NOVO ENCAMINHAMENTO ─── */}
+{/* ─── MODAL: NOVO ENCAMINHAMENTO ─── */}
       {showReferralModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: '20px' }}>
-          <div style={{ background: 'white', padding: '28px', borderRadius: '16px', width: '100%', maxWidth: '500px' }}>
-            <h3>Novo Encaminhamento de Rede</h3>
-            <form onSubmit={handleSaveReferral} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Beneficiário / Família</label>
-                <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={selectedFamily?.id} onChange={(e) => {
-                  const fam = families.find(f => f.id === e.target.value)
-                  if (fam) {
-                    setSelectedFamily(fam)
-                    setRefForm(rf => ({ ...rf, beneficiario: fam.responsavel }))
-                  }
-                }}>
-                  {families.map((f, idx) => (
-                    <option key={idx} value={f.id}>{f.responsavel}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Destino / Setor (Saúde, Educação, etc.)</label>
-                <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={refForm.destino} required onChange={(e) => setRefForm(rf => ({ ...rf, destino: e.target.value }))} placeholder="Ex: Secretaria de Saúde - Caps" />
-              </div>
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: '500px' }}>
+            <header className="modal-header">
+              <h3>Novo Encaminhamento de Rede</h3>
+              <button onClick={() => setShowReferralModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </header>
+            <div className="modal-body">
+              <form onSubmit={handleSaveReferral}>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Beneficiário / Família</label>
+                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={selectedFamily?.id} onChange={(e) => {
+                    const fam = families.find(f => f.id === e.target.value)
+                    if (fam) {
+                      setSelectedFamily(fam)
+                      setRefForm(rf => ({ ...rf, beneficiario: fam.responsavel }))
+                    }
+                  }}>
+                    {families.map((f: any, idx: number) => (
+                      <option key={idx} value={f.id}>{f.responsavel}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Destino / Setor (Saúde, Educação, etc.)</label>
+                  <input className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={refForm.destino} required onChange={(e) => setRefForm(rf => ({ ...rf, destino: e.target.value }))} placeholder="Ex: Secretaria de Saúde - Caps" />
+                </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Motivo do Encaminhamento</label>
-                <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '80px' }} value={refForm.motivo} required onChange={(e) => setRefForm(rf => ({ ...rf, motivo: e.target.value }))}></textarea>
-              </div>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Motivo do Encaminhamento</label>
+                  <textarea className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1', minHeight: '80px' }} value={refForm.motivo} required onChange={(e) => setRefForm(rf => ({ ...rf, motivo: e.target.value }))}></textarea>
+                </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Técnico Responsável</label>
-                <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={refForm.tecnico} required onChange={(e) => setRefForm(rf => ({ ...rf, tecnico: e.target.value }))}>
-                  <option value="" disabled>Selecione...</option>
-                  {professionals.map((p, idx) => (
-                    <option key={idx} value={p.nome}>{p.nome}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label>Técnico Responsável</label>
+                  <select className="input-modern" style={{ background: '#ffffff', color: 'var(--text-main) !important', borderColor: '#def2f1' }} value={refForm.tecnico} required onChange={(e) => setRefForm(rf => ({ ...rf, tecnico: e.target.value }))}>
+                    <option value="" disabled>Selecione...</option>
+                    {professionals.map((p: any, idx: number) => (
+                      <option key={idx} value={p.nome}>{p.nome}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <button type="button" onClick={() => setShowReferralModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #def2f1', background: 'none', cursor: 'pointer' }}>Cancelar</button>
-                <button type="submit" className="btn-primary">Emitir Guia</button>
-              </div>
-            </form>
+                <div className="modal-footer" style={{ marginTop: '24px', padding: '16px 0 0' }}>
+                  <button type="button" onClick={() => setShowReferralModal(false)} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Emitir Guia</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
