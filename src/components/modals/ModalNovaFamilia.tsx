@@ -631,12 +631,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
         acessibilidade,
 
         // Vulnerabilidades e PAIF (PAF)
-        vulnerabilidades: vulnerabilidadesFinais,
+        vulnerabilidades: paifAtivo ? vulnerabilidadesFinais : [],
         paif_ativo: paifAtivo,
         paif_data_inicio: paifAtivo && paifDataInicio ? paifDataInicio : (paifAtivo ? new Date().toISOString().split('T')[0] : undefined),
         paif_potencialidades: paifAtivo && paifPotencialidades.trim() ? paifPotencialidades.trim().toUpperCase() : undefined,
         paif_metas: paifAtivo && paifMetas.trim() ? paifMetas.trim().toUpperCase() : undefined,
-        tecnico_referencia: tecnicoReferencia.trim().toUpperCase() || undefined
+        tecnico_referencia: paifAtivo && tecnicoReferencia.trim() ? tecnicoReferencia.trim().toUpperCase() : undefined
       }
 
       // Adicionar o Responsável Familiar na lista de membros da família
@@ -1363,129 +1363,149 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 <input
                   type="checkbox"
                   checked={paifAtivo}
-                  onChange={e => setPaifAtivo(e.target.checked)}
+                  onChange={e => {
+                    const ativo = e.target.checked
+                    setPaifAtivo(ativo)
+                    if (!ativo) {
+                      setVulnerabilidades([])
+                      setOutraVulnerabilidadeTexto('')
+                      setPaifDataInicio('')
+                      setPaifPotencialidades('')
+                      setPaifMetas('')
+                      setTecnicoReferencia('')
+                    }
+                  }}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-700"></div>
-                <span className="ml-2 text-xs font-bold text-teal-900 uppercase">{paifAtivo ? 'PAIF ATIVO' : 'NÃO'}</span>
+                <span className="ml-2 text-xs font-bold text-teal-900 uppercase">{paifAtivo ? 'PAIF ATIVO' : 'PAIF INATIVO'}</span>
               </label>
             </div>
 
-            {paifAtivo && (
-              <div className="p-4 bg-teal-50/50 border border-teal-200 rounded-xl space-y-3 mb-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {paifAtivo ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-teal-50/50 border border-teal-200 rounded-xl space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-teal-950 mb-1">
+                        Data de Início do Acompanhamento <span className="text-red-600 font-bold">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        required={paifAtivo}
+                        value={paifDataInicio}
+                        onChange={e => setPaifDataInicio(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-teal-950 mb-1">
+                        Técnico(a) de Referência da Família (CRAS)
+                      </label>
+                      <select
+                        value={tecnicoReferencia}
+                        onChange={e => setTecnicoReferencia(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white font-medium"
+                      >
+                        <option value="">SELECIONE O(A) TÉCNICO(A) DE REFERÊNCIA...</option>
+                        {usuarios.map(u => (
+                          <option key={u.id} value={u.nome || u.usuario}>
+                            {u.nome} ({u.cargo || u.perfil}) {u.conselho && u.conselho !== 'Não aplicável' ? `— ${u.conselho}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-teal-950 mb-1">
-                      Data de Início do Acompanhamento <span className="text-red-600 font-bold">*</span>
+                      Potencialidades da Família (Recursos e Redes de Apoio)
                     </label>
-                    <input
-                      type="date"
-                      required={paifAtivo}
-                      value={paifDataInicio}
-                      onChange={e => setPaifDataInicio(e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
+                    <textarea
+                      rows={2}
+                      value={paifPotencialidades}
+                      onChange={e => setPaifPotencialidades(e.target.value.toUpperCase())}
+                      placeholder="EX: VÍNCULOS COMUNITÁRIOS FORTES, DISPOSIÇÃO PARA PARTICIPAR DE OFICINAS, REDE DE VIZINHANÇA ATIVA..."
+                      className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white font-medium"
                     />
                   </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-teal-950 mb-1">
-                      Técnico(a) de Referência da Família (CRAS)
+                      Objetivos e Metas Pactuadas (Plano de Acompanhamento Familiar - PAF)
                     </label>
-                    <select
-                      value={tecnicoReferencia}
-                      onChange={e => setTecnicoReferencia(e.target.value)}
+                    <textarea
+                      rows={2}
+                      value={paifMetas}
+                      onChange={e => setPaifMetas(e.target.value.toUpperCase())}
+                      placeholder="EX: 1. INCLUSÃO NO CADASTRO ÚNICO; 2. PARTICIPAÇÃO NO GRUPO DE MULHERES DO PAIF..."
                       className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white font-medium"
-                    >
-                      <option value="">SELECIONE O(A) TÉCNICO(A) DE REFERÊNCIA...</option>
-                      {usuarios.map(u => (
-                        <option key={u.id} value={u.nome || u.usuario}>
-                          {u.nome} ({u.cargo || u.perfil}) {u.conselho && u.conselho !== 'Não aplicável' ? `— ${u.conselho}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-teal-950 mb-1">
-                    Potencialidades da Família (Recursos e Redes de Apoio)
+                {/* Checklist de Vulnerabilidades SUAS */}
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                  <label className="block text-xs font-bold text-gray-800 mb-2 uppercase">
+                    Situações de Vulnerabilidade / Risco Identificadas <span className="text-red-600 font-bold">*</span>:
                   </label>
-                  <textarea
-                    rows={2}
-                    value={paifPotencialidades}
-                    onChange={e => setPaifPotencialidades(e.target.value.toUpperCase())}
-                    placeholder="EX: VÍNCULOS COMUNITÁRIOS FORTES, DISPOSIÇÃO PARA PARTICIPAR DE OFICINAS, REDE DE VIZINHANÇA ATIVA..."
-                    className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white font-medium"
-                  />
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
+                    {[
+                      'Situação de Extrema Pobreza (RMA B.1)',
+                      'Beneficiária do Bolsa Família (RMA B.2)',
+                      'Descumprimento de Condicionalidades do PBF (RMA B.3)',
+                      'Membro Beneficiário do BPC Idoso / PcD (RMA B.4)',
+                      'Presença de Trabalho Infantil (RMA B.5)',
+                      'Criança/Adolescente em Serviço de Acolhimento (RMA B.6)',
+                      'Violência Intrafamiliar / Negligência',
+                      'Desemprego Prolongado / Sem Renda Fixa',
+                      'Uso Prejudicial de Álcool e Outras Drogas',
+                      'Isolamento Social / Rompimento de Vínculos',
+                      'Conflito com a Lei / Medida Socioeducativa',
+                      'Outras...'
+                    ].map(v => (
+                      <label
+                        key={v}
+                        onClick={() => toggleVulnerabilidade(v)}
+                        className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition ${
+                          vulnerabilidades.includes(v)
+                            ? 'bg-teal-100 border-teal-400 font-bold text-teal-950'
+                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={vulnerabilidades.includes(v)}
+                          readOnly
+                          className="rounded text-teal-700"
+                        />
+                        <span>{v}</span>
+                      </label>
+                    ))}
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-teal-950 mb-1">
-                    Objetivos e Metas Pactuadas (Plano de Acompanhamento Familiar - PAF)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={paifMetas}
-                    onChange={e => setPaifMetas(e.target.value.toUpperCase())}
-                    placeholder="EX: 1. INCLUSÃO NO CADASTRO ÚNICO; 2. PARTICIPAÇÃO NO GRUPO DE MULHERES DO PAIF..."
-                    className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white font-medium"
-                  />
+                  {vulnerabilidades.includes('Outras...') && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        required
+                        value={outraVulnerabilidadeTexto}
+                        onChange={e => setOutraVulnerabilidadeTexto(e.target.value.toUpperCase())}
+                        placeholder="DESCREVA A OUTRA SITUAÇÃO DE VULNERABILIDADE..."
+                        className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-semibold"
+                      />
+                    </div>
+                  )}
                 </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                <span className="text-xs text-gray-500 italic">
+                  <i className="fa-solid fa-circle-info mr-1 text-teal-700"></i>
+                  Acompanhamento PAIF desativado para esta família. Caso a família entre em acompanhamento sistemático no futuro, ative o botão acima.
+                </span>
               </div>
             )}
-
-            {/* Checklist de Vulnerabilidades SUAS */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-2">
-                Situações de Vulnerabilidade / Risco Identificadas:
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
-                {[
-                  'Situação de Extrema Pobreza (RMA B.1)',
-                  'Beneficiária do Bolsa Família (RMA B.2)',
-                  'Descumprimento de Condicionalidades do PBF (RMA B.3)',
-                  'Membro Beneficiário do BPC Idoso / PcD (RMA B.4)',
-                  'Presença de Trabalho Infantil (RMA B.5)',
-                  'Criança/Adolescente em Serviço de Acolhimento (RMA B.6)',
-                  'Violência Intrafamiliar / Negligência',
-                  'Desemprego Prolongado / Sem Renda Fixa',
-                  'Uso Prejudicial de Álcool e Outras Drogas',
-                  'Isolamento Social / Rompimento de Vínculos',
-                  'Conflito com a Lei / Medida Socioeducativa',
-                  'Outras...'
-                ].map(v => (
-                  <label
-                    key={v}
-                    onClick={() => toggleVulnerabilidade(v)}
-                    className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition ${
-                      vulnerabilidades.includes(v)
-                        ? 'bg-teal-100 border-teal-400 font-bold text-teal-950'
-                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={vulnerabilidades.includes(v)}
-                      readOnly
-                      className="rounded text-teal-700"
-                    />
-                    <span>{v}</span>
-                  </label>
-                ))}
-              </div>
-
-              {vulnerabilidades.includes('Outras...') && (
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    required
-                    value={outraVulnerabilidadeTexto}
-                    onChange={e => setOutraVulnerabilidadeTexto(e.target.value.toUpperCase())}
-                    placeholder="DESCREVA A OUTRA SITUAÇÃO DE VULNERABILIDADE..."
-                    className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-semibold"
-                  />
-                </div>
-              )}
-            </div>
           </div>
 
           {/* ========================================================
