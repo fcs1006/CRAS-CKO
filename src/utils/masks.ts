@@ -7,6 +7,7 @@ export function maskCPF(value: string): string {
 }
 
 export function maskNIS(value: string): string {
+  if (!value || value.startsWith('SEM_NIS')) return '';
   const digits = value.replace(/\D/g, '').slice(0, 11);
   if (digits.length <= 3) return digits;
   if (digits.length <= 8) return digits.replace(/(\d{3})(\d{1,5})/, '$1.$2');

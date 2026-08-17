@@ -59,12 +59,12 @@ function sanitizeFamiliaPayload(payload: any) {
     }
   }
 
-  // Garantir null em campos de identificação únicos quando não preenchidos
-  if (!clean.nis_responsavel || (typeof clean.nis_responsavel === 'string' && !clean.nis_responsavel.trim())) {
-    clean.nis_responsavel = null
-  }
-  if (!clean.cpf_responsavel || (typeof clean.cpf_responsavel === 'string' && !clean.cpf_responsavel.trim())) {
-    clean.cpf_responsavel = null
+  // Se NIS não foi informado ou é string vazia, gerar um placeholder único "SEM_NIS_..."
+  // para evitar erros de restrição NOT NULL / UNIQUE no PostgreSQL da tabela familias
+  const nisStr = typeof clean.nis_responsavel === 'string' ? clean.nis_responsavel.trim() : ''
+  if (!nisStr || nisStr.startsWith('SEM_NIS_')) {
+    const cod = clean.cod_familiar || payload.cod_familiar || Math.floor(100000 + Math.random() * 900000)
+    clean.nis_responsavel = `SEM_NIS_${cod}_${Math.random().toString(36).substring(2, 7)}`
   }
 
   return clean
@@ -110,11 +110,14 @@ export async function GET() {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    // Mapear rg_responsavel a partir do membro responsável se não estiver na raiz
+    // Mapear rg_responsavel e limpar placeholder SEM_NIS_ do retorno para o frontend
     const formattedData = (data || []).map((f: any) => {
       const membroResp = (f.membros || []).find((m: any) => m.parentesco === 'Responsável' || m.nome === f.responsavel)
+      const rawNis = f.nis_responsavel || ''
+      const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
       return {
         ...f,
+        nis_responsavel: nisClean,
         rg_responsavel: f.rg_responsavel || membroResp?.rg || null,
         sexo_responsavel: f.sexo_responsavel || membroResp?.sexo || 'Feminino',
         raca_cor_responsavel: f.raca_cor_responsavel || membroResp?.raca_cor || 'Parda',
