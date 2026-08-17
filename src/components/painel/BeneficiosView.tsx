@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { BeneficioConcedido, AlmoxarifadoItem, Configuracao, Familia, Usuario } from '@/types'
 import { maskCPF, maskNIS, maskPhone } from '@/utils/masks'
 import { ModalEditarBeneficio } from '@/components/modals/ModalEditarBeneficio'
+import { ModalAlmoxarifado } from '@/components/modals/ModalAlmoxarifado'
 
 interface BeneficiosViewProps {
   beneficios: BeneficioConcedido[]
@@ -12,6 +13,7 @@ interface BeneficiosViewProps {
   usuarios?: Usuario[]
   configuracao?: Configuracao
   onAbrirModalConcederBeneficio: () => void
+  onAtualizarAlmoxarifado?: (itens: AlmoxarifadoItem[]) => Promise<void>
   onEditarBeneficio?: (id: string, updates: Partial<BeneficioConcedido>) => Promise<void>
   onExcluirBeneficio?: (id: string) => Promise<void>
 }
@@ -143,6 +145,7 @@ export function BeneficiosView({
   usuarios = [],
   configuracao,
   onAbrirModalConcederBeneficio,
+  onAtualizarAlmoxarifado,
   onEditarBeneficio,
   onExcluirBeneficio
 }: BeneficiosViewProps) {
@@ -150,6 +153,7 @@ export function BeneficiosView({
   const [filtroSituacao, setFiltroSituacao] = useState('TODOS')
   const [beneficioParaEditar, setBeneficioParaEditar] = useState<BeneficioConcedido | null>(null)
   const [beneficioParaImprimir, setBeneficioParaImprimir] = useState<BeneficioConcedido | null>(null)
+  const [modalAlmoxarifado, setModalAlmoxarifado] = useState(false)
 
   const beneficiosFiltrados = beneficios.filter(b => {
     const termo = busca.toLowerCase().trim()
@@ -221,9 +225,18 @@ export function BeneficiosView({
 
       {/* Grid de Almoxarifado / Estoque */}
       <div>
-        <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-2 uppercase tracking-wider">
-          <i className="fa-solid fa-boxes-stacked text-teal-700"></i> Saldo em Almoxarifado CRAS
-        </h3>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <i className="fa-solid fa-boxes-stacked text-teal-700"></i> Saldo em Almoxarifado CRAS
+          </h3>
+          <button
+            onClick={() => setModalAlmoxarifado(true)}
+            className="bg-teal-50 hover:bg-teal-100 text-teal-900 border border-teal-300 px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 uppercase shadow-2xs"
+          >
+            <i className="fa-solid fa-boxes-packing text-teal-700"></i> Gerenciar / Cadastrar Estoque
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {almoxarifado.map(item => (
             <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition">
@@ -393,6 +406,19 @@ export function BeneficiosView({
         </div>
       </div>
       </div>
+
+      {/* Modal de Gestão de Almoxarifado */}
+      {modalAlmoxarifado && (
+        <ModalAlmoxarifado
+          almoxarifado={almoxarifado}
+          onClose={() => setModalAlmoxarifado(false)}
+          onAtualizarAlmoxarifado={async itens => {
+            if (onAtualizarAlmoxarifado) {
+              await onAtualizarAlmoxarifado(itens)
+            }
+          }}
+        />
+      )}
 
       {/* Modal de Edição */}
       {beneficioParaEditar && onEditarBeneficio && (

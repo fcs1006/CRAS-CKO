@@ -723,6 +723,16 @@ export default function PainelPage() {
                   usuarios={usuarios}
                   configuracao={configuracao}
                   onAbrirModalConcederBeneficio={() => setModalConcederBeneficio(true)}
+                  onAtualizarAlmoxarifado={async itens => {
+                    setAlmoxarifado(itens)
+                    try {
+                      const res = await fetch('/api/almoxarifado')
+                      if (res.ok) {
+                        const json = await res.json()
+                        if (json.ok && json.data) setAlmoxarifado(json.data)
+                      }
+                    } catch (e) {}
+                  }}
                   onEditarBeneficio={handleEditarBeneficio}
                   onExcluirBeneficio={handleExcluirBeneficio}
                 />
