@@ -16,7 +16,6 @@ function sanitizeFamiliaPayload(payload: any) {
     'renda_responsavel',
     'programa_social_responsavel',
     'cpf_responsavel',
-    'rg_responsavel',
     'nis_responsavel',
     'logradouro',
     'numero',
@@ -66,9 +65,6 @@ function sanitizeFamiliaPayload(payload: any) {
   }
   if (!clean.cpf_responsavel || (typeof clean.cpf_responsavel === 'string' && !clean.cpf_responsavel.trim())) {
     clean.cpf_responsavel = null
-  }
-  if (!clean.rg_responsavel || (typeof clean.rg_responsavel === 'string' && !clean.rg_responsavel.trim())) {
-    clean.rg_responsavel = null
   }
 
   return clean
