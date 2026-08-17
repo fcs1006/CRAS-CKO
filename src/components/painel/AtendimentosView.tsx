@@ -218,7 +218,7 @@ export function ConteudoDocumentoAtendimento({
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           3. Providências e Encaminhamentos Adotados
         </h4>
-        <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-medium text-justify">
+        <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-medium text-justify whitespace-pre-line">
           {item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.'}
         </div>
       </div>
@@ -911,7 +911,7 @@ export function AtendimentosView({
               {atendimentoSelecionado.providencias && (
                 <div>
                   <h4 className="font-bold text-amber-900 uppercase mb-1">Providências & Encaminhamentos Adotados:</h4>
-                  <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-xs text-amber-950 leading-relaxed font-semibold">
+                  <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-xs text-amber-950 leading-relaxed font-semibold whitespace-pre-line">
                     {atendimentoSelecionado.providencias}
                   </div>
                 </div>

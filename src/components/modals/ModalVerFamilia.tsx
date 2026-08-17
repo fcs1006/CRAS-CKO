@@ -772,7 +772,7 @@ export function ModalVerFamilia({
                         {a.data ? a.data.split('-').reverse().join('/') : '—'} às {a.hora}
                       </span>
                     </div>
-                    <p className="text-gray-700 uppercase bg-gray-50 p-2 rounded leading-relaxed">{a.relato}</p>
+                    <p className="text-gray-700 uppercase bg-gray-50 p-2 rounded leading-relaxed whitespace-pre-line">{a.relato}</p>
                     <div className="text-[10px] text-teal-800 font-bold uppercase">
                       Técnico(a): {a.tecnico}
                     </div>
