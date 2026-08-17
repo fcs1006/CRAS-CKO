@@ -551,6 +551,11 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
       return
     }
 
+    if (novoMembroNome.trim()) {
+      alert(`Atenção: Há um integrante em preenchimento ("${novoMembroNome.trim().toUpperCase()}"). Por favor, clique no botão "${membroEditandoIndex !== null ? 'Salvar Alterações' : 'Adicionar Integrante'}" para incluí-lo na lista da família ou limpe o campo Nome Completo.`)
+      return
+    }
+
     // Trava de Duplicidade Completa
     if (familiasExistentes && familiasExistentes.length > 0) {
       const dupResp = verificarDuplicidadePessoa(
@@ -1558,10 +1563,10 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Parentesco */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Parentesco <span className="text-red-600 font-bold">*</span>
+                    Parentesco {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <select
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroParentesco}
                     onChange={e => setNovoMembroParentesco(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
@@ -1583,11 +1588,11 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Data Nasc */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Data Nascimento <span className="text-red-600 font-bold">*</span>
+                    Data Nascimento {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <input
                     type="date"
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroNasc}
                     onChange={e => setNovoMembroNasc(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
@@ -1597,10 +1602,10 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Sexo */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Sexo / Gênero <span className="text-red-600 font-bold">*</span>
+                    Sexo / Gênero {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <select
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroSexo}
                     onChange={e => setNovoMembroSexo(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase"
@@ -1615,10 +1620,10 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Cor / Raça */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Cor / Raça <span className="text-red-600 font-bold">*</span>
+                    Cor / Raça {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <select
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroRacaCor}
                     onChange={e => setNovoMembroRacaCor(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase"
@@ -1636,11 +1641,11 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* CPF */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    CPF <span className="text-red-600 font-bold">*</span>
+                    CPF {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <input
                     type="text"
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroCpf}
                     onChange={e => setNovoMembroCpf(maskCPF(e.target.value))}
                     placeholder="000.000.000-00"
@@ -1679,11 +1684,11 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Renda Individual */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Renda Individual (R$) <span className="text-red-600 font-bold">*</span>
+                    Renda Individual (R$) {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <input
                     type="text"
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroRenda}
                     onChange={e => setNovoMembroRenda(maskCurrency(e.target.value))}
                     placeholder="R$ 0,00"
@@ -1694,10 +1699,10 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Escolaridade */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Escolaridade <span className="text-red-600 font-bold">*</span>
+                    Escolaridade {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <select
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroEscolaridade}
                     onChange={e => setNovoMembroEscolaridade(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
@@ -1712,11 +1717,11 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Ocupação / CBO */}
                 <div className="relative">
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Ocupação / CBO <span className="text-red-600 font-bold">*</span>
+                    Ocupação / CBO {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <input
                     type="text"
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroOcupacao}
                     onChange={e => handleOcupacaoMembroChange(e.target.value)}
                     placeholder="DIGITE PARA BUSCAR CBO..."
@@ -1742,10 +1747,10 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 {/* Programa Social */}
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    Programa Social <span className="text-red-600 font-bold">*</span>
+                    Programa Social {novoMembroNome.trim() && <span className="text-red-600 font-bold">*</span>}
                   </label>
                   <select
-                    required
+                    required={Boolean(novoMembroNome.trim())}
                     value={novoMembroProgSocial}
                     onChange={e => setNovoMembroProgSocial(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
