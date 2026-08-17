@@ -1200,17 +1200,17 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
               <span><i className="fa-solid fa-house-chimney text-teal-700 mr-1.5"></i> 3. Condições Habitacionais & Infraestrutura Sanitária</span>
               <span className="text-[10px] text-red-600 font-normal">* campos obrigatórios</span>
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
               {/* Condição de Ocupação */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                   Forma de Ocupação <span className="text-red-600 font-bold">*</span>
                 </label>
                 <select
                   required
                   value={moradiaTipo}
                   onChange={e => setMoradiaTipo(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium truncate"
                 >
                   <option value="">SELECIONE A FORMA DE OCUPAÇÃO *</option>
                   <option value="Própria">PRÓPRIA (QUITADA OU FINANCIADA)</option>
@@ -1223,16 +1223,16 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Material da Construção */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Material Predominante <span className="text-red-600 font-bold">*</span>
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
+                  Tipo de Construção <span className="text-red-600 font-bold">*</span>
                 </label>
                 <select
                   required
                   value={tipoConstrucao}
                   onChange={e => setTipoConstrucao(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium truncate"
                 >
-                  <option value="">SELECIONE O MATERIAL *</option>
+                  <option value="">SELECIONE O TIPO DE CONSTRUÇÃO *</option>
                   <option value="Alvenaria com Revestimento">ALVENARIA COM REVESTIMENTO</option>
                   <option value="Alvenaria sem Revestimento">ALVENARIA SEM REVESTIMENTO</option>
                   <option value="Madeira / Madeira Tratada">MADEIRA / TÁBUA</option>
@@ -1243,14 +1243,14 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Água */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                   Abastecimento de Água <span className="text-red-600 font-bold">*</span>
                 </label>
                 <select
                   required
                   value={moradiaAgua}
                   onChange={e => setMoradiaAgua(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium truncate"
                 >
                   <option value="">SELECIONE O ABASTECIMENTO *</option>
                   <option value="Rede Pública / Canalizada">REDE PÚBLICA CANALIZADA</option>
@@ -1263,14 +1263,14 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Esgoto */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                   Esgotamento Sanitário <span className="text-red-600 font-bold">*</span>
                 </label>
                 <select
                   required
                   value={moradiaSanear}
                   onChange={e => setMoradiaSanear(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium truncate"
                 >
                   <option value="">SELECIONE O ESGOTAMENTO *</option>
                   <option value="Rede Pública / Fossa Séptica">REDE COLETORA OU FOSSA SÉPTICA</option>
@@ -1282,14 +1282,14 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Lixo */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                   Destino do Lixo <span className="text-red-600 font-bold">*</span>
                 </label>
                 <select
                   required
                   value={moradiaLixo}
                   onChange={e => setMoradiaLixo(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium truncate"
                 >
                   <option value="">SELECIONE O DESTINO DO LIXO *</option>
                   <option value="Coleta Pública Regular">COLETA PÚBLICA DIRETA</option>
@@ -1301,14 +1301,14 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Energia */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                   Energia Elétrica <span className="text-red-600 font-bold">*</span>
                 </label>
                 <select
                   required
                   value={moradiaEnergia}
                   onChange={e => setMoradiaEnergia(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-medium truncate"
                 >
                   <option value="">SELECIONE A ENERGIA *</option>
                   <option value="Rede Elétrica com Medidor Próprio">COM MEDIDOR PRÓPRIO (RELÓGIO)</option>
@@ -1320,7 +1320,7 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Nº Cômodos */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                   Quantidade de Cômodos <span className="text-red-600 font-bold">*</span>
                 </label>
                 <input
@@ -1336,15 +1336,15 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
               </div>
 
               {/* Acessibilidade */}
-              <div className="flex items-center pt-6">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-800">
+              <div className="flex items-center pt-2 sm:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-800 whitespace-nowrap">
                   <input
                     type="checkbox"
                     checked={acessibilidade}
                     onChange={e => setAcessibilidade(e.target.checked)}
                     className="w-4 h-4 text-teal-700 rounded"
                   />
-                  <span>Possui Acessibilidade para PcD/Idosos</span>
+                  <span>Possui Acessibilidade para PcD / Idosos</span>
                 </label>
               </div>
             </div>

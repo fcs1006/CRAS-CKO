@@ -489,19 +489,33 @@ export function ModalVerFamilia({
                   </span>
                 </div>
 
-                <div className="text-xs space-y-1.5 text-teal-950 mt-2">
-                  <p><strong>Técnico(a) Referência:</strong> {familia.tecnico_referencia || 'NÃO DESIGNADO'}</p>
-                  <p><strong>Data de Início:</strong> {familia.paif_data_inicio ? familia.paif_data_inicio.split('-').reverse().join('/') : '—'}</p>
-                  {familia.paif_data_fim && (
-                    <p className="text-red-800"><strong>Desligamento:</strong> {familia.paif_data_fim.split('-').reverse().join('/')} ({familia.paif_motivo_desligamento || 'Superação'})</p>
-                  )}
-                  <p className="text-[11px] leading-relaxed">
-                    <strong>Potencialidades:</strong> {familia.paif_potencialidades || 'Vínculos familiares preservados e rede de apoio comunitário.'}
-                  </p>
-                  <p className="text-[11px] leading-relaxed">
-                    <strong>Metas Pactuadas:</strong> {familia.paif_metas || 'Acompanhamento do acesso a direitos e participação em grupos do CRAS.'}
-                  </p>
-                </div>
+                {familia.paif_ativo ? (
+                  <div className="text-xs space-y-1.5 text-teal-950 mt-2">
+                    {familia.tecnico_referencia && (
+                      <p><strong>Técnico(a) Referência:</strong> {familia.tecnico_referencia}</p>
+                    )}
+                    {familia.paif_data_inicio && (
+                      <p><strong>Data de Início:</strong> {familia.paif_data_inicio.split('-').reverse().join('/')}</p>
+                    )}
+                    {familia.paif_data_fim && (
+                      <p className="text-red-800"><strong>Desligamento:</strong> {familia.paif_data_fim.split('-').reverse().join('/')} ({familia.paif_motivo_desligamento || 'Superação'})</p>
+                    )}
+                    {familia.paif_potencialidades && (
+                      <p className="text-[11px] leading-relaxed">
+                        <strong>Potencialidades:</strong> {familia.paif_potencialidades}
+                      </p>
+                    )}
+                    {familia.paif_metas && (
+                      <p className="text-[11px] leading-relaxed">
+                        <strong>Metas Pactuadas:</strong> {familia.paif_metas}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 italic mt-3 py-2 text-center bg-white/50 rounded-lg border border-teal-100">
+                    A família não possui plano de acompanhamento familiar (PAIF/PAF) ativo no momento.
+                  </div>
+                )}
               </div>
             </div>
           </div>
