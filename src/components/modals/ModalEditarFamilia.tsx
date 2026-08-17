@@ -408,16 +408,39 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
       alert('Por favor, preencha a Data de Nascimento.')
       return
     }
+    if (!novoMembroSexo) {
+      alert('Por favor, selecione o Sexo / Gênero.')
+      return
+    }
+    if (!novoMembroRacaCor) {
+      alert('Por favor, selecione a Cor / Raça.')
+      return
+    }
+    if (!novoMembroCpf.trim()) {
+      alert('Por favor, preencha o CPF do Integrante.')
+      return
+    }
+    if (!novoMembroRenda.trim()) {
+      alert('Por favor, preencha a Renda Individual.')
+      return
+    }
     if (!novoMembroEscolaridade) {
       alert('Por favor, selecione a Escolaridade.')
       return
     }
     if (!novoMembroOcupacao.trim()) {
-      alert('Por favor, preencha a Ocupação.')
+      alert('Por favor, preencha a Ocupação / CBO.')
       return
     }
-    if (!novoMembroRenda.trim()) {
-      alert('Por favor, preencha a Renda Individual.')
+    if (!novoMembroProgSocial) {
+      alert('Por favor, selecione o Programa Social.')
+      return
+    }
+
+    const ocupacaoUpper = novoMembroOcupacao.trim().toUpperCase()
+    const isEstudante = ocupacaoUpper.includes('ESTUDANTE') || ocupacaoUpper.includes('ALUNO') || ocupacaoUpper.includes('ESTUDAR')
+    if (isEstudante && (!novoMembroFreqEscolar || novoMembroFreqEscolar === 'Não se aplica')) {
+      alert('Quando a Ocupação for Estudante, a Frequência Escolar é obrigatória (Sim ou Não).')
       return
     }
 
@@ -1455,8 +1478,9 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Parentesco</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Parentesco <span className="text-red-600 font-bold">*</span></label>
                   <select
+                    required
                     value={novoMembroParentesco}
                     onChange={e => setNovoMembroParentesco(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
@@ -1476,9 +1500,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Data Nascimento</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Data Nascimento <span className="text-red-600 font-bold">*</span></label>
                   <input
                     type="date"
+                    required
                     value={novoMembroNasc}
                     onChange={e => setNovoMembroNasc(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
@@ -1486,12 +1511,14 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Sexo / Gênero</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Sexo / Gênero <span className="text-red-600 font-bold">*</span></label>
                   <select
+                    required
                     value={novoMembroSexo}
                     onChange={e => setNovoMembroSexo(e.target.value as any)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase"
                   >
+                    <option value="">SELECIONE O SEXO *</option>
                     <option value="Feminino">FEMININO</option>
                     <option value="Masculino">MASCULINO</option>
                     <option value="Outro">OUTRO</option>
@@ -1499,12 +1526,14 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Cor / Raça</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Cor / Raça <span className="text-red-600 font-bold">*</span></label>
                   <select
+                    required
                     value={novoMembroRacaCor}
                     onChange={e => setNovoMembroRacaCor(e.target.value as any)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase"
                   >
+                    <option value="">SELECIONE A COR/RAÇA *</option>
                     <option value="Parda">PARDA</option>
                     <option value="Branca">BRANCA</option>
                     <option value="Preta">PRETA</option>
@@ -1515,13 +1544,14 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">CPF</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">CPF <span className="text-red-600 font-bold">*</span></label>
                   <input
                     type="text"
+                    required
                     value={novoMembroCpf}
                     onChange={e => setNovoMembroCpf(maskCPF(e.target.value))}
                     placeholder="000.000.000-00"
-                    className="w-full px-3 py-2 border rounded-lg text-xs font-mono bg-white"
+                    className="w-full px-3 py-2 border rounded-lg text-xs font-mono bg-white font-semibold"
                   />
                 </div>
 
@@ -1552,9 +1582,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Renda Individual (R$)</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Renda Individual (R$) <span className="text-red-600 font-bold">*</span></label>
                   <input
                     type="text"
+                    required
                     value={novoMembroRenda}
                     onChange={e => setNovoMembroRenda(maskCurrency(e.target.value))}
                     placeholder="R$ 0,00"
@@ -1563,8 +1594,9 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Escolaridade</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Escolaridade <span className="text-red-600 font-bold">*</span></label>
                   <select
+                    required
                     value={novoMembroEscolaridade}
                     onChange={e => setNovoMembroEscolaridade(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
@@ -1577,9 +1609,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div className="relative">
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Ocupação / CBO</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Ocupação / CBO <span className="text-red-600 font-bold">*</span></label>
                   <input
                     type="text"
+                    required
                     value={novoMembroOcupacao}
                     onChange={e => handleOcupacaoMembroChange(e.target.value)}
                     placeholder="DIGITE PARA BUSCAR CBO..."
@@ -1602,12 +1635,14 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Programa Social</label>
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">Programa Social <span className="text-red-600 font-bold">*</span></label>
                   <select
+                    required
                     value={novoMembroProgSocial}
                     onChange={e => setNovoMembroProgSocial(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase"
                   >
+                    <option value="">SELECIONE O PROGRAMA *</option>
                     <option value="Nenhum">NENHUM</option>
                     <option value="Bolsa Família">BOLSA FAMÍLIA</option>
                     <option value="BPC Idoso">BPC IDOSO</option>
@@ -1625,7 +1660,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">Frequência Escolar</label>
+                    <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">
+                      Frequência Escolar
+                      {novoMembroOcupacao.toUpperCase().includes('ESTUDANTE') && <span className="text-red-600 font-bold ml-1">*</span>}
+                    </label>
                     <select
                       value={novoMembroFreqEscolar}
                       onChange={e => setNovoMembroFreqEscolar(e.target.value as any)}

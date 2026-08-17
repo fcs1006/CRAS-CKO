@@ -234,6 +234,7 @@ export function ModalVerFamilia({
   const [novoMembroOcupacao, setNovoMembroOcupacao] = useState('')
   const [novoMembroRenda, setNovoMembroRenda] = useState('')
   const [novoMembroProgSocial, setNovoMembroProgSocial] = useState('NENHUM')
+  const [novoMembroFreqEscolar, setNovoMembroFreqEscolar] = useState('Não se aplica')
   const [novoMembroPossuiDeficiencia, setNovoMembroPossuiDeficiencia] = useState(false)
   const [novoMembroTipoDeficiencia, setNovoMembroTipoDeficiencia] = useState('')
 
@@ -323,6 +324,20 @@ export function ModalVerFamilia({
     if (!novoMembroNome.trim()) return alert('Informe o nome do dependente.')
     if (!novoMembroParentesco) return alert('Selecione o parentesco.')
     if (!novoMembroNasc) return alert('Informe a data de nascimento.')
+    if (!novoMembroSexo) return alert('Selecione o sexo / gênero.')
+    if (!novoMembroRacaCor) return alert('Selecione a cor / raça.')
+    if (!novoMembroCpf.trim()) return alert('Informe o CPF do dependente.')
+    if (!novoMembroRenda.trim()) return alert('Informe a renda individual.')
+    if (!novoMembroEscolaridade) return alert('Selecione a escolaridade.')
+    if (!novoMembroOcupacao.trim()) return alert('Informe a ocupação / CBO.')
+    if (!novoMembroProgSocial) return alert('Selecione o programa social.')
+
+    const ocupacaoUpper = novoMembroOcupacao.trim().toUpperCase()
+    const isEstudante = ocupacaoUpper.includes('ESTUDANTE') || ocupacaoUpper.includes('ALUNO') || ocupacaoUpper.includes('ESTUDAR')
+    if (isEstudante && (!novoMembroFreqEscolar || novoMembroFreqEscolar === 'Não se aplica')) {
+      alert('Quando a Ocupação for Estudante, a Frequência Escolar é obrigatória (Sim ou Não).')
+      return
+    }
 
     const idade = calculateAge(novoMembroNasc)
     if (idade >= 18 && !novoMembroRg.trim()) {
