@@ -164,9 +164,21 @@ export function ConteudoDocumentoProntuario({
         </h4>
         <div className="border border-black p-2 rounded bg-white text-[10px] space-y-0.5">
           <p><strong className="font-extrabold">Status do Acompanhamento:</strong> {familia.paif_ativo ? 'EM ACOMPANHAMENTO SISTEMÁTICO ATIVO' : 'NÃO ACOMPANHADO ATIVAMENTE'}</p>
-          <p><strong className="font-extrabold">Técnico(a) de Referência:</strong> {familia.tecnico_referencia || (usuarioLogado?.nome ? usuarioLogado.nome.toUpperCase() : 'TÉCNICO CRAS')}</p>
-          <p><strong className="font-extrabold">Potencialidades Identificadas:</strong> {familia.paif_potencialidades || 'Vínculos familiares preservados, disponibilidade para participação nas atividades do CRAS.'}</p>
-          <p><strong className="font-extrabold">Metas e Compromissos Pactuados:</strong> {familia.paif_metas || 'Acompanhamento do acesso a direitos socioassistenciais e condicionalidades de programas sociais.'}</p>
+          {familia.paif_ativo ? (
+            <>
+              {familia.tecnico_referencia && (
+                <p><strong className="font-extrabold">Técnico(a) de Referência:</strong> {familia.tecnico_referencia}</p>
+              )}
+              {familia.paif_potencialidades && (
+                <p><strong className="font-extrabold">Potencialidades Identificadas:</strong> {familia.paif_potencialidades}</p>
+              )}
+              {familia.paif_metas && (
+                <p><strong className="font-extrabold">Metas e Compromissos Pactuados:</strong> {familia.paif_metas}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-gray-600 italic">A família não possui plano de acompanhamento familiar (PAIF/PAF) ativo no momento.</p>
+          )}
         </div>
       </div>
 
