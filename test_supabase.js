@@ -1,8 +1,18 @@
-const url = 'https://uutbuvbyexjsjtwcnzntn.supabase.co';
-const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1dGJ1dnlieGpzY2p0d2NuenRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMjMzMjIsImV4cCI6MjA5ODU5OTMyMn0.3BZlt1pJ4JLypq8HmAizCUQk6Jz7LINmfGiQRGxJgIo';
+const fs = require('fs');
 
-console.log('Testando conexão com Supabase...');
-fetch(`${url}/rest/v1/usuarios?select=count`, {
+const envFile = fs.readFileSync('.env.local', 'utf8');
+const env = {};
+envFile.split('\n').forEach(line => {
+  const [k, v] = line.split('=');
+  if (k && v) env[k.trim()] = v.trim();
+});
+
+const url = env.NEXT_PUBLIC_SUPABASE_URL;
+const key = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+console.log('Testando conexão com Supabase:', url);
+
+fetch(`${url}/rest/v1/pacientes?select=*&limit=5`, {
   headers: {
     'apikey': key,
     'Authorization': `Bearer ${key}`

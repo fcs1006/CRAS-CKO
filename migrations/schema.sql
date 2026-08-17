@@ -22,6 +22,20 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 CREATE INDEX IF NOT EXISTS idx_usuarios_cpf ON usuarios(usuario);
 
+-- Inserir usuário Administrador inicial (se não existir)
+INSERT INTO usuarios (nome, usuario, senha_hash, ativo, perfil, cargo, conselho, email)
+VALUES (
+  'Administrador CRAS',
+  '000.000.000-00',
+  crypt('admin', gen_salt('bf')),
+  true,
+  'admin',
+  'Coordenador / Admin',
+  'CRESS/TO 0001',
+  'admin@cras.gov.br'
+)
+ON CONFLICT (usuario) DO NOTHING;
+
 -- 2. TABELA DE CONFIGURAÇÕES INSTITUCIONAIS
 CREATE TABLE IF NOT EXISTS configuracoes (
   id BIGSERIAL PRIMARY KEY,
@@ -206,6 +220,28 @@ CREATE TABLE IF NOT EXISTS agenda_tecnica (
 
 CREATE INDEX IF NOT EXISTS idx_agenda_data ON agenda_tecnica(data);
 
+-- 13. TABELA DE PACIENTES (IMPORTADA / UNIFICADA)
+CREATE TABLE IF NOT EXISTS pacientes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome TEXT NOT NULL,
+  cpf TEXT,
+  rg TEXT,
+  data_nascimento DATE,
+  logradouro TEXT,
+  numero TEXT,
+  bairro TEXT,
+  municipio TEXT DEFAULT 'Conceição do Tocantins',
+  uf TEXT DEFAULT 'TO',
+  telefone TEXT,
+  outro_contato TEXT,
+  email TEXT,
+  observacoes TEXT,
+  criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pacientes_cpf ON pacientes(cpf);
+CREATE INDEX IF NOT EXISTS idx_pacientes_nome ON pacientes(nome);
+
 -- ============================================================
 -- FUNÇÕES DE AUTENTICAÇÃO E LOGIN (COMPATÍVEIS COM O SISTEMA)
 -- ============================================================
@@ -308,3 +344,22 @@ BEGIN
 
   RETURN json_build_object('ok', true);
 END; $$;
+
+
+-- ============================================================
+-- DESABILITAR ROW LEVEL SECURITY (RLS) PARA ACESSO DIRETO VIA CLIENT
+-- ============================================================
+
+ALTER TABLE usuarios DISABLE ROW LEVEL SECURITY;
+ALTER TABLE configuracoes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE familias DISABLE ROW LEVEL SECURITY;
+ALTER TABLE membros_familia DISABLE ROW LEVEL SECURITY;
+ALTER TABLE historico_atendimentos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE beneficios_concedidos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE almoxarifado DISABLE ROW LEVEL SECURITY;
+ALTER TABLE grupos_scfv DISABLE ROW LEVEL SECURITY;
+ALTER TABLE participantes_scfv DISABLE ROW LEVEL SECURITY;
+ALTER TABLE frequencia_scfv DISABLE ROW LEVEL SECURITY;
+ALTER TABLE encaminhamentos DISABLE ROW LEVEL SECURITY;
+ALTER TABLE agenda_tecnica DISABLE ROW LEVEL SECURITY;
+ALTER TABLE pacientes DISABLE ROW LEVEL SECURITY;

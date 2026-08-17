@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { parseResponseJson } from '@/utils/safeFetch'
 
 type Tela = 'login' | 'cadastro' | 'esqueci'
 
@@ -23,6 +24,26 @@ export default function Home() {
         if (parsed.logoUrl) setLogoUrl(parsed.logoUrl)
       } catch (e) {}
     }
+
+    // Buscar configurações mais recentes do servidor
+    async function buscarConfiguracoes() {
+      try {
+        const res = await fetch('/api/configuracoes')
+        const json = await parseResponseJson(res, 'Erro ao carregar configurações')
+        if (json && json.ok && json.data) {
+          if (json.data.cras_unidade) setCrasName(json.data.cras_unidade)
+          if (json.data.municipio) setMunicipio(json.data.municipio)
+          if (json.data.logo_url) setLogoUrl(json.data.logo_url)
+          localStorage.setItem('cras_settings', JSON.stringify({
+            crasUnidade: json.data.cras_unidade,
+            municipio: json.data.municipio,
+            secretaria: json.data.secretaria,
+            logoUrl: json.data.logo_url
+          }))
+        }
+      } catch (err) {}
+    }
+    buscarConfiguracoes()
   }, [])
 
   return (
@@ -101,9 +122,9 @@ function FormLogin({ irPara }: { irPara: (t: Tela) => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario: usuario.trim(), senha: senha.trim() })
       })
-      const data = await res.json()
+      const data = await parseResponseJson(res, 'Erro no login')
       if (!res.ok || !data?.ok) {
-        setErro(data.error || 'Usuário ou senha incorretos.')
+        setErro(data?.error || 'Usuário ou senha incorretos.')
         setCarregando(false)
         return
       }
@@ -151,11 +172,25 @@ function FormLogin({ irPara }: { irPara: (t: Tela) => void }) {
           required
         />
       </div>
-      {erro && <div className="status-err">{erro}</div>}
+      {erro && (
+        <div className="status-err" style={{ fontSize: '11px', lineHeight: '1.4', padding: '10px', borderRadius: '8px', background: 'rgba(231, 29, 54, 0.15)', border: '1px solid rgba(231, 29, 54, 0.4)', color: '#ff8080' }}>
+          {erro}
+        </div>
+      )}
       <button type="submit" disabled={carregando} className="btn-primary" style={{ width: '100%', marginTop: '4px' }}>
         {carregando ? 'Verificando...' : 'ENTRAR'}
       </button>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+      <button 
+        type="button" 
+        onClick={() => {
+          setUsuario('000.000.000-00')
+          setSenha('admin')
+        }}
+        style={{ width: '100%', marginTop: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#def2f1', padding: '8px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px' }}
+      >
+        <i className="fa-solid fa-flask" style={{ marginRight: '6px' }}></i> Usar Credenciais Demo / Offline (000.000.000-00 / admin)
+      </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
         <button type="button" onClick={() => irPara('cadastro')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2ec4b6', fontSize: '12px', padding: 0 }}>
           Solicitar acesso
@@ -207,9 +242,9 @@ function FormCadastro({ irPara }: { irPara: (t: Tela) => void }) {
           senha: form.senha
         })
       })
-      const data = await res.json()
+      const data = await parseResponseJson(res, 'Erro ao realizar cadastro')
       if (!res.ok || !data?.ok) {
-        setErro(data.error || 'Erro ao realizar cadastro.')
+        setErro(data?.error || 'Erro ao realizar cadastro.')
         setCarregando(false)
         return
       }
@@ -349,9 +384,9 @@ function FormEsqueci({ irPara }: { irPara: (t: Tela) => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf: form.cpf })
       })
-      const data = await res.json()
-      if (!res.ok || !data.ok) {
-        setErro(data.error || 'CPF não localizado.')
+      const data = await parseResponseJson(res, 'Erro ao localizar CPF')
+      if (!res.ok || !data?.ok) {
+        setErro(data?.error || 'CPF não localizado.')
         setCarregando(false)
         return
       }
@@ -379,9 +414,9 @@ function FormEsqueci({ irPara }: { irPara: (t: Tela) => void }) {
           novaSenha: form.senha
         })
       })
-      const data = await res.json()
-      if (!res.ok || !data.ok) {
-        setErro(data.error || 'Informações de validação incorretas.')
+      const data = await parseResponseJson(res, 'Erro ao redefinir senha')
+      if (!res.ok || !data?.ok) {
+        setErro(data?.error || 'Informações de validação incorretas.')
         setCarregando(false)
         return
       }
