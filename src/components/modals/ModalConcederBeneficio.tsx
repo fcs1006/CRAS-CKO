@@ -25,6 +25,7 @@ export function ModalConcederBeneficio({
 }: ModalConcederBeneficioProps) {
   const [salvando, setSalvando] = useState(false)
   const [familiaId, setFamiliaId] = useState('')
+  const [pessoaAtendida, setPessoaAtendida] = useState('')
   const [situacaoBeneficio, setSituacaoBeneficio] = useState<string>('')
   const [tipo, setTipo] = useState('')
   const [quantidade, setQuantidade] = useState<number>(1)
@@ -35,8 +36,19 @@ export function ModalConcederBeneficio({
   const [beneficioConcedidoImprimir, setBeneficioConcedidoImprimir] = useState<Partial<BeneficioConcedido> | null>(null)
 
   const familiaSelecionada = familias.find(f => f.id === familiaId)
+  const membrosFamiliares = familiaSelecionada?.membros || []
   const itemEstoque = almoxarifado.find(a => a.tipo === tipo)
   const saldoInsuficiente = tipo && itemEstoque ? itemEstoque.saldo < (quantidade || 1) : false
+
+  function handleFamiliaChange(id: string) {
+    setFamiliaId(id)
+    const fam = familias.find(f => f.id === id)
+    if (fam) {
+      setPessoaAtendida(fam.responsavel)
+    } else {
+      setPessoaAtendida('')
+    }
+  }
 
   function handleSituacaoChange(sit: string) {
     setSituacaoBeneficio(sit)
@@ -64,9 +76,11 @@ export function ModalConcederBeneficio({
     const tecnicoObj = usuarios.find(u => u.nome === tecnico || u.usuario === tecnico)
     const conselhoInfo = tecnicoObj?.conselho && tecnicoObj.conselho !== 'Não aplicável' ? tecnicoObj.conselho : undefined
     const catRma = getCategoriaRma(situacaoBeneficio)
+    const solicitanteFinal = (pessoaAtendida || familiaSelecionada?.responsavel || '').trim().toUpperCase()
 
     const novoPayload: Partial<BeneficioConcedido> = {
       familia_id: familiaId,
+      solicitante: solicitanteFinal,
       data,
       tipo,
       categoria_rma: catRma,
@@ -75,7 +89,7 @@ export function ModalConcederBeneficio({
       tecnico_conselho: conselhoInfo,
       parecer_social: parecerSocial.trim().toUpperCase() || undefined,
       status: 'Entregue',
-      observacao: `SITUAÇÃO: ${situacaoBeneficio.toUpperCase()}${observacao ? ` | OBS: ${observacao.trim().toUpperCase()}` : ''}`
+      observacao: `PESSOA ATENDIDA / SOLICITANTE: ${solicitanteFinal} | SITUAÇÃO: ${situacaoBeneficio.toUpperCase()}${observacao ? ` | OBS: ${observacao.trim().toUpperCase()}` : ''}`
     }
 
     try {
@@ -118,7 +132,7 @@ export function ModalConcederBeneficio({
             </label>
             <select
               value={familiaId}
-              onChange={e => setFamiliaId(e.target.value)}
+              onChange={e => handleFamiliaChange(e.target.value)}
               required
               className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
             >
@@ -130,6 +144,35 @@ export function ModalConcederBeneficio({
               ))}
             </select>
           </div>
+
+          {/* Pessoa Atendida / Solicitante Direto */}
+          {familiaSelecionada && (
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+              <label className="block text-xs font-bold text-emerald-950 uppercase flex items-center gap-1.5">
+                <i className="fa-solid fa-user-tag text-emerald-700"></i> Pessoa Atendida / Solicitante Direto do Benefício <span className="text-red-600 font-bold">*</span>
+              </label>
+              <select
+                value={pessoaAtendida}
+                onChange={e => setPessoaAtendida(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-emerald-300 rounded-lg text-xs bg-white font-bold uppercase text-emerald-950"
+              >
+                <option value={familiaSelecionada.responsavel}>
+                  {familiaSelecionada.responsavel} (Responsável Familiar - CPF: {familiaSelecionada.cpf_responsavel || '—'})
+                </option>
+                {membrosFamiliares
+                  .filter(m => m.nome.trim().toUpperCase() !== familiaSelecionada.responsavel.trim().toUpperCase())
+                  .map(m => (
+                    <option key={m.id || m.nome} value={m.nome}>
+                      {m.nome} ({m.parentesco || 'Integrante'}{m.cpf ? ` — CPF: ${m.cpf}` : ''})
+                    </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-emerald-800 font-medium">
+                Indique quem é o integrante específico da família solicitando ou recebendo o benefício direto.
+              </p>
+            </div>
+          )}
 
           {/* As 4 Situações Oficiais de Benefício Eventual */}
           <div className="p-3.5 bg-teal-50/70 border border-teal-200 rounded-xl space-y-2">

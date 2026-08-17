@@ -119,6 +119,7 @@ export interface Atendimento {
 export interface BeneficioConcedido {
   id: string
   familia_id: string
+  solicitante?: string
   data: string
   tipo: string // Cesta Básica | Auxílio-Natalidade / Enxoval | Auxílio-Funeral | Aluguel Social | Outro
   categoria_rma?: 'auxilio_natalidade' | 'auxilio_funeral' | 'outros_eventuais'

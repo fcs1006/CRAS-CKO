@@ -18,6 +18,24 @@ interface BeneficiosViewProps {
 
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
 
+export function getSolicitanteBeneficio(b: Partial<BeneficioConcedido>, fam?: Familia) {
+  if (b.solicitante) return b.solicitante.trim().toUpperCase()
+  if (b.observacao?.includes('PESSOA ATENDIDA / SOLICITANTE:')) {
+    const parts = b.observacao.split('|')
+    const solPart = parts.find(p => p.includes('PESSOA ATENDIDA / SOLICITANTE:'))
+    if (solPart) {
+      return solPart.replace('PESSOA ATENDIDA / SOLICITANTE:', '').trim().toUpperCase()
+    }
+  } else if (b.observacao?.includes('SOLICITANTE:')) {
+    const parts = b.observacao.split('|')
+    const solPart = parts.find(p => p.includes('SOLICITANTE:'))
+    if (solPart) {
+      return solPart.replace('SOLICITANTE:', '').trim().toUpperCase()
+    }
+  }
+  return (b.responsavel_nome || fam?.responsavel || 'BENEFICIÁRIO(A)').trim().toUpperCase()
+}
+
 export function ConteudoTermoBeneficio({
   b,
   configuracao,
@@ -28,7 +46,8 @@ export function ConteudoTermoBeneficio({
   familias?: Familia[]
 }) {
   const fam = familias.find(f => f.id === b.familia_id)
-  const nomeBeneficiario = (b.responsavel_nome || fam?.responsavel || 'BENEFICIÁRIO(A)').toUpperCase()
+  const nomeResponsavel = (b.responsavel_nome || fam?.responsavel || 'RESPONSÁVEL FAMILIAR').toUpperCase()
+  const pessoaAtendidaNome = getSolicitanteBeneficio(b, fam)
   const dataFormatada = (b.data || '').split('-').reverse().join('/')
   
   let dataExtensaFormatada = ''
@@ -54,8 +73,8 @@ export function ConteudoTermoBeneficio({
       assinaturas={
         <div className="grid grid-cols-2 gap-10 text-center text-[10px] pt-4 pb-2">
           <div className="border-t-[1.5px] border-black pt-1.5">
-            <p className="font-extrabold uppercase text-[10.5px] text-black">{nomeBeneficiario}</p>
-            <p className="text-[9.5px] font-semibold text-black mt-0.5">Assinatura do(a) Beneficiário(a) (ou a Rogo)</p>
+            <p className="font-extrabold uppercase text-[10.5px] text-black">{pessoaAtendidaNome}</p>
+            <p className="text-[9.5px] font-semibold text-black mt-0.5">Assinatura da Pessoa Atendida / Solicitante (ou a Rogo)</p>
           </div>
           <div className="border-t-[1.5px] border-black pt-1.5">
             <p className="font-extrabold uppercase text-[10.5px] text-black">{(b.tecnico_responsavel || 'TÉCNICO(A) RESPONSÁVEL — CRAS').toUpperCase()}</p>
@@ -64,15 +83,18 @@ export function ConteudoTermoBeneficio({
         </div>
       }
     >
-      {/* 1. Identificação do Beneficiário */}
+      {/* 1. Identificação do Beneficiário e Solicitante */}
       <div className="space-y-1">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
-          1. Identificação do(a) Beneficiário(a) e Prontuário
+          1. Identificação do(a) Responsável e da Pessoa Atendida / Solicitante
         </h4>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-1 text-[10px]">
-          <div><strong className="font-extrabold">Nome do Beneficiário:</strong> {nomeBeneficiario}</div>
-          <div><strong className="font-extrabold">CPF:</strong> {fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'}</div>
-          <div><strong className="font-extrabold">NIS:</strong> {fam?.nis_responsavel ? maskNIS(fam.nis_responsavel) : '—'}</div>
+          <div><strong className="font-extrabold">Responsável Familiar:</strong> {nomeResponsavel}</div>
+          <div><strong className="font-extrabold">CPF do Responsável:</strong> {fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'}</div>
+          <div><strong className="font-extrabold">NIS do Responsável:</strong> {fam?.nis_responsavel ? maskNIS(fam.nis_responsavel) : '—'}</div>
+          <div className="col-span-3 bg-gray-50 p-1.5 border border-black rounded my-0.5 uppercase">
+            <strong className="font-extrabold text-black">PESSOA ATENDIDA / SOLICITANTE DIRETO:</strong> <span className="font-black text-black">{pessoaAtendidaNome}</span>
+          </div>
           <div><strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}</div>
           <div><strong className="font-extrabold">Telefone:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}</div>
           <div><strong className="font-extrabold">Território SUAS:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}</div>
@@ -107,7 +129,7 @@ export function ConteudoTermoBeneficio({
 
       {/* 4. Declaração de Recebimento */}
       <div className="border border-black p-2 rounded bg-white text-[10px] leading-relaxed text-justify mt-2">
-        Eu, <strong>{nomeBeneficiario}</strong>, portador(a) do CPF nº <strong>{fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'}</strong>, DECLARO para os devidos fins de comprovação junto ao Sistema Único de Assistência Social (SUAS) e à Secretaria Municipal de Assistência Social, que <strong>RECEBI</strong> nesta data a provisão suplementar acima especificada, em perfeitas condições.
+        Eu, <strong>{pessoaAtendidaNome}</strong>, integrante da família de <strong>{nomeResponsavel}</strong> (Prontuário nº <strong>{fam?.cod_familiar || '—'}</strong>), DECLARO para os devidos fins de comprovação junto ao Sistema Único de Assistência Social (SUAS) e à Secretaria Municipal de Assistência Social, que <strong>RECEBI</strong> nesta data a provisão suplementar acima especificada, em perfeitas condições.
       </div>
     </DocumentoOficialLayout>
   )
@@ -281,7 +303,9 @@ export function BeneficiosView({
               ) : (
                 beneficiosFiltrados.map(b => {
                   const fam = familias.find(f => f.id === b.familia_id)
-                  const nomeBeneficiario = b.responsavel_nome || fam?.responsavel || 'BENEFICIÁRIO'
+                  const nomeResponsavel = b.responsavel_nome || fam?.responsavel || 'BENEFICIÁRIO'
+                  const pessoaAtendidaNome = getSolicitanteBeneficio(b, fam)
+                  const ehOutroSolicitante = pessoaAtendidaNome && pessoaAtendidaNome !== nomeResponsavel.trim().toUpperCase()
 
                   const isNatalidade = b.categoria_rma === 'auxilio_natalidade' || b.tipo.toUpperCase().includes('NATALIDADE') || b.tipo.toUpperCase().includes('ENXOVAL')
                   const isFuneral = b.categoria_rma === 'auxilio_funeral' || b.tipo.toUpperCase().includes('FUNERAL')
@@ -293,8 +317,15 @@ export function BeneficiosView({
                         {b.data ? b.data.split('-').reverse().join('/') : '—'}
                       </td>
                       <td className="py-3 px-3">
-                        <strong className="text-gray-900 uppercase text-xs block font-bold">{nomeBeneficiario}</strong>
-                        {(fam?.bairro || b.bairro) && <span className="text-[10px] text-gray-500 uppercase">Bairro: {fam?.bairro || b.bairro}</span>}
+                        <strong className="text-gray-900 uppercase text-xs block font-bold">
+                          Resp: {nomeResponsavel}
+                        </strong>
+                        {ehOutroSolicitante && (
+                          <span className="text-[11px] text-emerald-800 font-bold uppercase block mt-0.5">
+                            <i className="fa-solid fa-user-tag text-emerald-700 mr-1"></i> Atendido: {pessoaAtendidaNome}
+                          </span>
+                        )}
+                        {(fam?.bairro || b.bairro) && <span className="text-[10px] text-gray-500 uppercase block mt-0.5">Bairro: {fam?.bairro || b.bairro}</span>}
                       </td>
                       <td className="py-3 px-3">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
