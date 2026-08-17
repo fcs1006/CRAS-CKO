@@ -27,13 +27,19 @@ export function ModalNovoAtendimento({
   const [local, setLocal] = useState(dadosIniciais?.local || '')
   const [data, setData] = useState(dadosIniciais?.data || '')
   const [hora, setHora] = useState(dadosIniciais?.hora || '')
-  const [tecnico, setTecnico] = useState(dadosIniciais?.tecnico || '')
+  const [tecnico, setTecnico] = useState(dadosIniciais?.tecnico || usuarioLogadoNome || '')
   const [compartilhada, setCompartilhada] = useState<'Sim' | 'Não' | ''>((dadosIniciais?.compartilhada as 'Sim' | 'Não') || '')
   const [profissionaisParticipantes, setProfissionaisParticipantes] = useState(dadosIniciais?.profissionais_participantes || '')
   const [selecionadosCompartilhados, setSelecionadosCompartilhados] = useState<string[]>([])
   const [outrosProfissionaisTexto, setOutrosProfissionaisTexto] = useState('')
   const [relato, setRelato] = useState(dadosIniciais?.relato || '')
   const [providencias, setProvidencias] = useState(dadosIniciais?.providencias || '')
+
+  useEffect(() => {
+    if (!tecnico && usuarioLogadoNome) {
+      setTecnico(usuarioLogadoNome)
+    }
+  }, [usuarioLogadoNome])
 
   const familiaSelecionada = familias.find(f => f.id === familiaId)
 
@@ -138,23 +144,17 @@ export function ModalNovoAtendimento({
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
           {/* Seleção da Família */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
               Família / Prontuário <span className="text-red-600 font-bold">*</span>
             </label>
             <select
               value={familiaId}
               onChange={e => {
-                const id = e.target.value
-                setFamiliaId(id)
-                const fam = familias.find(f => f.id === id)
-                if (fam) {
-                  setUsuarioVisitado(fam.responsavel)
-                } else {
-                  setUsuarioVisitado('')
-                }
+                setFamiliaId(e.target.value)
+                setUsuarioVisitado('')
               }}
               required
-              className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
+              className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold truncate"
             >
               <option value="">SELECIONE A FAMÍLIA ATENDIDA *</option>
               {familias.map(f => (
@@ -166,9 +166,9 @@ export function ModalNovoAtendimento({
           </div>
 
           {/* Pessoa Atendida e Tipo de Atendimento */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                 Pessoa Atendida / Solicitante <span className="text-red-600 font-bold">*</span>
               </label>
               {familiaSelecionada ? (
@@ -176,7 +176,7 @@ export function ModalNovoAtendimento({
                   value={usuarioVisitado}
                   onChange={e => setUsuarioVisitado(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950 truncate"
                 >
                   <option value="">SELECIONE QUEM FOI ATENDIDO *</option>
                   <option value={familiaSelecionada.responsavel}>
@@ -196,21 +196,21 @@ export function ModalNovoAtendimento({
                   required
                   value={usuarioVisitado}
                   onChange={e => setUsuarioVisitado(e.target.value.toUpperCase())}
-                  placeholder="DIGITE O NOME OU SELECIONE A FAMÍLIA ACIMA"
+                  placeholder="SELECIONE A FAMÍLIA ACIMA"
                   className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-medium"
                 />
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                 Tipologia do Atendimento (SUAS/RMA) <span className="text-red-600 font-bold">*</span>
               </label>
               <select
                 value={tipo}
                 onChange={e => handleTipoChange(e.target.value)}
                 required
-                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold uppercase"
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold uppercase truncate"
               >
                 <option value="">SELECIONE A TIPOLOGIA *</option>
                 <option value="Recepção / Acolhida Inicial">RECEPÇÃO / ACOLHIDA INICIAL</option>
@@ -222,61 +222,17 @@ export function ModalNovoAtendimento({
             </div>
           </div>
 
-          {/* Local, Data, Hora e Técnico */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Técnico Responsável e Local */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Local <span className="text-red-600 font-bold">*</span>
-              </label>
-              <select
-                value={local}
-                onChange={e => setLocal(e.target.value)}
-                required
-                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold uppercase"
-              >
-                <option value="">SELECIONE O LOCAL *</option>
-                <option value="CRAS">CRAS (UNIDADE)</option>
-                <option value="Domicílio">DOMICÍLIO</option>
-                <option value="Espaço Comunitário">ESPAÇO COMUNITÁRIO</option>
-                <option value="Outro">OUTRO</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Data <span className="text-red-600 font-bold">*</span>
-              </label>
-              <input
-                type="date"
-                required
-                value={data}
-                onChange={e => setData(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Horário <span className="text-red-600 font-bold">*</span>
-              </label>
-              <input
-                type="time"
-                required
-                value={hora}
-                onChange={e => setHora(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
                 Técnico(a) Responsável <span className="text-red-600 font-bold">*</span>
               </label>
               <select
                 value={tecnico}
                 onChange={e => setTecnico(e.target.value)}
                 required
-                className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950 truncate"
               >
                 <option value="">SELECIONE O TÉCNICO *</option>
                 {usuarios.map(u => (
@@ -285,6 +241,53 @@ export function ModalNovoAtendimento({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
+                Local do Atendimento <span className="text-red-600 font-bold">*</span>
+              </label>
+              <select
+                value={local}
+                onChange={e => setLocal(e.target.value)}
+                required
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold uppercase truncate"
+              >
+                <option value="">SELECIONE O LOCAL *</option>
+                <option value="CRAS">CRAS (UNIDADE)</option>
+                <option value="Domicílio">DOMICÍLIO</option>
+                <option value="Espaço Comunitário">ESPAÇO COMUNITÁRIO</option>
+                <option value="Outro">OUTRO</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Data e Horário */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
+                Data do Atendimento <span className="text-red-600 font-bold">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                value={data}
+                onChange={e => setData(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-xs font-mono font-semibold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1 whitespace-nowrap">
+                Horário do Atendimento <span className="text-red-600 font-bold">*</span>
+              </label>
+              <input
+                type="time"
+                required
+                value={hora}
+                onChange={e => setHora(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-xs font-mono font-semibold"
+              />
             </div>
           </div>
 
@@ -313,7 +316,12 @@ export function ModalNovoAtendimento({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   {usuarios
-                    .filter(u => u.nome !== tecnico)
+                    .filter(u => {
+                      const uNomeUpper = u.nome.trim().toUpperCase()
+                      const tecUpper = (tecnico || '').trim().toUpperCase()
+                      const logUpper = (usuarioLogadoNome || '').trim().toUpperCase()
+                      return uNomeUpper !== tecUpper && uNomeUpper !== logUpper
+                    })
                     .map(u => {
                       const itemStr = `${u.nome.toUpperCase()} (${(u.cargo || 'TÉCNICO').toUpperCase()})`
                       const isChecked = selecionadosCompartilhados.includes(itemStr)
