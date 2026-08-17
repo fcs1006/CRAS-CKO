@@ -30,10 +30,25 @@ export function ModalNovoAtendimento({
   const [tecnico, setTecnico] = useState(dadosIniciais?.tecnico || '')
   const [compartilhada, setCompartilhada] = useState<'Sim' | 'Não' | ''>((dadosIniciais?.compartilhada as 'Sim' | 'Não') || '')
   const [profissionaisParticipantes, setProfissionaisParticipantes] = useState(dadosIniciais?.profissionais_participantes || '')
+  const [selecionadosCompartilhados, setSelecionadosCompartilhados] = useState<string[]>([])
+  const [outrosProfissionaisTexto, setOutrosProfissionaisTexto] = useState('')
   const [relato, setRelato] = useState(dadosIniciais?.relato || '')
   const [providencias, setProvidencias] = useState(dadosIniciais?.providencias || '')
 
   const familiaSelecionada = familias.find(f => f.id === familiaId)
+
+  function handleTipoChange(novoTipo: string) {
+    setTipo(novoTipo)
+    if (novoTipo === 'Visita Domiciliar') {
+      setLocal('Domicílio')
+    }
+  }
+
+  function toggleProfissionalCompartilhado(nomeCargo: string) {
+    setSelecionadosCompartilhados(prev =>
+      prev.includes(nomeCargo) ? prev.filter(n => n !== nomeCargo) : [...prev, nomeCargo]
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,6 +69,21 @@ export function ModalNovoAtendimento({
       return
     }
 
+    let profissionaisFinais: string | undefined = undefined
+    if (compartilhada === 'Sim') {
+      const lista = [...selecionadosCompartilhados]
+      if (outrosProfissionaisTexto.trim()) {
+        lista.push(outrosProfissionaisTexto.trim().toUpperCase())
+      }
+      if (lista.length === 0 && profissionaisParticipantes.trim()) {
+        lista.push(profissionaisParticipantes.trim().toUpperCase())
+      }
+      if (lista.length === 0) {
+        return alert('Por favor, selecione ou informe ao menos um profissional participante do atendimento compartilhado.')
+      }
+      profissionaisFinais = lista.join(', ')
+    }
+
     setSalvando(true)
 
     try {
@@ -68,7 +98,7 @@ export function ModalNovoAtendimento({
         participantes_familiares: [usuarioVisitado.trim().toUpperCase()],
         local,
         compartilhada: (compartilhada as 'Sim' | 'Não') || 'Não',
-        profissionais_participantes: compartilhada === 'Sim' ? profissionaisParticipantes.trim().toUpperCase() : undefined,
+        profissionais_participantes: compartilhada === 'Sim' ? profissionaisFinais : undefined,
         tecnico: tecnico.trim().toUpperCase(),
         tecnico_conselho: conselhoInfo,
         relato: relato.trim().toUpperCase(),
@@ -114,8 +144,14 @@ export function ModalNovoAtendimento({
             <select
               value={familiaId}
               onChange={e => {
-                setFamiliaId(e.target.value)
-                setUsuarioVisitado('')
+                const id = e.target.value
+                setFamiliaId(id)
+                const fam = familias.find(f => f.id === id)
+                if (fam) {
+                  setUsuarioVisitado(fam.responsavel)
+                } else {
+                  setUsuarioVisitado('')
+                }
               }}
               required
               className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
@@ -135,30 +171,32 @@ export function ModalNovoAtendimento({
               <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Pessoa Atendida / Solicitante <span className="text-red-600 font-bold">*</span>
               </label>
-              {familiaSelecionada && familiaSelecionada.membros && familiaSelecionada.membros.length > 0 ? (
-                <div className="space-y-1">
-                  <select
-                    value={usuarioVisitado}
-                    onChange={e => setUsuarioVisitado(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
-                  >
-                    <option value="">SELECIONE QUEM FOI ATENDIDO *</option>
-                    <option value={familiaSelecionada.responsavel}>{familiaSelecionada.responsavel} (Responsável Familiar)</option>
-                    {familiaSelecionada.membros.map(m => (
+              {familiaSelecionada ? (
+                <select
+                  value={usuarioVisitado}
+                  onChange={e => setUsuarioVisitado(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
+                >
+                  <option value="">SELECIONE QUEM FOI ATENDIDO *</option>
+                  <option value={familiaSelecionada.responsavel}>
+                    {familiaSelecionada.responsavel} (Responsável Familiar)
+                  </option>
+                  {familiaSelecionada.membros && familiaSelecionada.membros
+                    .filter(m => m.nome.trim().toUpperCase() !== familiaSelecionada.responsavel.trim().toUpperCase())
+                    .map(m => (
                       <option key={m.id || m.nome} value={m.nome}>
-                        {m.nome} ({m.parentesco})
+                        {m.nome} ({m.parentesco || 'Membro Familiar'})
                       </option>
-                    ))}
-                  </select>
-                </div>
+                  ))}
+                </select>
               ) : (
                 <input
                   type="text"
                   required
                   value={usuarioVisitado}
                   onChange={e => setUsuarioVisitado(e.target.value.toUpperCase())}
-                  placeholder="NOME DO MEMBRO DA FAMÍLIA"
+                  placeholder="DIGITE O NOME OU SELECIONE A FAMÍLIA ACIMA"
                   className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-medium"
                 />
               )}
@@ -170,7 +208,7 @@ export function ModalNovoAtendimento({
               </label>
               <select
                 value={tipo}
-                onChange={e => setTipo(e.target.value)}
+                onChange={e => handleTipoChange(e.target.value)}
                 required
                 className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold uppercase"
               >
@@ -251,13 +289,16 @@ export function ModalNovoAtendimento({
           </div>
 
           {/* Atendimento Compartilhado */}
-          <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-gray-700">Atendimento Compartilhado (Interdisciplinar / Co-visita)?</span>
+          <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <div>
+                <span className="font-bold text-gray-800 uppercase text-xs block">Atendimento Compartilhado (Interdisciplinar / Co-visita)?</span>
+                <span className="text-[10px] text-gray-500">Marque SIM caso mais de um técnico da equipe tenha participado do atendimento/visita</span>
+              </div>
               <select
                 value={compartilhada}
                 onChange={e => setCompartilhada(e.target.value as any)}
-                className="px-2 py-1 border rounded text-xs bg-white font-semibold uppercase"
+                className="px-3 py-1.5 border border-teal-300 rounded-lg text-xs bg-white font-bold uppercase text-teal-950 shadow-xs"
               >
                 <option value="">SELECIONE</option>
                 <option value="Não">NÃO</option>
@@ -266,17 +307,50 @@ export function ModalNovoAtendimento({
             </div>
 
             {compartilhada === 'Sim' && (
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Profissionais Participantes / Co-visitantes
+              <div className="p-3 bg-white border border-teal-200 rounded-xl space-y-2.5">
+                <label className="block text-xs font-bold text-teal-950 uppercase flex items-center gap-1.5">
+                  <i className="fa-solid fa-user-group text-teal-700"></i> Selecione os Profissionais Participantes / Co-visitantes Cadastrados <span className="text-red-600 font-bold">*</span>:
                 </label>
-                <input
-                  type="text"
-                  value={profissionaisParticipantes}
-                  onChange={e => setProfissionaisParticipantes(e.target.value.toUpperCase())}
-                  placeholder="EX: FILIPE NOVAES (PSICÓLOGO) - CRP 227358"
-                  className="w-full px-3 py-2 border rounded-lg text-xs uppercase"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {usuarios
+                    .filter(u => u.nome !== tecnico)
+                    .map(u => {
+                      const itemStr = `${u.nome.toUpperCase()} (${(u.cargo || 'TÉCNICO').toUpperCase()})`
+                      const isChecked = selecionadosCompartilhados.includes(itemStr)
+                      return (
+                        <label
+                          key={u.id}
+                          onClick={() => toggleProfissionalCompartilhado(itemStr)}
+                          className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition ${
+                            isChecked
+                              ? 'bg-teal-100 border-teal-400 font-bold text-teal-950 shadow-xs'
+                              : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            readOnly
+                            className="rounded text-teal-700"
+                          />
+                          <span>{itemStr}</span>
+                        </label>
+                      )
+                    })}
+                </div>
+
+                <div className="pt-1">
+                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                    Outros Profissionais Externos / Participantes Adicionais (opcional):
+                  </label>
+                  <input
+                    type="text"
+                    value={outrosProfissionaisTexto}
+                    onChange={e => setOutrosProfissionaisTexto(e.target.value.toUpperCase())}
+                    placeholder="EX: ENFERMEIRA MARIA (POSTO DE SAÚDE), CONSELHEIRO PEDRO..."
+                    className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white"
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -93,20 +93,33 @@ export function ConteudoGuiaEncaminhamento({
       </div>
 
       {/* 4. Campo de Contrarreferência / Devolutiva */}
-      <div className="space-y-1 mt-1.5">
+      <div className="space-y-1 mt-3">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           4. Devolutiva / Contrarreferência do Órgão Receptor (Preenchimento pelo Destinatário)
         </h4>
-        <div className="border border-dashed border-black p-2.5 rounded bg-white text-[9.5px] min-h-[60px] space-y-3">
-          <p className="text-gray-500 italic text-[9px]">
-            Espaço reservado para registro de recebimento, data de acolhida e providências adotadas pela instituição recebedora:
-          </p>
-          <div className="grid grid-cols-2 gap-8 pt-3">
-            <div className="border-t border-black text-center text-[9px] pt-1 font-semibold">
+        <div className="border border-dashed border-black p-3.5 rounded bg-white text-[9.5px] min-h-[160px] flex flex-col justify-between space-y-4">
+          <div>
+            <p className="text-gray-600 italic text-[9.5px] mb-2 font-medium">
+              Espaço reservado para registro de recebimento, acolhimento, atendimento realizado e providências/desfecho adotados pela instituição recebedora:
+            </p>
+            {enc.resposta ? (
+              <div className="text-black font-semibold text-[10px] uppercase whitespace-pre-line p-2 bg-gray-50 border border-gray-300 rounded">
+                {enc.resposta}
+              </div>
+            ) : (
+              <div className="space-y-3.5 pt-1">
+                <div className="border-b border-gray-300 border-dotted h-4"></div>
+                <div className="border-b border-gray-300 border-dotted h-4"></div>
+                <div className="border-b border-gray-300 border-dotted h-4"></div>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-10 pt-4">
+            <div className="border-t border-black text-center text-[9px] pt-1 font-extrabold uppercase">
               Data e Assinatura / Carimbo do Responsável pelo Recebimento
             </div>
-            <div className="border-t border-black text-center text-[9px] pt-1 font-semibold">
-              Providência / Desfecho Adotado
+            <div className="border-t border-black text-center text-[9px] pt-1 font-extrabold uppercase">
+              Providência / Parecer do Órgão Receptor
             </div>
           </div>
         </div>
