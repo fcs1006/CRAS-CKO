@@ -614,7 +614,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
         programa_social_responsavel: progSocialFinal,
         cpf_responsavel: cpf.replace(/\D/g, ''),
         rg_responsavel: rg.trim().toUpperCase() || undefined,
-        nis_responsavel: nis.replace(/\D/g, ''),
+        nis_responsavel: nis.replace(/\D/g, '') || undefined,
 
         // Endereço e Território
         logradouro: logradouro.trim().toUpperCase(),

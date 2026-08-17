@@ -16,6 +16,7 @@ function sanitizeFamiliaPayload(payload: any) {
     'renda_responsavel',
     'programa_social_responsavel',
     'cpf_responsavel',
+    'rg_responsavel',
     'nis_responsavel',
     'logradouro',
     'numero',
@@ -51,9 +52,25 @@ function sanitizeFamiliaPayload(payload: any) {
   const clean: Record<string, any> = {}
   for (const key of allowed) {
     if (payload[key] !== undefined) {
-      clean[key] = payload[key]
+      let val = payload[key]
+      if (typeof val === 'string' && val.trim() === '') {
+        val = null
+      }
+      clean[key] = val
     }
   }
+
+  // Garantir null em campos de identificação únicos quando não preenchidos
+  if (!clean.nis_responsavel || (typeof clean.nis_responsavel === 'string' && !clean.nis_responsavel.trim())) {
+    clean.nis_responsavel = null
+  }
+  if (!clean.cpf_responsavel || (typeof clean.cpf_responsavel === 'string' && !clean.cpf_responsavel.trim())) {
+    clean.cpf_responsavel = null
+  }
+  if (!clean.rg_responsavel || (typeof clean.rg_responsavel === 'string' && !clean.rg_responsavel.trim())) {
+    clean.rg_responsavel = null
+  }
+
   return clean
 }
 
@@ -66,18 +83,18 @@ function sanitizeMembroPayload(m: any, familiaId: string) {
     idade: Number(m.idade) || 0,
     sexo: m.sexo || 'Não informado',
     raca_cor: m.raca_cor || 'Não informada',
-    cpf: m.cpf ? String(m.cpf).replace(/\D/g, '') : null,
-    rg: m.rg ? String(m.rg).trim().toUpperCase() : null,
-    nis: m.nis ? String(m.nis).replace(/\D/g, '') : null,
-    certidao_nascimento: m.certidao_nascimento ? String(m.certidao_nascimento).trim().toUpperCase() : null,
+    cpf: m.cpf && String(m.cpf).replace(/\D/g, '') ? String(m.cpf).replace(/\D/g, '') : null,
+    rg: m.rg && String(m.rg).trim() ? String(m.rg).trim().toUpperCase() : null,
+    nis: m.nis && String(m.nis).replace(/\D/g, '') ? String(m.nis).replace(/\D/g, '') : null,
+    certidao_nascimento: m.certidao_nascimento && String(m.certidao_nascimento).trim() ? String(m.certidao_nascimento).trim().toUpperCase() : null,
     renda: typeof m.renda === 'number' ? m.renda : Number(String(m.renda || 0).replace(/\D/g, '')) / 100 || 0,
     escolaridade: m.escolaridade || 'Não informada',
     ocupacao: (m.ocupacao || 'Não informada').trim().toUpperCase(),
     programa_governo: m.programa_governo || 'Nenhum',
     frequencia_escolar: m.frequencia_escolar || 'Não se aplica',
-    escola_nome: m.escola_nome ? String(m.escola_nome).trim().toUpperCase() : null,
+    escola_nome: m.escola_nome && String(m.escola_nome).trim() ? String(m.escola_nome).trim().toUpperCase() : null,
     possui_deficiencia: Boolean(m.possui_deficiencia),
-    tipo_deficiencia: m.tipo_deficiencia ? String(m.tipo_deficiencia).trim() : null,
+    tipo_deficiencia: m.tipo_deficiencia && String(m.tipo_deficiencia).trim() ? String(m.tipo_deficiencia).trim() : null,
     trabalho_infantil: Boolean(m.trabalho_infantil),
     acolhimento_institucional: Boolean(m.acolhimento_institucional),
     descumprimento_condicionalidades: Boolean(m.descumprimento_condicionalidades)
