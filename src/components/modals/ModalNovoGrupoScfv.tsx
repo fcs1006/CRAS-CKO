@@ -21,7 +21,8 @@ export function ModalNovoGrupoScfv({
   const [tipoGrupo, setTipoGrupo] = useState<'SCFV' | 'PAIF' | 'OUTRO'>('SCFV')
   const [faixaEtaria, setFaixaEtaria] = useState<string>('60_mais')
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>(['Terça', 'Quinta'])
-  const [horarioEncontro, setHorarioEncontro] = useState('09:00h às 10:30h')
+  const [horaInicio, setHoraInicio] = useState('09:00')
+  const [horaFim, setHoraFim] = useState('10:30')
   const [localEncontro, setLocalEncontro] = useState('CRAS (Sede)')
   const [tecnico, setTecnico] = useState(usuarioLogadoNome || '')
   const [vagasLimite, setVagasLimite] = useState<number | ''>(25)
@@ -53,11 +54,13 @@ export function ModalNovoGrupoScfv({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!nome.trim()) return alert('Por favor, informe o nome do coletivo/grupo.')
+    if (!horaInicio || !horaFim) return alert('Por favor, informe os horários de início e término dos encontros.')
+    if (!descricao.trim()) return alert('Por favor, informe o Objetivo e Descrição das Atividades / Plano de Trabalho.')
     setSalvando(true)
 
     try {
       const diasTexto = diasSelecionados.length > 0 ? diasSelecionados.join(' e ') : 'Encontros Periódicos'
-      const horarioFinal = `${diasTexto} às ${horarioEncontro || '09:00h'}`.trim()
+      const horarioFinal = `${diasTexto} das ${horaInicio} às ${horaFim}`.trim()
 
       const novo: Partial<GrupoSCFV> = {
         nome: nome.trim().toUpperCase(),
@@ -187,17 +190,30 @@ export function ModalNovoGrupoScfv({
           </div>
 
           {/* Horário & Local dos Encontros */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                Horário dos Encontros
+                Horário de Início <span className="text-rose-600 font-bold">*</span>
               </label>
               <input
-                type="text"
-                value={horarioEncontro}
-                onChange={e => setHorarioEncontro(e.target.value)}
-                placeholder="EX: 09:00h às 10:30h"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold bg-white"
+                type="time"
+                required
+                value={horaInicio}
+                onChange={e => setHoraInicio(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white text-gray-900"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
+                Horário de Término <span className="text-rose-600 font-bold">*</span>
+              </label>
+              <input
+                type="time"
+                required
+                value={horaFim}
+                onChange={e => setHoraFim(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white text-gray-900"
               />
             </div>
 
@@ -262,13 +278,14 @@ export function ModalNovoGrupoScfv({
           {/* Objetivo e Descrição das Atividades */}
           <div>
             <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-              Objetivo e Descrição das Atividades / Plano de Trabalho
+              Objetivo e Descrição das Atividades / Plano de Trabalho <span className="text-rose-600 font-bold">*</span>
             </label>
             <textarea
+              required
               rows={3}
               value={descricao}
               onChange={e => setDescricao(e.target.value)}
-              placeholder="DESCRIÇÃO DAS TEMÁTICAS ABORDADAS, OBJETIVOS OPERACIONAIS E PERFIL DOS PARTICIPANTES..."
+              placeholder="DESCRIÇÃO OBRIGATÓRIA DAS TEMÁTICAS ABORDADAS, OBJETIVOS OPERACIONAIS E PERFIL DOS PARTICIPANTES..."
               className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs leading-relaxed uppercase bg-white"
             />
           </div>
