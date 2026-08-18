@@ -8,13 +8,15 @@ interface ScfvViewProps {
   participantes: ParticipanteSCFV[]
   onAbrirModalNovoGrupo: () => void
   onAbrirModalAdicionarParticipante: (grupoId: string) => void
+  onExcluirParticipante?: (participanteId: string) => Promise<void>
 }
 
 export function ScfvView({
   grupos,
   participantes,
   onAbrirModalNovoGrupo,
-  onAbrirModalAdicionarParticipante
+  onAbrirModalAdicionarParticipante,
+  onExcluirParticipante
 }: ScfvViewProps) {
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<string | null>(
     grupos.length > 0 ? grupos[0].id : null
@@ -111,21 +113,38 @@ export function ScfvView({
                       <tr>
                         <th className="py-2.5 px-3">Nome do Participante</th>
                         <th className="py-2.5 px-3">Data de Inclusão</th>
+                        <th className="py-2.5 px-3 text-center">Ação</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {participantesGrupo.length === 0 ? (
                         <tr>
-                          <td colSpan={2} className="py-6 text-center text-gray-400 text-xs">
+                          <td colSpan={3} className="py-6 text-center text-gray-400 text-xs">
                             Nenhum integrante vinculado a este grupo.
                           </td>
                         </tr>
                       ) : (
                         participantesGrupo.map(p => (
                           <tr key={p.id} className="hover:bg-gray-50">
-                            <td className="py-2.5 px-3 font-semibold text-gray-800">{p.nome}</td>
+                            <td className="py-2.5 px-3 font-semibold text-gray-800 uppercase">{p.nome}</td>
                             <td className="py-2.5 px-3 text-xs text-gray-500">
                               {p.criado_em ? new Date(p.criado_em).toLocaleDateString('pt-BR') : '—'}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              {onExcluirParticipante && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (confirm(`Deseja desvincular ${p.nome} deste grupo?`)) {
+                                      await onExcluirParticipante(p.id)
+                                    }
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-rose-600 rounded transition"
+                                  title="Desvincular do Grupo"
+                                >
+                                  <i className="fa-solid fa-user-minus text-xs"></i>
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))

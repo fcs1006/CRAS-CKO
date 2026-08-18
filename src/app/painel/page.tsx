@@ -38,6 +38,7 @@ import { ModalNovoAgendamento } from '@/components/modals/ModalNovoAgendamento'
 import { ModalNovoAtendimento } from '@/components/modals/ModalNovoAtendimento'
 import { ModalConcederBeneficio } from '@/components/modals/ModalConcederBeneficio'
 import { ModalNovoGrupoScfv } from '@/components/modals/ModalNovoGrupoScfv'
+import { ModalVincularParticipanteScfv } from '@/components/modals/ModalVincularParticipanteScfv'
 import { ModalNovoEncaminhamento } from '@/components/modals/ModalNovoEncaminhamento'
 
 // Dados Mock de Fallback para ambiente de desenvolvimento offline
@@ -85,6 +86,7 @@ export default function PainelPage() {
   const [modalNovoAgendamento, setModalNovoAgendamento] = useState(false)
   const [modalConcederBeneficio, setModalConcederBeneficio] = useState(false)
   const [modalNovoGrupo, setModalNovoGrupo] = useState(false)
+  const [grupoParaVincular, setGrupoParaVincular] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
 
   // Carregar sessão do usuário e carregar dados
@@ -459,14 +461,40 @@ export default function PainelPage() {
     await carregarTodosOsDados()
   }
 
-  async function handleAdicionarParticipante(grupoId: string) {
-    const nome = prompt('Nome do participante para vincular ao grupo:')
-    if (!nome) return
-    await supabase.from('participantes_scfv').insert({
-      grupo_id: grupoId,
-      nome,
-      membro_id: '00000000-0000-0000-0000-000000000000'
-    })
+  async function handleSalvarParticipante(dados: { grupo_id: string; membro_id: string; nome: string; familia_id?: string }) {
+    const { data: partInserido, error: partErr } = await supabase
+      .from('participantes_scfv')
+      .insert({
+        grupo_id: dados.grupo_id,
+        membro_id: dados.membro_id,
+        nome: dados.nome,
+        familia_id: dados.familia_id || null
+      })
+      .select()
+      .single()
+
+    if (partErr) {
+      throw new Error(partErr.message || 'Erro ao vincular participante ao grupo.')
+    }
+
+    if (partInserido) {
+      setParticipantes(prev => [partInserido as ParticipanteSCFV, ...prev])
+    }
+    await carregarTodosOsDados()
+  }
+
+  async function handleExcluirParticipante(participanteId: string) {
+    const { error } = await supabase
+      .from('participantes_scfv')
+      .delete()
+      .eq('id', participanteId)
+
+    if (error) {
+      alert('Erro ao desvincular participante: ' + error.message)
+      return
+    }
+
+    setParticipantes(prev => prev.filter(p => p.id !== participanteId))
     await carregarTodosOsDados()
   }
 
@@ -758,7 +786,11 @@ export default function PainelPage() {
                   grupos={grupos}
                   participantes={participantes}
                   onAbrirModalNovoGrupo={() => setModalNovoGrupo(true)}
-                  onAbrirModalAdicionarParticipante={handleAdicionarParticipante}
+                  onAbrirModalAdicionarParticipante={(grupoId) => {
+                    const grp = grupos.find(g => g.id === grupoId)
+                    if (grp) setGrupoParaVincular(grp)
+                  }}
+                  onExcluirParticipante={handleExcluirParticipante}
                 />
               )}
 
@@ -898,6 +930,16 @@ export default function PainelPage() {
           usuarios={usuarios}
           onClose={() => setModalNovoGrupo(false)}
           onSalvar={handleSalvarGrupo}
+        />
+      )}
+
+      {grupoParaVincular && (
+        <ModalVincularParticipanteScfv
+          grupo={grupoParaVincular}
+          familias={familias}
+          participantesGrupoExistentes={participantes.filter(p => p.grupo_id === grupoParaVincular.id)}
+          onClose={() => setGrupoParaVincular(null)}
+          onSalvarParticipante={handleSalvarParticipante}
         />
       )}
 
