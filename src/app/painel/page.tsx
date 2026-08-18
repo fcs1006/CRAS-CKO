@@ -155,7 +155,7 @@ export default function PainelPage() {
         fetch('/api/atendimentos'),
         fetch('/api/beneficios'),
         supabase.from('almoxarifado').select('*'),
-        supabase.from('grupos_scfv').select('*'),
+        fetch('/api/scfv'),
         supabase.from('participantes_scfv').select('*'),
         fetch('/api/encaminhamentos'),
         fetch('/api/agenda'),
@@ -179,7 +179,10 @@ export default function PainelPage() {
 
       if (almRes.data && almRes.data.length > 0) setAlmoxarifado(almRes.data as AlmoxarifadoItem[])
 
-      if (grpRes.data) setGrupos(grpRes.data as GrupoSCFV[])
+      if (grpRes.ok && grpRes.headers.get('content-type')?.includes('application/json')) {
+        const grpJson = await grpRes.json()
+        if (grpJson.ok && grpJson.data) setGrupos(grpJson.data as GrupoSCFV[])
+      }
       if (partRes.data) setParticipantes(partRes.data as ParticipanteSCFV[])
 
       if (encRes.ok && encRes.headers.get('content-type')?.includes('application/json')) {
@@ -441,7 +444,18 @@ export default function PainelPage() {
   }
 
   async function handleSalvarGrupo(grupoData: Partial<GrupoSCFV>) {
-    await supabase.from('grupos_scfv').insert(grupoData)
+    const res = await fetch('/api/scfv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(grupoData)
+    })
+    const json = await parseResponseJson(res, 'Erro ao criar grupo SCFV')
+    if (!res.ok || !json.ok) {
+      throw new Error(json.error || 'Erro ao criar grupo SCFV.')
+    }
+    if (json.data) {
+      setGrupos(prev => [json.data, ...prev])
+    }
     await carregarTodosOsDados()
   }
 
