@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS historico_atendimentos (
   tecnico TEXT NOT NULL, -- Técnico principal
   relato TEXT NOT NULL,
   providencias TEXT,
+  sigilo TEXT NOT NULL DEFAULT 'equipe_tecnica', -- equipe_tecnica | apenas_psicologia | apenas_servico_social | publico
   tipo TEXT NOT NULL DEFAULT 'Atendimento', -- Atendimento | Visita Domiciliar | Falta / Não Comparecimento | Agendamento Cancelado
   criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

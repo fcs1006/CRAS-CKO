@@ -29,11 +29,23 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseServer()
-    const { data: atdInserido, error: atdErr } = await supabase
+    let payload = { ...atendimento }
+    let { data: atdInserido, error: atdErr } = await supabase
       .from('historico_atendimentos')
-      .insert(atendimento)
+      .insert(payload)
       .select()
       .single()
+
+    if (atdErr && atdErr.message?.includes('sigilo')) {
+      delete payload.sigilo
+      const retry = await supabase
+        .from('historico_atendimentos')
+        .insert(payload)
+        .select()
+        .single()
+      atdInserido = retry.data
+      atdErr = retry.error
+    }
 
     if (atdErr) {
       console.error('Erro ao inserir atendimento:', atdErr)
@@ -55,12 +67,25 @@ export async function PUT(request: NextRequest) {
     }
 
     const supabase = getSupabaseServer()
-    const { data: atdAtualizado, error: atdErr } = await supabase
+    let payload = { ...atendimento }
+    let { data: atdAtualizado, error: atdErr } = await supabase
       .from('historico_atendimentos')
-      .update(atendimento)
+      .update(payload)
       .eq('id', id)
       .select()
       .single()
+
+    if (atdErr && atdErr.message?.includes('sigilo')) {
+      delete payload.sigilo
+      const retry = await supabase
+        .from('historico_atendimentos')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single()
+      atdAtualizado = retry.data
+      atdErr = retry.error
+    }
 
     if (atdErr) {
       console.error('Erro ao atualizar atendimento:', atdErr)
