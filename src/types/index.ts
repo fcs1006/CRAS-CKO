@@ -146,11 +146,15 @@ export interface AlmoxarifadoItem {
 export interface GrupoSCFV {
   id: string
   nome: string
-  tipo_grupo?: 'SCFV' | 'PAIF' | string // Grupo SCFV ou Grupo/Oficina com Famílias do PAIF
-  faixa_etaria?: '0_a_6' | '7_a_14' | '15_a_17' | '18_a_59' | '60_mais' | 'Intergeracional' | string
+  tipo_grupo?: 'SCFV' | 'PAIF' | string
+  faixa_etaria?: '0_a_6' | '6_a_15' | '15_a_17' | '18_a_59' | '60_mais' | 'Intergeracional' | string
   descricao?: string
   tecnico_responsavel: string
   horario: string
+  dias_semana?: string
+  local_encontro?: string
+  vagas_limite?: number
+  status?: string
   criado_em?: string
   participantes_count?: number
 }

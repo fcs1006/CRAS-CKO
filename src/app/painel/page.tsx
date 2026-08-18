@@ -881,6 +881,7 @@ export default function PainelPage() {
       {modalNovoGrupo && (
         <ModalNovoGrupoScfv
           usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
+          usuarios={usuarios}
           onClose={() => setModalNovoGrupo(false)}
           onSalvar={handleSalvarGrupo}
         />
