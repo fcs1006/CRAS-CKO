@@ -75,12 +75,9 @@ export default function Home() {
               <i className="fa-solid fa-people-roof"></i>
             </div>
           )}
-          <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#ffffff', margin: '0 0 2px' }}>
-            {crasName.toUpperCase()}
+          <h1 style={{ fontSize: '13px', fontWeight: '800', color: '#ffffff', margin: '0', lineHeight: '1.4', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+            CENTRO DE REFERÊNCIA E ASSISTÊNCIA SOCIAL<br />PEDRO DE SANTANA BRITO
           </h1>
-          <p style={{ color: '#def2f1', fontSize: '11px', margin: 0, opacity: 0.8 }}>
-            {municipio} • Gestão SUAS Digital
-          </p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -179,16 +176,6 @@ function FormLogin({ irPara }: { irPara: (t: Tela) => void }) {
       )}
       <button type="submit" disabled={carregando} className="btn-primary" style={{ width: '100%', marginTop: '4px' }}>
         {carregando ? 'Verificando...' : 'ENTRAR'}
-      </button>
-      <button 
-        type="button" 
-        onClick={() => {
-          setUsuario('000.000.000-00')
-          setSenha('admin')
-        }}
-        style={{ width: '100%', marginTop: '6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#def2f1', padding: '8px', borderRadius: '8px', cursor: 'pointer', fontSize: '11px' }}
-      >
-        <i className="fa-solid fa-flask" style={{ marginRight: '6px' }}></i> Usar Credenciais Demo / Offline (000.000.000-00 / admin)
       </button>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
         <button type="button" onClick={() => irPara('cadastro')}
