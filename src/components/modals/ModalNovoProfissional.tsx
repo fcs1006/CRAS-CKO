@@ -290,10 +290,10 @@ export function ModalNovoProfissional({ onFechar, onSalvar }: ModalNovoProfissio
               onChange={e => setPerfil(e.target.value as any)}
               className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
             >
-              <option value="tecnico">📋 Técnico Superior (Assistente Social / Psicólogo / Referência PAIF)</option>
-              <option value="admin">👑 Administrador / Coordenador(a) (Acesso Total)</option>
-              <option value="recepcao">🏢 Atendimento / Recepção / CadÚnico (Acesso Operacional / Sem Relatos Confidenciais)</option>
-              <option value="scfv">🎨 Educador(a) / Orientador(a) Social (Restrito a Oficinas e SCFV)</option>
+              <option value="tecnico">Técnico Superior (Assistente Social / Psicólogo / Referência PAIF)</option>
+              <option value="admin">Administrador / Coordenador(a) (Acesso Total)</option>
+              <option value="recepcao">Atendimento / Recepção / CadÚnico (Acesso Operacional / Sem Relatos Confidenciais)</option>
+              <option value="scfv">Educador(a) / Orientador(a) Social (Restrito a Oficinas e SCFV)</option>
             </select>
           </div>
 

@@ -89,7 +89,7 @@ export function ConteudoDocumentoAtendimento({
 }) {
   const resSigilo = verificarAcessoRelatoAtendimento(item, usuarioLogado)
   const relatoExibido = resSigilo.podeVer ? (item.relato || 'Atendimento socioassistencial realizado no âmbito das ações do PAIF / CRAS.') : resSigilo.mensagemOculta
-  const providenciasExibidas = resSigilo.podeVer ? (item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.') : '🔒 [CONTEÚDO RESTRITO À CATEGORIA HABILITADA CONFORME SIGILO PROFISSIONAL]'
+  const providenciasExibidas = resSigilo.podeVer ? (item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.') : '[CONTEÚDO RESTRITO À CATEGORIA HABILITADA CONFORME SIGILO PROFISSIONAL]'
   const isCompartilhada = item.compartilhada === 'Sim' || item.tecnico?.toLowerCase().includes('co-visitantes') || Boolean(item.profissionais_participantes)
 
   const rawTecnico = (item.tecnico || '').trim()
@@ -725,17 +725,17 @@ export function AtendimentosView({
                       onChange={e => setSigiloEdicao(e.target.value)}
                       className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
                     >
-                      <option value="equipe_tecnica">🔒 Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
+                      <option value="equipe_tecnica">Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
 
                       {(ehPsicologoTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
-                        <option value="apenas_psicologia">🔐 Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
+                        <option value="apenas_psicologia">Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
                       )}
 
                       {(ehAssistenteSocialTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
-                        <option value="apenas_servico_social">🔐 Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
+                        <option value="apenas_servico_social">Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
                       )}
 
-                      <option value="publico">🌐 Geral / Público (Visível para toda a equipe do CRAS)</option>
+                      <option value="publico">Geral / Público (Visível para toda a equipe do CRAS)</option>
                     </select>
                   </div>
                 )

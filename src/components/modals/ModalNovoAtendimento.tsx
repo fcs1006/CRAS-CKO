@@ -383,21 +383,21 @@ export function ModalNovoAtendimento({
                   onChange={e => setSigilo(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
                 >
-                  <option value="equipe_tecnica">🔒 Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
+                  <option value="equipe_tecnica">Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
 
                   {(ehPsicologoTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
-                    <option value="apenas_psicologia">🔐 Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
+                    <option value="apenas_psicologia">Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
                   )}
 
                   {(ehAssistenteSocialTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
-                    <option value="apenas_servico_social">🔐 Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
+                    <option value="apenas_servico_social">Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
                   )}
 
-                  <option value="publico">🌐 Geral / Público (Visível para toda a equipe do CRAS)</option>
+                  <option value="publico">Geral / Público (Visível para toda a equipe do CRAS)</option>
                 </select>
                 {compartilhada === 'Sim' && (
                   <p className="text-[10px] text-teal-800 font-semibold mt-1">
-                    ℹ️ Atendimento compartilhado: os profissionais e co-visitantes selecionados terão acesso garantido à leitura do atendimento.
+                    Atendimento compartilhado: os profissionais e co-visitantes selecionados terão acesso garantido à leitura do atendimento.
                   </p>
                 )}
               </div>

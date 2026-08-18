@@ -304,7 +304,7 @@ export function RmaView({
         const e = item as Encaminhamento
         return {
           id: e.id || String(idx),
-          principal: `${e.beneficiario} ➔ Destino: ${e.destino}`,
+          principal: `${e.beneficiario} -> Destino: ${e.destino}`,
           secundario: `Técnico: ${e.tecnico} • Status: ${e.status} • Categoria: ${e.tipo_rma || 'Geral'}`,
           detalhes: e.motivo ? `Motivo: ${e.motivo}` : undefined,
           data: e.data_envio

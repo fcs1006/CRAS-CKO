@@ -66,7 +66,7 @@ export function verificarAcessoRelatoAtendimento(
     return {
       podeVer: false,
       motivo: 'Apenas Psicologia',
-      mensagemOculta: '🔒 [CONTEÚDO CONFIDENCIAL — SIGILO PROFISSIONAL DA PSICOLOGIA (RESOLUÇÃO CFP / RESTRITO A PSICÓLOGOS)]'
+      mensagemOculta: '[CONTEÚDO CONFIDENCIAL — SIGILO PROFISSIONAL DA PSICOLOGIA (RESOLUÇÃO CFP / RESTRITO A PSICÓLOGOS)]'
     }
   }
 
@@ -77,7 +77,7 @@ export function verificarAcessoRelatoAtendimento(
     return {
       podeVer: false,
       motivo: 'Apenas Serviço Social',
-      mensagemOculta: '🔒 [CONTEÚDO CONFIDENCIAL — SIGILO PROFISSIONAL DO SERVIÇO SOCIAL (CÓDIGO DE ÉTICA CRESS/CFESS / RESTRITO A ASSISTENTES SOCIAIS)]'
+      mensagemOculta: '[CONTEÚDO CONFIDENCIAL — SIGILO PROFISSIONAL DO SERVIÇO SOCIAL (CÓDIGO DE ÉTICA CRESS/CFESS / RESTRITO A ASSISTENTES SOCIAIS)]'
     }
   }
 
@@ -86,7 +86,7 @@ export function verificarAcessoRelatoAtendimento(
     return {
       podeVer: false,
       motivo: 'Restrito à Equipe Técnica Superior',
-      mensagemOculta: '🔒 [CONTEÚDO CONFIDENCIAL — RESTRITO À EQUIPE TÉCNICA SUPERIOR (ASSISTENTE SOCIAL / PSICÓLOGO)]'
+      mensagemOculta: '[CONTEÚDO CONFIDENCIAL — RESTRITO À EQUIPE TÉCNICA SUPERIOR (ASSISTENTE SOCIAL / PSICÓLOGO)]'
     }
   }
 

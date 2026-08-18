@@ -133,9 +133,9 @@ export function ModalNovoGrupoScfv({
                 onChange={e => setTipoGrupo(e.target.value as any)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white uppercase"
               >
-                <option value="SCFV">🎨 SCFV (Convivência e Vínculos)</option>
-                <option value="PAIF">🏠 Oficina / Grupo PAIF (Proteção Social)</option>
-                <option value="OUTRO">🤝 Grupo Comunitário / Outros</option>
+                <option value="SCFV">SCFV (Convivência e Vínculos)</option>
+                <option value="PAIF">Oficina / Grupo PAIF (Proteção Social)</option>
+                <option value="OUTRO">Grupo Comunitário / Outros</option>
               </select>
             </div>
 
@@ -148,12 +148,12 @@ export function ModalNovoGrupoScfv({
                 onChange={e => setFaixaEtaria(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white uppercase"
               >
-                <option value="0_a_6">👶 0 a 6 anos (Primeira Infância)</option>
-                <option value="6_a_15">👦 6 a 15 anos (Crianças e Adolescentes)</option>
-                <option value="15_a_17">🧑 15 a 17 anos (Adolescentes e Jovens)</option>
-                <option value="18_a_59">🧑‍💼 18 a 59 anos (Adultos / Famílias)</option>
-                <option value="60_mais">👵 60+ anos (Pessoas Idosas)</option>
-                <option value="Intergeracional">🤹 Intergeracional (Todas as Idades)</option>
+                <option value="0_a_6">0 a 6 anos (Primeira Infância)</option>
+                <option value="6_a_15">6 a 15 anos (Crianças e Adolescentes)</option>
+                <option value="15_a_17">15 a 17 anos (Adolescentes e Jovens)</option>
+                <option value="18_a_59">18 a 59 anos (Adultos / Famílias)</option>
+                <option value="60_mais">60+ anos (Pessoas Idosas)</option>
+                <option value="Intergeracional">Intergeracional (Todas as Idades)</option>
               </select>
             </div>
           </div>
