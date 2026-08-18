@@ -204,21 +204,21 @@ export function ConteudoDocumentoAtendimento({
       </div>
 
       {/* 2. Relato Técnico / Síntese */}
-      <div className="space-y-1">
+      <div className="space-y-1 w-full max-w-full overflow-hidden">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           2. Relato Técnico / Síntese da Escuta Qualificada
         </h4>
-        <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed whitespace-pre-line text-black font-normal min-h-[90px] text-justify">
+        <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-normal min-h-[90px] text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden">
           {item.relato || 'Atendimento socioassistencial realizado no âmbito das ações do PAIF / CRAS.'}
         </div>
       </div>
 
       {/* 3. Providências Adotadas */}
-      <div className="space-y-1">
+      <div className="space-y-1 w-full max-w-full overflow-hidden">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           3. Providências e Encaminhamentos Adotados
         </h4>
-        <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-medium text-justify whitespace-pre-line">
+        <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-medium text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden">
           {item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.'}
         </div>
       </div>

@@ -83,27 +83,27 @@ export function ConteudoGuiaEncaminhamento({
       </div>
 
       {/* 3. Motivo e Justificativa Técnica */}
-      <div className="space-y-1">
+      <div className="space-y-1 w-full max-w-full overflow-hidden">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           3. Motivo e Justificativa Técnica do Encaminhamento
         </h4>
-        <div className="border border-black p-2.5 rounded bg-white text-[10px] leading-relaxed text-justify whitespace-pre-line min-h-[75px]">
+        <div className="border border-black p-2.5 rounded bg-white text-[10px] leading-relaxed text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden min-h-[75px]">
           {enc.motivo || 'Encaminhamento para providências pertinentes no âmbito das competências desta instituição parceira da rede.'}
         </div>
       </div>
 
       {/* 4. Campo de Contrarreferência / Devolutiva */}
-      <div className="space-y-1 mt-4">
+      <div className="space-y-1 mt-4 w-full max-w-full overflow-hidden">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           4. Devolutiva / Contrarreferência do Órgão Receptor (Preenchimento pelo Destinatário)
         </h4>
-        <div className="border border-dashed border-black p-4 rounded bg-white text-[9.5px] min-h-[280px] flex flex-col justify-between space-y-6">
+        <div className="border border-dashed border-black p-4 rounded bg-white text-[9.5px] min-h-[280px] flex flex-col justify-between space-y-6 max-w-full overflow-hidden">
           <div>
             <p className="text-gray-700 italic text-[9.5px] mb-3 font-semibold">
               Espaço reservado para registro de recebimento, acolhimento, atendimento realizado e providências/desfecho adotados pela instituição recebedora:
             </p>
             {enc.resposta ? (
-              <div className="text-black font-semibold text-[10px] uppercase whitespace-pre-line p-3 bg-gray-50 border border-gray-300 rounded">
+              <div className="text-black font-semibold text-[10px] uppercase whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden p-3 bg-gray-50 border border-gray-300 rounded">
                 {enc.resposta}
               </div>
             ) : (

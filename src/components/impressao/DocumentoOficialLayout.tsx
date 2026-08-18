@@ -34,11 +34,11 @@ export function DocumentoOficialLayout({
   const dataFormatada = dataExtensa || new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <div className="print-document-container relative flex flex-col justify-between min-h-[250mm] sm:min-h-[255mm] print:min-h-0 text-black font-sans w-full pb-10 print:pb-8">
+    <div className="print-document-container relative flex flex-col justify-between min-h-[250mm] sm:min-h-[255mm] print:min-h-0 text-black font-sans w-full max-w-full overflow-hidden pb-10 print:pb-8">
       {/* Conteúdo Principal do Documento */}
-      <div className="space-y-3 flex-1 w-full">
+      <div className="space-y-3 flex-1 w-full max-w-full overflow-hidden">
         {/* Cabeçalho Institucional Oficial */}
-        <div className="border-b-2 border-black pb-2 flex items-center justify-between gap-4">
+        <div className="border-b-2 border-black pb-2 flex items-center justify-between gap-4 w-full">
           {configuracao?.logo_url ? (
             <img
               src={configuracao.logo_url}
@@ -46,17 +46,17 @@ export function DocumentoOficialLayout({
               className="h-14 w-auto max-w-[80px] object-contain shrink-0"
             />
           ) : (
-            <div className="w-12" />
+            <div className="w-12 shrink-0" />
           )}
 
-          <div className="text-center flex-1 space-y-0.5">
-            <h1 className="text-[13px] font-black uppercase text-black leading-tight">
+          <div className="text-center flex-1 space-y-0.5 min-w-0">
+            <h1 className="text-[13px] font-black uppercase text-black leading-tight break-words">
               {configuracao?.municipio || 'PREFEITURA MUNICIPAL DE CONCEIÇÃO DO TOCANTINS'}
             </h1>
-            <h2 className="text-[11px] font-extrabold uppercase text-black leading-tight">
+            <h2 className="text-[11px] font-extrabold uppercase text-black leading-tight break-words">
               {configuracao?.secretaria || 'SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL'}
             </h2>
-            <h3 className="text-[10px] font-extrabold uppercase text-black leading-tight">
+            <h3 className="text-[10px] font-extrabold uppercase text-black leading-tight break-words">
               {configuracao?.cras_unidade || 'CRAS PEDRO DE SANTANA BRITO'}
             </h3>
           </div>
@@ -79,7 +79,7 @@ export function DocumentoOficialLayout({
         </div>
 
         {/* Conteúdo Específico */}
-        <div className="space-y-3 pt-1">
+        <div className="space-y-3 pt-1 w-full max-w-full overflow-hidden">
           {children}
         </div>
       </div>

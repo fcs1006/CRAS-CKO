@@ -120,17 +120,17 @@ export function ConteudoTermoBeneficio({
       </div>
 
       {/* 3. Parecer Social */}
-      <div className="space-y-1">
+      <div className="space-y-1 w-full max-w-full overflow-hidden">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
           3. Parecer Social / Justificativa Técnica (SUAS)
         </h4>
-        <div className="border border-black p-2 rounded bg-white text-[10px] leading-relaxed text-justify">
+        <div className="border border-black p-2 rounded bg-white text-[10px] leading-relaxed text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden">
           {b.parecer_social || 'Concessão realizada após avaliação técnica das condições de vulnerabilidade social da família, nos termos da Lei Orgânica de Assistência Social (LOAS).'}
         </div>
       </div>
 
       {/* 4. Declaração de Recebimento */}
-      <div className="border border-black p-2 rounded bg-white text-[10px] leading-relaxed text-justify mt-2">
+      <div className="border border-black p-2 rounded bg-white text-[10px] leading-relaxed text-justify mt-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden">
         Eu, <strong>{pessoaAtendidaNome}</strong>, integrante da família de <strong>{nomeResponsavel}</strong> (Prontuário nº <strong>{fam?.cod_familiar || '—'}</strong>), DECLARO para os devidos fins de comprovação junto ao Sistema Único de Assistência Social (SUAS) e à Secretaria Municipal de Assistência Social, que <strong>RECEBI</strong> nesta data a provisão suplementar acima especificada, em perfeitas condições.
       </div>
     </DocumentoOficialLayout>

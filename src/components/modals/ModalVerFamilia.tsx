@@ -202,7 +202,7 @@ export function ConteudoDocumentoProntuario({
                     <strong>Técnico(a):</strong> {extrairNomeTecnicoLimpo(a.tecnico)}
                   </div>
                 </div>
-                <div className="leading-relaxed text-black text-justify whitespace-pre-line pt-0.5">
+                <div className="leading-relaxed text-black text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden pt-0.5">
                   <strong className="font-extrabold">Síntese / Relato Técnico:</strong> {a.relato || 'Atendimento socioassistencial realizado no âmbito do PAIF.'}
                   {a.providencias && (
                     <span className="block mt-0.5 font-medium">
