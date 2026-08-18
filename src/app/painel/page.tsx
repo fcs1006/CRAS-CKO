@@ -158,7 +158,7 @@ export default function PainelPage() {
         fetch('/api/beneficios'),
         supabase.from('almoxarifado').select('*'),
         fetch('/api/scfv'),
-        supabase.from('participantes_scfv').select('*'),
+        fetch('/api/scfv/participantes'),
         fetch('/api/encaminhamentos'),
         fetch('/api/agenda'),
         fetch('/api/usuarios')
@@ -185,7 +185,10 @@ export default function PainelPage() {
         const grpJson = await grpRes.json()
         if (grpJson.ok && grpJson.data) setGrupos(grpJson.data as GrupoSCFV[])
       }
-      if (partRes.data) setParticipantes(partRes.data as ParticipanteSCFV[])
+      if (partRes.ok && partRes.headers.get('content-type')?.includes('application/json')) {
+        const partJson = await partRes.json()
+        if (partJson.ok && partJson.data) setParticipantes(partJson.data as ParticipanteSCFV[])
+      }
 
       if (encRes.ok && encRes.headers.get('content-type')?.includes('application/json')) {
         const encJson = await encRes.json()
@@ -462,38 +465,30 @@ export default function PainelPage() {
   }
 
   async function handleSalvarParticipante(dados: { grupo_id: string; membro_id: string; nome: string; familia_id?: string }) {
-    const { data: partInserido, error: partErr } = await supabase
-      .from('participantes_scfv')
-      .insert({
-        grupo_id: dados.grupo_id,
-        membro_id: dados.membro_id,
-        nome: dados.nome,
-        familia_id: dados.familia_id || null
-      })
-      .select()
-      .single()
-
-    if (partErr) {
-      throw new Error(partErr.message || 'Erro ao vincular participante ao grupo.')
+    const res = await fetch('/api/scfv/participantes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    })
+    const json = await parseResponseJson(res, 'Erro ao vincular participante')
+    if (!res.ok || !json.ok) {
+      throw new Error(json.error || 'Erro ao vincular participante ao grupo.')
     }
-
-    if (partInserido) {
-      setParticipantes(prev => [partInserido as ParticipanteSCFV, ...prev])
+    if (json.data) {
+      setParticipantes(prev => [json.data as ParticipanteSCFV, ...prev])
     }
     await carregarTodosOsDados()
   }
 
   async function handleExcluirParticipante(participanteId: string) {
-    const { error } = await supabase
-      .from('participantes_scfv')
-      .delete()
-      .eq('id', participanteId)
-
-    if (error) {
-      alert('Erro ao desvincular participante: ' + error.message)
+    const res = await fetch(`/api/scfv/participantes?id=${participanteId}`, {
+      method: 'DELETE'
+    })
+    const json = await parseResponseJson(res, 'Erro ao desvincular participante')
+    if (!res.ok || !json.ok) {
+      alert('Erro ao desvincular participante: ' + (json.error || 'Tente novamente.'))
       return
     }
-
     setParticipantes(prev => prev.filter(p => p.id !== participanteId))
     await carregarTodosOsDados()
   }
