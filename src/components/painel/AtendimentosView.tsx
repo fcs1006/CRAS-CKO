@@ -255,6 +255,7 @@ export function AtendimentosView({
   const [relatoEdicao, setRelatoEdicao] = useState('')
   const [providenciasEdicao, setProvidenciasEdicao] = useState('')
   const [localEdicao, setLocalEdicao] = useState('')
+  const [sigiloEdicao, setSigiloEdicao] = useState('equipe_tecnica')
   const [salvandoEdicao, setSalvandoEdicao] = useState(false)
 
   // Modal de Impressão de Atendimento
@@ -347,7 +348,8 @@ export function AtendimentosView({
       await onEditarAtendimento(atendimentoParaEditar.id, {
         relato: relatoEdicao.trim().toUpperCase(),
         providencias: providenciasEdicao.trim().toUpperCase(),
-        local: localEdicao
+        local: localEdicao,
+        sigilo: sigiloEdicao
       })
       setAtendimentoParaEditar(null)
     } catch (err: any) {
@@ -627,6 +629,7 @@ export function AtendimentosView({
                               setRelatoEdicao(a.relato || '')
                               setProvidenciasEdicao(a.providencias || '')
                               setLocalEdicao(a.local || 'CRAS')
+                              setSigiloEdicao(a.sigilo || 'equipe_tecnica')
                             }}
                             className="w-7 h-7 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg font-bold transition border border-blue-200 flex items-center justify-center shadow-xs"
                             title="Editar Registro de Atendimento"
@@ -704,6 +707,39 @@ export function AtendimentosView({
                   <option value="Outro">OUTRO ESPAÇO COMUNITÁRIO</option>
                 </select>
               </div>
+
+              {(() => {
+                const tecnicoStr = atendimentoParaEditar.tecnico || ''
+                const tecnicoObj = usuarios.find(u => u.nome === tecnicoStr || u.usuario === tecnicoStr)
+                const ehPsicologoTecnico = (tecnicoObj?.cargo || '').toLowerCase().includes('psicól') || (tecnicoObj?.conselho || '').toLowerCase().includes('crp') || tecnicoStr.toLowerCase().includes('psicól') || tecnicoStr.toLowerCase().includes('crp')
+                const ehAssistenteSocialTecnico = (tecnicoObj?.cargo || '').toLowerCase().includes('social') || (tecnicoObj?.conselho || '').toLowerCase().includes('cress') || tecnicoStr.toLowerCase().includes('social') || tecnicoStr.toLowerCase().includes('cress')
+                const ehAdmin = usuarioLogado?.perfil === 'admin'
+
+                return (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase">
+                      Nível de Sigilo Profissional / Privacidade da Escuta
+                    </label>
+                    <select
+                      value={sigiloEdicao}
+                      onChange={e => setSigiloEdicao(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
+                    >
+                      <option value="equipe_tecnica">🔒 Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
+
+                      {(ehPsicologoTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
+                        <option value="apenas_psicologia">🔐 Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
+                      )}
+
+                      {(ehAssistenteSocialTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
+                        <option value="apenas_servico_social">🔐 Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
+                      )}
+
+                      <option value="publico">🌐 Geral / Público (Visível para toda a equipe do CRAS)</option>
+                    </select>
+                  </div>
+                )
+              })()}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase">
