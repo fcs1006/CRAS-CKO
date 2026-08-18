@@ -704,6 +704,7 @@ export default function PainelPage() {
                   familias={familias}
                   usuarios={usuarios}
                   configuracao={configuracao}
+                  usuarioLogado={usuarioLogado}
                   onAbrirModalNovoAtendimento={(dadosPreenchidos) => {
                     setDadosPreenchidosAtendimento(dadosPreenchidos || null)
                     setModalNovoAtendimento(true)

@@ -37,7 +37,7 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
   const [registroConselho, setRegistroConselho] = useState(inicial.registro)
   const [telefone, setTelefone] = useState(usuario.telefone ? maskPhone(usuario.telefone) : '')
   const [email, setEmail] = useState(usuario.email || '')
-  const [perfil, setPerfil] = useState<'usuario' | 'admin'>(usuario.perfil || 'usuario')
+  const [perfil, setPerfil] = useState<'usuario' | 'admin' | 'tecnico' | 'recepcao' | 'scfv'>((usuario.perfil as any) || 'tecnico')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -247,6 +247,23 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
                 Formato salvo: <strong className="font-mono">{conselho}/{ufConselho} {registroConselho || '0000'}</strong>
               </span>
             )}
+          </div>
+
+          {/* Perfil de Acesso e Permissões */}
+          <div>
+            <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center gap-1">
+              <i className="fa-solid fa-user-shield text-teal-700"></i> Perfil de Acesso & Nível de Permissão *
+            </label>
+            <select
+              value={perfil}
+              onChange={e => setPerfil(e.target.value as any)}
+              className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
+            >
+              <option value="tecnico">📋 Técnico Superior (Assistente Social / Psicólogo / Referência PAIF)</option>
+              <option value="admin">👑 Administrador / Coordenador(a) (Acesso Total)</option>
+              <option value="recepcao">🏢 Atendimento / Recepção / CadÚnico (Acesso Operacional / Sem Relatos Confidenciais)</option>
+              <option value="scfv">🎨 Educador(a) / Orientador(a) Social (Restrito a Oficinas e SCFV)</option>
+            </select>
           </div>
 
           {/* Telefone e E-mail */}

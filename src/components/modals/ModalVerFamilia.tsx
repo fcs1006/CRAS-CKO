@@ -6,6 +6,7 @@ import { maskCPF, maskNIS, maskPhone, calculateAge, maskCurrency, parseCurrencyT
 import { buscarCBO, CBO } from '@/data/cboList'
 import { verificarDuplicidadePessoa } from '@/utils/duplicidade'
 import { syncPacienteComBase } from '@/utils/syncPaciente'
+import { verificarAcessoRelatoAtendimento } from '@/utils/permissoes'
 
 interface ModalVerFamiliaProps {
   familia: Familia
@@ -189,29 +190,38 @@ export function ConteudoDocumentoProntuario({
             5. Registro de Atendimentos Realizados ({atendimentosFamilia.length})
           </h4>
           <div className="space-y-1.5 mt-1">
-            {atendimentosFamilia.map((a, idx) => (
-              <div key={idx} className="border border-black rounded p-2 bg-white text-[9.5px] space-y-1">
-                <div className="flex flex-wrap justify-between items-center text-[10px] font-extrabold text-black border-b border-black pb-0.5 gap-x-3 gap-y-0.5">
-                  <div>
-                    <strong>Data & Local:</strong> {a.data ? a.data.split('-').reverse().join('/') : '—'} às {a.hora || '10:00'} • {a.tipo?.toUpperCase()} ({a.local || 'CRAS'})
+            {atendimentosFamilia.map((a, idx) => {
+              const resA = verificarAcessoRelatoAtendimento(a, usuarioLogado)
+              return (
+                <div key={idx} className="border border-black rounded p-2 bg-white text-[9.5px] space-y-1">
+                  <div className="flex flex-wrap justify-between items-center text-[10px] font-extrabold text-black border-b border-black pb-0.5 gap-x-3 gap-y-0.5">
+                    <div>
+                      <strong>Data & Local:</strong> {a.data ? a.data.split('-').reverse().join('/') : '—'} às {a.hora || '10:00'} • {a.tipo?.toUpperCase()} ({a.local || 'CRAS'})
+                    </div>
+                    <div>
+                      <strong>Pessoa Atendida:</strong> {(a.usuario_visitado || familia.responsavel).toUpperCase()}
+                    </div>
+                    <div>
+                      <strong>Técnico(a):</strong> {extrairNomeTecnicoLimpo(a.tecnico)}
+                    </div>
                   </div>
-                  <div>
-                    <strong>Pessoa Atendida:</strong> {(a.usuario_visitado || familia.responsavel).toUpperCase()}
-                  </div>
-                  <div>
-                    <strong>Técnico(a):</strong> {extrairNomeTecnicoLimpo(a.tecnico)}
+                  <div className="leading-relaxed text-black text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden pt-0.5">
+                    {resA.podeVer ? (
+                      <>
+                        <strong className="font-extrabold">Síntese / Relato Técnico:</strong> {a.relato || 'Atendimento socioassistencial realizado no âmbito do PAIF.'}
+                        {a.providencias && (
+                          <span className="block mt-0.5 font-medium">
+                            <strong className="font-extrabold">Providências & Encaminhamentos:</strong> {a.providencias}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="font-bold text-amber-950 block py-0.5">{resA.mensagemOculta}</span>
+                    )}
                   </div>
                 </div>
-                <div className="leading-relaxed text-black text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden pt-0.5">
-                  <strong className="font-extrabold">Síntese / Relato Técnico:</strong> {a.relato || 'Atendimento socioassistencial realizado no âmbito do PAIF.'}
-                  {a.providencias && (
-                    <span className="block mt-0.5 font-medium">
-                      <strong className="font-extrabold">Providências & Encaminhamentos:</strong> {a.providencias}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

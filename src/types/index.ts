@@ -2,7 +2,7 @@ export interface Usuario {
   id: number
   nome: string
   usuario: string // CPF
-  perfil: 'admin' | 'usuario'
+  perfil: 'admin' | 'tecnico' | 'recepcao' | 'scfv' | 'usuario' | string
   ativo: boolean
   cargo: string
   conselho?: string // Ex: CRESS/TO 1234, CRP-23 5678
@@ -108,6 +108,7 @@ export interface Atendimento {
   profissionais_participantes?: string
   tecnico: string
   tecnico_conselho?: string
+  sigilo?: 'publico' | 'equipe_tecnica' | 'apenas_psicologia' | 'apenas_servico_social' | string
   relato: string
   providencias?: string
   tipo: string // Acolhida Inicial | Atendimento Particularizado | Acompanhamento PAIF | Visita Domiciliar | Atendimento Coletivo | Falta

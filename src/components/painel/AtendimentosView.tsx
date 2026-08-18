@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Atendimento, AgendaItem, Familia, Configuracao, Usuario } from '@/types'
 import { maskCPF } from '@/utils/masks'
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
+import { verificarAcessoRelatoAtendimento } from '@/utils/permissoes'
 
 interface AtendimentosViewProps {
   atendimentos: Atendimento[]
@@ -9,6 +10,7 @@ interface AtendimentosViewProps {
   familias?: Familia[]
   usuarios?: Usuario[]
   configuracao?: Configuracao
+  usuarioLogado?: Usuario | null
   onAbrirModalNovoAtendimento: (dadosPreenchidos?: Partial<Atendimento> & { agenda_id?: string }) => void
   onAbrirModalNovoAgendamento?: () => void
   onAtualizarStatusAgendamento?: (agendamento: AgendaItem, novoStatus: string, motivoCancelamento?: string) => void
@@ -76,13 +78,18 @@ export function ConteudoDocumentoAtendimento({
   item,
   configuracao,
   familias = [],
-  usuarios = []
+  usuarios = [],
+  usuarioLogado
 }: {
   item: Atendimento
   configuracao?: Configuracao
   familias?: Familia[]
   usuarios?: Usuario[]
+  usuarioLogado?: Usuario | null
 }) {
+  const resSigilo = verificarAcessoRelatoAtendimento(item, usuarioLogado)
+  const relatoExibido = resSigilo.podeVer ? (item.relato || 'Atendimento socioassistencial realizado no âmbito das ações do PAIF / CRAS.') : resSigilo.mensagemOculta
+  const providenciasExibidas = resSigilo.podeVer ? (item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.') : '🔒 [CONTEÚDO RESTRITO À CATEGORIA HABILITADA CONFORME SIGILO PROFISSIONAL]'
   const isCompartilhada = item.compartilhada === 'Sim' || item.tecnico?.toLowerCase().includes('co-visitantes') || Boolean(item.profissionais_participantes)
 
   const rawTecnico = (item.tecnico || '').trim()
@@ -209,7 +216,7 @@ export function ConteudoDocumentoAtendimento({
           2. Relato Técnico / Síntese da Escuta Qualificada
         </h4>
         <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-normal min-h-[90px] text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden">
-          {item.relato || 'Atendimento socioassistencial realizado no âmbito das ações do PAIF / CRAS.'}
+          {relatoExibido}
         </div>
       </div>
 
@@ -219,7 +226,7 @@ export function ConteudoDocumentoAtendimento({
           3. Providências e Encaminhamentos Adotados
         </h4>
         <div className="p-2.5 border border-black rounded bg-white text-[10.5px] leading-relaxed text-black font-medium text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden">
-          {item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.'}
+          {providenciasExibidas}
         </div>
       </div>
     </DocumentoOficialLayout>
@@ -232,6 +239,7 @@ export function AtendimentosView({
   familias = [],
   usuarios = [],
   configuracao,
+  usuarioLogado,
   onAbrirModalNovoAtendimento,
   onAbrirModalNovoAgendamento,
   onAtualizarStatusAgendamento,
@@ -579,14 +587,28 @@ export function AtendimentosView({
                       </span>
                     </td>
                     <td className="py-3 px-3 max-w-xs">
-                      <p className="line-clamp-2 text-gray-600 text-[11px] leading-relaxed">
-                        {a.relato}
-                      </p>
-                      {a.providencias && (
-                        <span className="text-[10px] font-semibold text-amber-800 block truncate mt-0.5">
-                          Providências: {a.providencias}
-                        </span>
-                      )}
+                      {(() => {
+                        const resA = verificarAcessoRelatoAtendimento(a, usuarioLogado)
+                        if (!resA.podeVer) {
+                          return (
+                            <span className="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded block">
+                              {resA.mensagemOculta}
+                            </span>
+                          )
+                        }
+                        return (
+                          <>
+                            <p className="line-clamp-2 text-gray-600 text-[11px] leading-relaxed">
+                              {a.relato}
+                            </p>
+                            {a.providencias && (
+                              <span className="text-[10px] font-semibold text-amber-800 block truncate mt-0.5">
+                                Providências: {a.providencias}
+                              </span>
+                            )}
+                          </>
+                        )
+                      })()}
                     </td>
                     <td className="py-3 px-3 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
@@ -734,7 +756,7 @@ export function AtendimentosView({
       {/* Área de Impressão Direta do Atendimento */}
       {atendimentoParaImprimir && (
         <div className="hidden print:block print:w-full print-document-area">
-          <ConteudoDocumentoAtendimento item={atendimentoParaImprimir} configuracao={configuracao} familias={familias} usuarios={usuarios} />
+          <ConteudoDocumentoAtendimento item={atendimentoParaImprimir} configuracao={configuracao} familias={familias} usuarios={usuarios} usuarioLogado={usuarioLogado} />
         </div>
       )}
 
@@ -901,21 +923,37 @@ export function AtendimentosView({
                 </div>
               </div>
 
-              <div>
-                <h4 className="font-bold text-gray-800 uppercase mb-1">Relato Técnico / Anotações de Escuta Qualificada:</h4>
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-800 leading-relaxed whitespace-pre-line font-medium">
-                  {atendimentoSelecionado.relato}
-                </div>
-              </div>
+              {(() => {
+                const resSel = verificarAcessoRelatoAtendimento(atendimentoSelecionado, usuarioLogado)
+                if (!resSel.podeVer) {
+                  return (
+                    <div className="p-5 bg-amber-50 rounded-2xl border border-amber-300 text-xs font-bold text-amber-950 uppercase text-center space-y-2">
+                      <i className="fa-solid fa-user-lock text-2xl text-amber-700 block"></i>
+                      <p>{resSel.mensagemOculta}</p>
+                    </div>
+                  )
+                }
 
-              {atendimentoSelecionado.providencias && (
-                <div>
-                  <h4 className="font-bold text-amber-900 uppercase mb-1">Providências & Encaminhamentos Adotados:</h4>
-                  <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-xs text-amber-950 leading-relaxed font-semibold whitespace-pre-line">
-                    {atendimentoSelecionado.providencias}
-                  </div>
-                </div>
-              )}
+                return (
+                  <>
+                    <div>
+                      <h4 className="font-bold text-gray-800 uppercase mb-1">Relato Técnico / Anotações de Escuta Qualificada:</h4>
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+                        {atendimentoSelecionado.relato}
+                      </div>
+                    </div>
+
+                    {atendimentoSelecionado.providencias && (
+                      <div>
+                        <h4 className="font-bold text-amber-900 uppercase mb-1">Providências & Encaminhamentos Adotados:</h4>
+                        <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-xs text-amber-950 leading-relaxed font-semibold whitespace-pre-line">
+                          {atendimentoSelecionado.providencias}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
 
               <div className="pt-4 border-t flex justify-end">
                 <button

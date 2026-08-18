@@ -34,6 +34,7 @@ export function ModalNovoAtendimento({
   const [outrosProfissionaisTexto, setOutrosProfissionaisTexto] = useState('')
   const [relato, setRelato] = useState(dadosIniciais?.relato || '')
   const [providencias, setProvidencias] = useState(dadosIniciais?.providencias || '')
+  const [sigilo, setSigilo] = useState<string>(dadosIniciais?.sigilo || 'equipe_tecnica')
 
   useEffect(() => {
     if (!tecnico && usuarioLogadoNome) {
@@ -107,6 +108,7 @@ export function ModalNovoAtendimento({
         profissionais_participantes: compartilhada === 'Sim' ? profissionaisFinais : undefined,
         tecnico: tecnico.trim().toUpperCase(),
         tecnico_conselho: conselhoInfo,
+        sigilo,
         relato: relato.trim().toUpperCase(),
         providencias: providencias.trim().toUpperCase(),
         tipo,
@@ -361,6 +363,23 @@ export function ModalNovoAtendimento({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Nível de Sigilo Profissional */}
+          <div>
+            <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center gap-1.5">
+              <i className="fa-solid fa-lock text-amber-600"></i> Nível de Sigilo Profissional / Privacidade da Escuta *
+            </label>
+            <select
+              value={sigilo}
+              onChange={e => setSigilo(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950"
+            >
+              <option value="equipe_tecnica">🔒 Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
+              <option value="apenas_psicologia">🔐 Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
+              <option value="apenas_servico_social">🔐 Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
+              <option value="publico">🌐 Geral / Público (Visível para toda a equipe do CRAS)</option>
+            </select>
           </div>
 
           {/* Relato Técnico / Síntese */}

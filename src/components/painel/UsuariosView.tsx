@@ -128,10 +128,16 @@ export function UsuariosView({
                     <td className="py-3 px-4 text-gray-700">{u.cargo}</td>
                     <td className="py-3 px-4 text-xs text-gray-500">{u.conselho || '—'}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                        u.perfil === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-700'
+                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                        u.perfil === 'admin' 
+                          ? 'bg-purple-100 text-purple-900 border border-purple-200' 
+                          : u.perfil === 'recepcao' 
+                            ? 'bg-blue-100 text-blue-900 border border-blue-200'
+                            : u.perfil === 'scfv' 
+                              ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                              : 'bg-teal-100 text-teal-900 border border-teal-200'
                       }`}>
-                        {u.perfil.toUpperCase()}
+                        {u.perfil === 'admin' ? 'Coordenador / Admin' : u.perfil === 'recepcao' ? 'Recepção / Atendimento' : u.perfil === 'scfv' ? 'Educador SCFV' : 'Técnico Superior'}
                       </span>
                     </td>
                     <td className="py-3 px-4">
