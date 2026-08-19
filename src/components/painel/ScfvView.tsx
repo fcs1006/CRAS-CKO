@@ -11,6 +11,7 @@ interface ScfvViewProps {
   onAbrirModalEditarGrupo?: (grupo: GrupoSCFV) => void
   onExcluirGrupo?: (grupoId: string) => Promise<void>
   onExcluirParticipante?: (participanteId: string) => Promise<void>
+  onAbrirModalFrequencia?: (grupo: GrupoSCFV) => void
 }
 
 export function ScfvView({
@@ -20,7 +21,8 @@ export function ScfvView({
   onAbrirModalAdicionarParticipante,
   onAbrirModalEditarGrupo,
   onExcluirGrupo,
-  onExcluirParticipante
+  onExcluirParticipante,
+  onAbrirModalFrequencia
 }: ScfvViewProps) {
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<string | null>(
     grupos.length > 0 ? grupos[0].id : null
@@ -150,6 +152,15 @@ export function ScfvView({
                       className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1"
                     >
                       <i className="fa-solid fa-trash-can text-rose-600"></i> Excluir Grupo
+                    </button>
+                  )}
+
+                  {onAbrirModalFrequencia && (
+                    <button
+                      onClick={() => onAbrirModalFrequencia(grupoAtual)}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-clipboard-user text-indigo-200"></i> Lançar Frequência / Chamada
                     </button>
                   )}
 

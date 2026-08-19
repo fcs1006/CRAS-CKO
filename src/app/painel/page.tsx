@@ -39,6 +39,7 @@ import { ModalNovoAtendimento } from '@/components/modals/ModalNovoAtendimento'
 import { ModalConcederBeneficio } from '@/components/modals/ModalConcederBeneficio'
 import { ModalNovoGrupoScfv } from '@/components/modals/ModalNovoGrupoScfv'
 import { ModalVincularParticipanteScfv } from '@/components/modals/ModalVincularParticipanteScfv'
+import { ModalFrequenciaGrupoScfv } from '@/components/modals/ModalFrequenciaGrupoScfv'
 import { ModalNovoEncaminhamento } from '@/components/modals/ModalNovoEncaminhamento'
 
 // Dados Mock de Fallback para ambiente de desenvolvimento offline
@@ -88,6 +89,7 @@ export default function PainelPage() {
   const [modalNovoGrupo, setModalNovoGrupo] = useState(false)
   const [grupoParaEditar, setGrupoParaEditar] = useState<GrupoSCFV | null>(null)
   const [grupoParaVincular, setGrupoParaVincular] = useState<GrupoSCFV | null>(null)
+  const [grupoParaFrequencia, setGrupoParaFrequencia] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
 
   // Carregar sessão do usuário e carregar dados
@@ -477,6 +479,19 @@ export default function PainelPage() {
     await carregarTodosOsDados()
   }
 
+  async function handleSalvarFrequencia(dados: any) {
+    const res = await fetch('/api/scfv/frequencia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    })
+    const json = await parseResponseJson(res, 'Erro ao registrar frequência')
+    if (!res.ok || !json.ok) {
+      throw new Error(json.error || 'Erro ao registrar frequência.')
+    }
+    await carregarTodosOsDados()
+  }
+
   async function handleSalvarParticipante(dados: { grupo_id: string; membro_id: string; nome: string; familia_id?: string }) {
     const res = await fetch('/api/scfv/participantes', {
       method: 'POST',
@@ -804,6 +819,7 @@ export default function PainelPage() {
                     if (grp) setGrupoParaVincular(grp)
                   }}
                   onExcluirParticipante={handleExcluirParticipante}
+                  onAbrirModalFrequencia={(grupo) => setGrupoParaFrequencia(grupo)}
                 />
               )}
 
@@ -957,6 +973,16 @@ export default function PainelPage() {
           participantesGrupoExistentes={participantes.filter(p => p.grupo_id === grupoParaVincular.id)}
           onClose={() => setGrupoParaVincular(null)}
           onSalvarParticipante={handleSalvarParticipante}
+        />
+      )}
+
+      {grupoParaFrequencia && (
+        <ModalFrequenciaGrupoScfv
+          grupo={grupoParaFrequencia}
+          participantes={participantes.filter(p => p.grupo_id === grupoParaFrequencia.id)}
+          usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
+          onClose={() => setGrupoParaFrequencia(null)}
+          onSalvarFrequencia={handleSalvarFrequencia}
         />
       )}
 
