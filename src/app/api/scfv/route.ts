@@ -80,6 +80,66 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const { id, ...grupoData } = await request.json()
+
+    if (!id) {
+      return NextResponse.json({ ok: false, error: 'ID do grupo é obrigatório.' }, { status: 400 })
+    }
+
+    const supabase = getSupabaseServer()
+    let payload = { ...grupoData }
+
+    let { data: grupoAtualizado, error: grpErr } = await supabase
+      .from('grupos_scfv')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (grpErr && (grpErr.message?.includes('column') || grpErr.message?.includes('schema cache'))) {
+      console.warn('Coluna ausente no banco Supabase para grupos_scfv (PUT), aplicando fallback:', grpErr.message)
+
+      const infoAdicional = []
+      if (payload.tipo_grupo) infoAdicional.push(`TIPO: ${payload.tipo_grupo}`)
+      if (payload.faixa_etaria) infoAdicional.push(`FAIXA ETÁRIA: ${payload.faixa_etaria}`)
+      if (payload.local_encontro) infoAdicional.push(`LOCAL: ${payload.local_encontro}`)
+
+      let descFinal = payload.descricao || ''
+      if (infoAdicional.length > 0) {
+        descFinal = `[${infoAdicional.join(' | ')}]\n${descFinal}`.trim()
+      }
+
+      const safePayload = {
+        nome: payload.nome,
+        horario: payload.horario || 'Encontros Periódicos',
+        tecnico_responsavel: payload.tecnico_responsavel || 'TÉCNICO RESPONSÁVEL',
+        descricao: descFinal
+      }
+
+      const retry = await supabase
+        .from('grupos_scfv')
+        .update(safePayload)
+        .eq('id', id)
+        .select()
+        .single()
+
+      grupoAtualizado = retry.data
+      grpErr = retry.error
+    }
+
+    if (grpErr) {
+      console.error('Erro ao atualizar grupo SCFV:', grpErr)
+      return NextResponse.json({ ok: false, error: grpErr.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true, data: grupoAtualizado })
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

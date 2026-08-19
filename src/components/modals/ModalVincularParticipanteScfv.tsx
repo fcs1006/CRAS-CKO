@@ -35,48 +35,58 @@ export function ModalVincularParticipanteScfv({
   const [busca, setBusca] = useState('')
   const [vinculandoId, setVinculandoId] = useState<string | null>(null)
 
-  // Extrai todos os beneficiários cadastrados na base de famílias
+  // Extrai todos os beneficiários cadastrados na base de famílias (sem duplicatas)
   const todosBeneficiarios = useMemo(() => {
     const lista: BeneficiarioItem[] = []
-    const idsEncontrados = new Set<string>()
+    const pessoasUnicas = new Set<string>()
 
     familias.forEach(f => {
       // 1. Responsável Familiar
       if (f.responsavel) {
-        const keyResp = `resp_${f.id}`
-        idsEncontrados.add(keyResp)
-        lista.push({
-          idKey: keyResp,
-          membro_id: f.id,
-          nome: f.responsavel.toUpperCase(),
-          parentesco: 'RESPONSÁVEL FAMILIAR',
-          cpf: f.cpf_responsavel || (f as any).cpf,
-          nis: f.nis_responsavel || (f as any).nis,
-          familia_id: f.id,
-          responsavel_nome: f.responsavel,
-          cod_familiar: f.cod_familiar,
-          data_nascimento: f.data_nascimento_responsavel
-        })
+        const nomeNorm = f.responsavel.trim().toUpperCase()
+        const cpfNorm = (f.cpf_responsavel || (f as any).cpf || '').replace(/\D/g, '')
+        const chavePessoa = `${f.id}_${nomeNorm}_${cpfNorm}`
+
+        if (!pessoasUnicas.has(chavePessoa)) {
+          pessoasUnicas.add(chavePessoa)
+          lista.push({
+            idKey: `resp_${f.id}`,
+            membro_id: f.id,
+            nome: nomeNorm,
+            parentesco: 'RESPONSÁVEL FAMILIAR',
+            cpf: f.cpf_responsavel || (f as any).cpf,
+            nis: f.nis_responsavel || (f as any).nis,
+            familia_id: f.id,
+            responsavel_nome: f.responsavel,
+            cod_familiar: f.cod_familiar,
+            data_nascimento: f.data_nascimento_responsavel
+          })
+        }
       }
 
       // 2. Demais membros familiares
       if (f.membros && Array.isArray(f.membros)) {
         f.membros.forEach((m, idx) => {
-          const keyMembro = m.id ? `membro_${m.id}` : `membro_${f.id}__${idx}`
-          if (!idsEncontrados.has(keyMembro) && m.nome) {
-            idsEncontrados.add(keyMembro)
-            lista.push({
-              idKey: keyMembro,
-              membro_id: m.id || f.id,
-              nome: m.nome.toUpperCase(),
-              parentesco: (m.parentesco || 'MEMBRO FAMILIAR').toUpperCase(),
-              cpf: m.cpf || f.cpf_responsavel || (f as any).cpf,
-              nis: m.nis || f.nis_responsavel || (f as any).nis,
-              familia_id: f.id,
-              responsavel_nome: f.responsavel,
-              cod_familiar: f.cod_familiar,
-              data_nascimento: m.data_nascimento
-            })
+          if (m.nome) {
+            const nomeMembroNorm = m.nome.trim().toUpperCase()
+            const cpfMembroNorm = (m.cpf || '').replace(/\D/g, '')
+            const chaveMembro = `${f.id}_${nomeMembroNorm}_${cpfMembroNorm}`
+
+            if (!pessoasUnicas.has(chaveMembro)) {
+              pessoasUnicas.add(chaveMembro)
+              lista.push({
+                idKey: m.id ? `membro_${m.id}` : `membro_${f.id}__${idx}`,
+                membro_id: m.id || f.id,
+                nome: nomeMembroNorm,
+                parentesco: (m.parentesco || 'MEMBRO FAMILIAR').toUpperCase(),
+                cpf: m.cpf || f.cpf_responsavel || (f as any).cpf,
+                nis: m.nis || f.nis_responsavel || (f as any).nis,
+                familia_id: f.id,
+                responsavel_nome: f.responsavel,
+                cod_familiar: f.cod_familiar,
+                data_nascimento: m.data_nascimento
+              })
+            }
           }
         })
       }

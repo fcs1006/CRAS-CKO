@@ -86,6 +86,7 @@ export default function PainelPage() {
   const [modalNovoAgendamento, setModalNovoAgendamento] = useState(false)
   const [modalConcederBeneficio, setModalConcederBeneficio] = useState(false)
   const [modalNovoGrupo, setModalNovoGrupo] = useState(false)
+  const [grupoParaEditar, setGrupoParaEditar] = useState<GrupoSCFV | null>(null)
   const [grupoParaVincular, setGrupoParaVincular] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
 
@@ -449,18 +450,30 @@ export default function PainelPage() {
   }
 
   async function handleSalvarGrupo(grupoData: Partial<GrupoSCFV>) {
+    const isEdit = Boolean(grupoData.id)
+    const method = isEdit ? 'PUT' : 'POST'
     const res = await fetch('/api/scfv', {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(grupoData)
     })
-    const json = await parseResponseJson(res, 'Erro ao criar grupo SCFV')
+    const json = await parseResponseJson(res, `Erro ao ${isEdit ? 'atualizar' : 'criar'} grupo SCFV`)
     if (!res.ok || !json.ok) {
-      throw new Error(json.error || 'Erro ao criar grupo SCFV.')
+      throw new Error(json.error || `Erro ao ${isEdit ? 'atualizar' : 'criar'} grupo SCFV.`)
     }
-    if (json.data) {
-      setGrupos(prev => [json.data, ...prev])
+    await carregarTodosOsDados()
+  }
+
+  async function handleExcluirGrupo(grupoId: string) {
+    const res = await fetch(`/api/scfv?id=${grupoId}`, {
+      method: 'DELETE'
+    })
+    const json = await parseResponseJson(res, 'Erro ao excluir grupo SCFV')
+    if (!res.ok || !json.ok) {
+      alert('Erro ao excluir grupo: ' + (json.error || 'Tente novamente.'))
+      return
     }
+    setGrupos(prev => prev.filter(g => g.id !== grupoId))
     await carregarTodosOsDados()
   }
 
@@ -780,7 +793,12 @@ export default function PainelPage() {
                 <ScfvView
                   grupos={grupos}
                   participantes={participantes}
-                  onAbrirModalNovoGrupo={() => setModalNovoGrupo(true)}
+                  onAbrirModalNovoGrupo={() => {
+                    setGrupoParaEditar(null)
+                    setModalNovoGrupo(true)
+                  }}
+                  onAbrirModalEditarGrupo={(grupo) => setGrupoParaEditar(grupo)}
+                  onExcluirGrupo={handleExcluirGrupo}
                   onAbrirModalAdicionarParticipante={(grupoId) => {
                     const grp = grupos.find(g => g.id === grupoId)
                     if (grp) setGrupoParaVincular(grp)
@@ -919,11 +937,15 @@ export default function PainelPage() {
         />
       )}
 
-      {modalNovoGrupo && (
+      {(modalNovoGrupo || grupoParaEditar) && (
         <ModalNovoGrupoScfv
           usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
           usuarios={usuarios}
-          onClose={() => setModalNovoGrupo(false)}
+          grupoParaEditar={grupoParaEditar}
+          onClose={() => {
+            setModalNovoGrupo(false)
+            setGrupoParaEditar(null)
+          }}
           onSalvar={handleSalvarGrupo}
         />
       )}

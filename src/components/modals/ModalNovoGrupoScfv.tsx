@@ -6,6 +6,7 @@ import { GrupoSCFV, Usuario } from '@/types'
 interface ModalNovoGrupoScfvProps {
   usuarioLogadoNome?: string
   usuarios?: Usuario[]
+  grupoParaEditar?: GrupoSCFV | null
   onClose: () => void
   onSalvar: (grupo: Partial<GrupoSCFV>) => Promise<void>
 }
@@ -13,26 +14,40 @@ interface ModalNovoGrupoScfvProps {
 export function ModalNovoGrupoScfv({
   usuarioLogadoNome = '',
   usuarios = [],
+  grupoParaEditar = null,
   onClose,
   onSalvar
 }: ModalNovoGrupoScfvProps) {
   const [salvando, setSalvando] = useState(false)
-  const [nome, setNome] = useState('')
-  const [tipoGrupo, setTipoGrupo] = useState<'SCFV' | 'PAIF' | 'OUTRO'>('SCFV')
-  const [faixaEtaria, setFaixaEtaria] = useState<string>('60_mais')
-  const [diasSelecionados, setDiasSelecionados] = useState<string[]>(['Terça', 'Quinta'])
+  const [nome, setNome] = useState(grupoParaEditar?.nome || '')
+  const [tipoGrupo, setTipoGrupo] = useState<'SCFV' | 'PAIF' | 'OUTRO'>(grupoParaEditar?.tipo_grupo || 'SCFV')
+  const [faixaEtaria, setFaixaEtaria] = useState<string>(grupoParaEditar?.faixa_etaria || '60_mais')
+  const [diasSelecionados, setDiasSelecionados] = useState<string[]>(
+    grupoParaEditar?.dias_semana ? grupoParaEditar.dias_semana.split(' e ') : ['Terça', 'Quinta']
+  )
   const [horaInicio, setHoraInicio] = useState('09:00')
   const [horaFim, setHoraFim] = useState('10:30')
-  const [localEncontro, setLocalEncontro] = useState('CRAS (Sede)')
-  const [tecnico, setTecnico] = useState(usuarioLogadoNome || '')
-  const [vagasLimite, setVagasLimite] = useState<number | ''>(25)
-  const [descricao, setDescricao] = useState('')
+  const [localEncontro, setLocalEncontro] = useState(grupoParaEditar?.local_encontro || 'CRAS (Sede)')
+  const [tecnico, setTecnico] = useState(grupoParaEditar?.tecnico_responsavel || usuarioLogadoNome || '')
+  const [vagasLimite, setVagasLimite] = useState<number | ''>(grupoParaEditar?.vagas_limite || 25)
+  const [descricao, setDescricao] = useState(grupoParaEditar?.descricao || '')
 
   useEffect(() => {
-    if (usuarioLogadoNome && !tecnico) {
+    if (grupoParaEditar) {
+      setNome(grupoParaEditar.nome || '')
+      setTipoGrupo(grupoParaEditar.tipo_grupo || 'SCFV')
+      setFaixaEtaria(grupoParaEditar.faixa_etaria || '60_mais')
+      if (grupoParaEditar.dias_semana) {
+        setDiasSelecionados(grupoParaEditar.dias_semana.split(' e '))
+      }
+      if (grupoParaEditar.local_encontro) setLocalEncontro(grupoParaEditar.local_encontro)
+      if (grupoParaEditar.tecnico_responsavel) setTecnico(grupoParaEditar.tecnico_responsavel)
+      if (grupoParaEditar.vagas_limite) setVagasLimite(grupoParaEditar.vagas_limite)
+      if (grupoParaEditar.descricao) setDescricao(grupoParaEditar.descricao)
+    } else if (usuarioLogadoNome && !tecnico) {
       setTecnico(usuarioLogadoNome)
     }
-  }, [usuarioLogadoNome])
+  }, [usuarioLogadoNome, grupoParaEditar])
 
   const todosDias = [
     { sigla: 'SEG', nome: 'Segunda' },
@@ -63,6 +78,7 @@ export function ModalNovoGrupoScfv({
       const horarioFinal = `${diasTexto} das ${horaInicio} às ${horaFim}`.trim()
 
       const novo: Partial<GrupoSCFV> = {
+        ...(grupoParaEditar ? { id: grupoParaEditar.id } : {}),
         nome: nome.trim().toUpperCase(),
         tipo_grupo: tipoGrupo,
         faixa_etaria: faixaEtaria,
@@ -72,13 +88,13 @@ export function ModalNovoGrupoScfv({
         vagas_limite: vagasLimite === '' ? undefined : Number(vagasLimite),
         tecnico_responsavel: tecnico.trim() || usuarioLogadoNome || 'TÉCNICO RESPONSÁVEL',
         descricao: descricao.trim().toUpperCase(),
-        status: 'Ativo'
+        status: grupoParaEditar?.status || 'Ativo'
       }
 
       await onSalvar(novo)
       onClose()
     } catch (err: any) {
-      alert('Erro ao criar grupo/oficina.')
+      alert('Erro ao salvar grupo/oficina.')
     } finally {
       setSalvando(false)
     }
@@ -92,7 +108,7 @@ export function ModalNovoGrupoScfv({
         <div className="bg-indigo-900 text-white p-5 flex justify-between items-center shrink-0">
           <div>
             <h3 className="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className="fa-solid fa-people-group text-indigo-300 text-lg"></i> Criar Grupo / Oficina SCFV (SUAS)
+              <i className="fa-solid fa-people-group text-indigo-300 text-lg"></i> {grupoParaEditar ? 'Editar Coletivo / Grupo' : 'Criar Grupo / Oficina SCFV (SUAS)'}
             </h3>
             <p className="text-[11px] text-indigo-200 mt-0.5 font-medium">
               Serviço de Convivência e Fortalecimento de Vínculos / Oficinas PAIF

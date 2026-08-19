@@ -8,6 +8,8 @@ interface ScfvViewProps {
   participantes: ParticipanteSCFV[]
   onAbrirModalNovoGrupo: () => void
   onAbrirModalAdicionarParticipante: (grupoId: string) => void
+  onAbrirModalEditarGrupo?: (grupo: GrupoSCFV) => void
+  onExcluirGrupo?: (grupoId: string) => Promise<void>
   onExcluirParticipante?: (participanteId: string) => Promise<void>
 }
 
@@ -16,6 +18,8 @@ export function ScfvView({
   participantes,
   onAbrirModalNovoGrupo,
   onAbrirModalAdicionarParticipante,
+  onAbrirModalEditarGrupo,
+  onExcluirGrupo,
   onExcluirParticipante
 }: ScfvViewProps) {
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<string | null>(
@@ -62,22 +66,53 @@ export function ScfvView({
                 <div
                   key={g.id}
                   onClick={() => setGrupoSelecionadoId(g.id)}
-                  className={`p-4 rounded-xl border transition cursor-pointer ${
+                  className={`p-4 rounded-xl border transition cursor-pointer relative group ${
                     isSelected
                       ? 'border-indigo-500 bg-indigo-50/50 shadow-sm'
                       : 'border-gray-100 hover:border-gray-200 bg-white'
                   }`}
                 >
                   <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-gray-800 text-sm">{g.nome}</h4>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                      {count} Integrantes
-                    </span>
+                    <h4 className="font-bold text-gray-800 text-sm uppercase">{g.nome}</h4>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                        {count} Integrantes
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{g.descricao || 'Sem descrição'}</p>
-                  <div className="mt-3 pt-2 border-t border-gray-100/60 flex justify-between text-[11px] text-gray-500">
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2 uppercase">{g.descricao || 'Sem descrição'}</p>
+                  <div className="mt-3 pt-2 border-t border-gray-100/60 flex justify-between items-center text-[11px] text-gray-500">
                     <span>Horário: <strong>{g.horario}</strong></span>
-                    <span>Técnico: <strong>{g.tecnico_responsavel}</strong></span>
+                    <div className="flex items-center gap-1">
+                      {onAbrirModalEditarGrupo && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onAbrirModalEditarGrupo(g)
+                          }}
+                          className="p-1 text-gray-400 hover:text-indigo-700 rounded transition"
+                          title="Editar Grupo"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </button>
+                      )}
+                      {onExcluirGrupo && (
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            if (confirm(`Deseja realmente excluir o grupo "${g.nome}"?`)) {
+                              await onExcluirGrupo(g.id)
+                            }
+                          }}
+                          className="p-1 text-gray-400 hover:text-rose-600 rounded transition"
+                          title="Excluir Grupo"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
@@ -89,17 +124,42 @@ export function ScfvView({
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
           {grupoAtual ? (
             <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 border-b border-gray-100">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-gray-100">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">{grupoAtual.nome}</h3>
-                  <p className="text-xs text-gray-500">{grupoAtual.descricao}</p>
+                  <h3 className="text-lg font-bold text-gray-800 uppercase">{grupoAtual.nome}</h3>
+                  <p className="text-xs text-gray-500 uppercase">{grupoAtual.descricao}</p>
                 </div>
-                <button
-                  onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center gap-1"
-                >
-                  <i className="fa-solid fa-user-plus"></i> Vincular Participante
-                </button>
+                
+                <div className="flex items-center gap-2 flex-wrap">
+                  {onAbrirModalEditarGrupo && (
+                    <button
+                      onClick={() => onAbrirModalEditarGrupo(grupoAtual)}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                    >
+                      <i className="fa-solid fa-pen-to-square text-gray-600"></i> Editar Grupo
+                    </button>
+                  )}
+                  
+                  {onExcluirGrupo && (
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Deseja realmente excluir o grupo "${grupoAtual.nome}"?`)) {
+                          await onExcluirGrupo(grupoAtual.id)
+                        }
+                      }}
+                      className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                    >
+                      <i className="fa-solid fa-trash-can text-rose-600"></i> Excluir Grupo
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1"
+                  >
+                    <i className="fa-solid fa-user-plus"></i> Vincular Participante
+                  </button>
+                </div>
               </div>
 
               <div>
