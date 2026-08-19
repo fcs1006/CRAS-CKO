@@ -20,7 +20,7 @@ export function ModalNovoGrupoScfv({
 }: ModalNovoGrupoScfvProps) {
   const [salvando, setSalvando] = useState(false)
   const [nome, setNome] = useState(grupoParaEditar?.nome || '')
-  const [tipoGrupo, setTipoGrupo] = useState<'SCFV' | 'PAIF' | 'OUTRO'>(grupoParaEditar?.tipo_grupo || 'SCFV')
+  const [tipoGrupo, setTipoGrupo] = useState<'SCFV' | 'PAIF' | 'OUTRO'>((grupoParaEditar?.tipo_grupo as 'SCFV' | 'PAIF' | 'OUTRO') || 'SCFV')
   const [faixaEtaria, setFaixaEtaria] = useState<string>(grupoParaEditar?.faixa_etaria || '60_mais')
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>(
     grupoParaEditar?.dias_semana ? grupoParaEditar.dias_semana.split(' e ') : ['Terça', 'Quinta']
@@ -35,7 +35,7 @@ export function ModalNovoGrupoScfv({
   useEffect(() => {
     if (grupoParaEditar) {
       setNome(grupoParaEditar.nome || '')
-      setTipoGrupo(grupoParaEditar.tipo_grupo || 'SCFV')
+      setTipoGrupo((grupoParaEditar.tipo_grupo as 'SCFV' | 'PAIF' | 'OUTRO') || 'SCFV')
       setFaixaEtaria(grupoParaEditar.faixa_etaria || '60_mais')
       if (grupoParaEditar.dias_semana) {
         setDiasSelecionados(grupoParaEditar.dias_semana.split(' e '))
