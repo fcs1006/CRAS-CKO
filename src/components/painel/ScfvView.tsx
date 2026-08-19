@@ -12,6 +12,7 @@ interface ScfvViewProps {
   onExcluirGrupo?: (grupoId: string) => Promise<void>
   onExcluirParticipante?: (participanteId: string) => Promise<void>
   onAbrirModalFrequencia?: (grupo: GrupoSCFV) => void
+  onAbrirModalRelatorioGrupo?: (grupo: GrupoSCFV) => void
 }
 
 export function ScfvView({
@@ -22,7 +23,8 @@ export function ScfvView({
   onAbrirModalEditarGrupo,
   onExcluirGrupo,
   onExcluirParticipante,
-  onAbrirModalFrequencia
+  onAbrirModalFrequencia,
+  onAbrirModalRelatorioGrupo
 }: ScfvViewProps) {
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<string | null>(
     grupos.length > 0 ? grupos[0].id : null
@@ -152,6 +154,15 @@ export function ScfvView({
                       className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1"
                     >
                       <i className="fa-solid fa-trash-can text-rose-600"></i> Excluir Grupo
+                    </button>
+                  )}
+
+                  {onAbrirModalRelatorioGrupo && (
+                    <button
+                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual)}
+                      className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-file-invoice text-slate-300"></i> Relatório do Grupo
                     </button>
                   )}
 
