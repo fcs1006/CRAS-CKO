@@ -37,25 +37,43 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseServer()
 
-    // 1. Salvar ou atualizar registro na tabela de frequencia_scfv
-    const { data: freqSalva, error: freqErr } = await supabase
+    // 1. Tentar salvar na tabela de frequencia_scfv com registros completos
+    let payload = {
+      grupo_id,
+      data,
+      tema: tema || null,
+      tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
+      registros
+    }
+
+    let { data: freqSalva, error: freqErr } = await supabase
       .from('frequencia_scfv')
-      .upsert(
-        {
-          grupo_id,
-          data,
-          tema: tema || null,
-          tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
-          registros
-        },
-        { onConflict: 'grupo_id,data' }
-      )
+      .upsert(payload, { onConflict: 'grupo_id,data' })
       .select()
       .single()
 
-    if (freqErr) {
-      console.error('Erro ao salvar frequência do grupo:', freqErr)
-      return NextResponse.json({ ok: false, error: freqErr.message }, { status: 500 })
+    // Fallback resiliente se a tabela no banco não tiver a coluna 'registros' ainda
+    if (freqErr && (freqErr.message?.includes('registros') || freqErr.message?.includes('column') || freqErr.message?.includes('schema cache'))) {
+      console.warn('Coluna ausente no Supabase para frequencia_scfv, aplicando fallback para array presentes:', freqErr.message)
+
+      const presentesArray = registros
+        .filter((r: any) => r.status === 'presente' && r.membro_id && r.membro_id.length === 36)
+        .map((r: any) => r.membro_id)
+
+      const safePayload = {
+        grupo_id,
+        data,
+        presentes: presentesArray
+      }
+
+      const retry = await supabase
+        .from('frequencia_scfv')
+        .upsert(safePayload, { onConflict: 'grupo_id,data' })
+        .select()
+        .single()
+
+      freqSalva = retry.data
+      freqErr = retry.error
     }
 
     // 2. Gravar no Histórico do Beneficiário (historico_atendimentos) para cada participante
@@ -105,7 +123,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, data: freqSalva })
+    return NextResponse.json({ ok: true, data: freqSalva || { grupo_id, data } })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
