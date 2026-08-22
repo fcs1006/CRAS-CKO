@@ -235,15 +235,15 @@ export function ScfvView({
                 </div>
 
                 {/* Ações Administrativas de Gestão do Coletivo */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {onAbrirModalEditarGrupo && (
                     <button
                       type="button"
                       onClick={() => onAbrirModalEditarGrupo(grupoAtual)}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-gray-200"
-                      title="Editar configurações do grupo"
+                      className="w-8 h-8 bg-gray-100 hover:bg-indigo-600 text-gray-600 hover:text-white rounded-lg transition flex items-center justify-center border border-gray-200"
+                      title="Editar Configurações do Grupo"
                     >
-                      <i className="fa-solid fa-pen-to-square text-gray-500"></i> Editar Grupo
+                      <i className="fa-solid fa-pen-to-square text-xs"></i>
                     </button>
                   )}
                   {onExcluirGrupo && (
@@ -254,10 +254,10 @@ export function ScfvView({
                           await onExcluirGrupo(grupoAtual.id)
                         }
                       }}
-                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-rose-200"
-                      title="Excluir grupo"
+                      className="w-8 h-8 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition flex items-center justify-center border border-rose-200"
+                      title="Excluir Grupo"
                     >
-                      <i className="fa-solid fa-trash-can text-rose-600"></i> Excluir Grupo
+                      <i className="fa-solid fa-trash-can text-xs"></i>
                     </button>
                   )}
                 </div>
@@ -413,29 +413,29 @@ export function ScfvView({
                                     <button
                                       type="button"
                                       onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
-                                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-md text-[11px] transition flex items-center gap-1 shadow-2xs"
-                                      title="Visualizar e imprimir o relatório completo deste encontro"
+                                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white transition flex items-center justify-center border border-slate-200"
+                                      title="Visualizar Relatório do Encontro"
                                     >
-                                      <i className="fa-solid fa-eye text-slate-300 text-xs"></i> Visualizar
+                                      <i className="fa-solid fa-eye text-xs"></i>
                                     </button>
 
                                     <button
                                       type="button"
                                       onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
-                                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold rounded-md text-[11px] transition border border-indigo-200 flex items-center gap-1"
-                                      title="Editar relatório e informações deste encontro"
+                                      className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white transition flex items-center justify-center border border-indigo-200"
+                                      title="Editar Relatório do Encontro"
                                     >
-                                      <i className="fa-solid fa-pen-to-square text-xs"></i> Editar
+                                      <i className="fa-solid fa-pen-to-square text-xs"></i>
                                     </button>
                                   </>
                                 )}
                                 <button
                                   type="button"
                                   onClick={() => handleExcluirEncontro(item.dataStr)}
-                                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-md text-[11px] transition border border-rose-200 flex items-center gap-1"
-                                  title="Excluir este encontro e relatório"
+                                  className="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white transition flex items-center justify-center border border-rose-200"
+                                  title="Excluir Encontro"
                                 >
-                                  <i className="fa-solid fa-trash-can text-xs"></i> Excluir
+                                  <i className="fa-solid fa-trash-can text-xs"></i>
                                 </button>
                               </div>
                             </td>
