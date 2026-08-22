@@ -14,17 +14,17 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
   const parseConselhoInicial = () => {
     const raw = (usuario.conselho || '').trim()
     if (!raw || raw === 'Não aplicável') {
-      return { conselho: 'Não aplicável', uf: 'TO', registro: '' }
+      return { conselho: 'Não aplicável', regiao: '', registro: '' }
     }
-    const match = raw.match(/^(CRESS|CRP|OAB)(?:\/([A-Z]{2}))?\s*(.*)$/i)
+    const match = raw.match(/^(CRESS|CRP|OAB)(?:[\/\-]([^\s]+))?\s*(.*)$/i)
     if (match) {
       return {
         conselho: match[1].toUpperCase(),
-        uf: match[2] ? match[2].toUpperCase() : 'TO',
+        regiao: match[2] ? match[2].trim().toUpperCase() : '',
         registro: match[3] ? match[3].trim() : ''
       }
     }
-    return { conselho: 'CRESS', uf: 'TO', registro: raw }
+    return { conselho: 'CRESS', regiao: '', registro: raw }
   }
 
   const inicial = parseConselhoInicial()
@@ -33,7 +33,7 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
   const [cargo, setCargo] = useState(usuario.cargo || 'Assistente Social')
   const [outroCargo, setOutroCargo] = useState('')
   const [conselho, setConselho] = useState(inicial.conselho)
-  const [ufConselho, setUfConselho] = useState(inicial.uf)
+  const [regiaoConselho, setRegiaoConselho] = useState(inicial.regiao)
   const [registroConselho, setRegistroConselho] = useState(inicial.registro)
   const [telefone, setTelefone] = useState(usuario.telefone ? maskPhone(usuario.telefone) : '')
   const [email, setEmail] = useState(usuario.email || '')
@@ -42,12 +42,6 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
-
-  const ufsBrasil = [
-    'TO', 'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 
-    'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 
-    'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE'
-  ]
 
   const cargosPredefinidos = [
     'Assistente Social',
@@ -75,7 +69,8 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
 
     let conselhoFinal = 'Não aplicável'
     if (conselho !== 'Não aplicável' && registroConselho.trim()) {
-      conselhoFinal = `${conselho}/${ufConselho} ${registroConselho.trim().toUpperCase()}`
+      const regStr = regiaoConselho.trim() ? `/${regiaoConselho.trim().toUpperCase()}` : ''
+      conselhoFinal = `${conselho}${regStr} ${registroConselho.trim().toUpperCase()}`
     }
 
     setSalvando(true)
@@ -217,17 +212,15 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">UF do Conselho</label>
-                <select
+                <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Região</label>
+                <input
+                  type="text"
                   disabled={conselho === 'Não aplicável'}
-                  value={ufConselho}
-                  onChange={e => setUfConselho(e.target.value)}
-                  className="w-full px-2.5 py-2 border rounded-lg text-xs font-semibold bg-white uppercase disabled:bg-gray-100 disabled:text-gray-400"
-                >
-                  {ufsBrasil.map(uf => (
-                    <option key={uf} value={uf}>{uf}</option>
-                  ))}
-                </select>
+                  value={regiaoConselho}
+                  onChange={e => setRegiaoConselho(e.target.value.toUpperCase())}
+                  placeholder="EX: 23ª, TO, 01ª"
+                  className="w-full px-2.5 py-2 border rounded-lg text-xs font-semibold uppercase disabled:bg-gray-100 disabled:text-gray-400 bg-white"
+                />
               </div>
 
               <div>
@@ -244,7 +237,7 @@ export function ModalEditarProfissional({ usuario, onFechar, onSalvar }: ModalEd
             </div>
             {conselho !== 'Não aplicável' && (
               <span className="text-[11px] text-teal-800 font-semibold block">
-                Formato salvo: <strong className="font-mono">{conselho}/{ufConselho} {registroConselho || '0000'}</strong>
+                Formato salvo: <strong className="font-mono">{conselho}{regiaoConselho.trim() ? `/${regiaoConselho.trim().toUpperCase()}` : ''} {registroConselho || '0000'}</strong>
               </span>
             )}
           </div>

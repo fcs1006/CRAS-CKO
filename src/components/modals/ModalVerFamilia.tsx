@@ -362,10 +362,6 @@ export function ModalVerFamilia({
     }
 
     const idade = calculateAge(novoMembroNasc)
-    if (idade >= 18 && !novoMembroRg.trim()) {
-      alert('Para integrantes com 18 anos ou mais, o preenchimento do RG é obrigatório.')
-      return
-    }
 
     const m: MembroFamilia = {
       nome: novoMembroNome.trim().toUpperCase(),
@@ -641,7 +637,7 @@ export function ModalVerFamilia({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-teal-950 mb-1">RG</label>
+                    <label className="block text-[11px] font-semibold text-teal-950 mb-1">RG (opcional)</label>
                     <input
                       type="text"
                       value={novoMembroRg}

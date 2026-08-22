@@ -24,7 +24,7 @@ export function ModalNovoProfissional({ onFechar, onSalvar }: ModalNovoProfissio
   const [cargo, setCargo] = useState('Assistente Social')
   const [outroCargo, setOutroCargo] = useState('')
   const [conselho, setConselho] = useState('CRESS')
-  const [ufConselho, setUfConselho] = useState('TO')
+  const [regiaoConselho, setRegiaoConselho] = useState('')
   const [registroConselho, setRegistroConselho] = useState('')
   const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
@@ -33,12 +33,6 @@ export function ModalNovoProfissional({ onFechar, onSalvar }: ModalNovoProfissio
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
-
-  const ufsBrasil = [
-    'TO', 'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 
-    'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 
-    'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE'
-  ]
 
   const cargosPredefinidos = [
     'Assistente Social',
@@ -84,7 +78,8 @@ export function ModalNovoProfissional({ onFechar, onSalvar }: ModalNovoProfissio
 
     let conselhoFinal = 'Não aplicável'
     if (conselho !== 'Não aplicável' && registroConselho.trim()) {
-      conselhoFinal = `${conselho}/${ufConselho} ${registroConselho.trim().toUpperCase()}`
+      const regStr = regiaoConselho.trim() ? `/${regiaoConselho.trim().toUpperCase()}` : ''
+      conselhoFinal = `${conselho}${regStr} ${registroConselho.trim().toUpperCase()}`
     }
 
     setSalvando(true)
@@ -248,17 +243,15 @@ export function ModalNovoProfissional({ onFechar, onSalvar }: ModalNovoProfissio
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">UF do Conselho</label>
-                <select
+                <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">Região</label>
+                <input
+                  type="text"
                   disabled={conselho === 'Não aplicável'}
-                  value={ufConselho}
-                  onChange={e => setUfConselho(e.target.value)}
-                  className="w-full px-2.5 py-2 border rounded-lg text-xs font-semibold bg-white uppercase disabled:bg-gray-100 disabled:text-gray-400"
-                >
-                  {ufsBrasil.map(uf => (
-                    <option key={uf} value={uf}>{uf}</option>
-                  ))}
-                </select>
+                  value={regiaoConselho}
+                  onChange={e => setRegiaoConselho(e.target.value.toUpperCase())}
+                  placeholder="EX: 23ª, TO, 01ª"
+                  className="w-full px-2.5 py-2 border rounded-lg text-xs font-semibold uppercase disabled:bg-gray-100 disabled:text-gray-400 bg-white"
+                />
               </div>
 
               <div>
@@ -275,7 +268,7 @@ export function ModalNovoProfissional({ onFechar, onSalvar }: ModalNovoProfissio
             </div>
             {conselho !== 'Não aplicável' && (
               <span className="text-[11px] text-teal-800 font-semibold block">
-                Formato gerado: <strong className="font-mono">{conselho}/{ufConselho} {registroConselho || '0000'}</strong>
+                Formato gerado: <strong className="font-mono">{conselho}{regiaoConselho.trim() ? `/${regiaoConselho.trim().toUpperCase()}` : ''} {registroConselho || '0000'}</strong>
               </span>
             )}
           </div>

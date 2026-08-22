@@ -26,6 +26,40 @@ interface ModalFrequenciaGrupoScfvProps {
 
 type StatusFrequencia = 'presente' | 'falta_justificada' | 'falta_nao_justificada'
 
+function validarDiaSemanaEncontro(dataStr: string, diasSemanaStr?: string) {
+  if (!dataStr) return { valido: true, diaFormatado: '', diasConfigurados: '' }
+  
+  const diasConfig = (diasSemanaStr || '').trim()
+  if (!diasConfig || diasConfig.toLowerCase().includes('periódico') || diasConfig.toLowerCase().includes('periodico')) {
+    return { valido: true, diaFormatado: '', diasConfigurados: '' }
+  }
+
+  const [year, month, day] = dataStr.split('-').map(Number)
+  if (!year || !month || !day) return { valido: true, diaFormatado: '', diasConfigurados: '' }
+
+  const dateObj = new Date(year, month - 1, day)
+  const dayOfWeekNum = dateObj.getDay()
+
+  const mapDias: Record<number, { nome: string; regex: RegExp }> = {
+    0: { nome: 'Domingo', regex: /domingo/i },
+    1: { nome: 'Segunda-feira', regex: /segunda/i },
+    2: { nome: 'Terça-feira', regex: /ter[çc]a/i },
+    3: { nome: 'Quarta-feira', regex: /quarta/i },
+    4: { nome: 'Quinta-feira', regex: /quinta/i },
+    5: { nome: 'Sexta-feira', regex: /sexta/i },
+    6: { nome: 'Sábado', regex: /s[áa]bado/i },
+  }
+
+  const diaAtual = mapDias[dayOfWeekNum]
+  const valido = diaAtual ? diaAtual.regex.test(diasConfig) : true
+
+  return {
+    valido,
+    diaFormatado: diaAtual ? diaAtual.nome : '',
+    diasConfigurados: diasConfig
+  }
+}
+
 export function ModalFrequenciaGrupoScfv({
   grupo,
   participantes,
@@ -37,6 +71,9 @@ export function ModalFrequenciaGrupoScfv({
   const [dataChamada, setDataChamada] = useState<string>(new Date().toISOString().split('T')[0])
   const [tema, setTema] = useState('')
   const [tecnico, setTecnico] = useState(usuarioLogadoNome || grupo.tecnico_responsavel || '')
+
+  const diasConfiguradosGrupo = grupo.dias_semana || grupo.horario || ''
+  const validacaoDia = validarDiaSemanaEncontro(dataChamada, diasConfiguradosGrupo)
 
   // Inicializa a lista de frequências com 'presente' por padrão
   const [frequencias, setFrequencias] = useState<Record<string, { status: StatusFrequencia; observacao: string }>>(() => {
@@ -74,6 +111,16 @@ export function ModalFrequenciaGrupoScfv({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!dataChamada) return alert('Por favor, selecione a data do encontro.')
+
+    if (!validacaoDia.valido) {
+      const dataBr = dataChamada.split('-').reverse().join('/')
+      return alert(
+        `A data selecionada (${dataBr}) cai em uma ${validacaoDia.diaFormatado}.\n\n` +
+        `Este grupo foi configurado para encontros em: ${validacaoDia.diasConfigurados}.\n` +
+        `Selecione uma data que corresponda aos dias do encontro.`
+      )
+    }
+
     setSalvando(true)
 
     try {
@@ -146,8 +193,15 @@ export function ModalFrequenciaGrupoScfv({
                   required
                   value={dataChamada}
                   onChange={e => setDataChamada(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white text-gray-900"
+                  className={`w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
+                    !validacaoDia.valido ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
+                  }`}
                 />
+                {diasConfiguradosGrupo && (
+                  <span className="text-[10px] text-gray-500 mt-1 block">
+                    Dias cadastrados: <strong className="text-indigo-800">{diasConfiguradosGrupo}</strong>
+                  </span>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -163,6 +217,18 @@ export function ModalFrequenciaGrupoScfv({
                 />
               </div>
             </div>
+
+            {!validacaoDia.valido && (
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 font-semibold text-xs flex items-center gap-2.5">
+                <i className="fa-solid fa-triangle-exclamation text-amber-600 text-base shrink-0"></i>
+                <div>
+                  <p className="font-bold">Data incompatível com os dias de encontro do grupo!</p>
+                  <p className="text-[11px] text-amber-900 font-medium">
+                    A data selecionada ({dataChamada.split('-').reverse().join('/')}) cai em uma <strong>{validacaoDia.diaFormatado}</strong>, porém este grupo possui encontros configurados em: <strong>{validacaoDia.diasConfigurados}</strong>.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Ações de Lote e Resumo de Frequência */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-2 border-t border-gray-200">
@@ -312,7 +378,7 @@ export function ModalFrequenciaGrupoScfv({
               
               <button
                 type="submit"
-                disabled={salvando || participantes.length === 0}
+                disabled={salvando || participantes.length === 0 || !validacaoDia.valido}
                 className="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-2 disabled:opacity-50"
               >
                 {salvando ? (

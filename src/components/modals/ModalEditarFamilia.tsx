@@ -445,10 +445,6 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
     }
 
     const idade = calculateAge(novoMembroNasc)
-    if (idade >= 18 && !novoMembroRg.trim()) {
-      alert('Para integrantes com 18 anos ou mais, o preenchimento do RG é obrigatório.')
-      return
-    }
 
     const mAtualizado: MembroFamilia = {
       nome: novoMembroNome.trim().toUpperCase(),
@@ -516,10 +512,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
       alert('Por favor, informe o Nome Completo da Mãe do Responsável.')
       return
     }
-    if (!rg.trim()) {
-      alert('Por favor, informe o RG do Responsável.')
-      return
-    }
+
     if (!pontoReferencia.trim()) {
       alert('Por favor, informe o Ponto de Referência do Endereço.')
       return
@@ -889,11 +882,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
               {/* RG */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  RG do Responsável <span className="text-red-600 font-bold">*</span>
+                  RG do Responsável <span className="text-gray-400 font-normal">(opcional)</span>
                 </label>
                 <input
                   type="text"
-                  required
                   value={rg}
                   onChange={e => setRg(e.target.value.toUpperCase())}
                   placeholder="EX: 00.000.000-0"
@@ -1613,7 +1605,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
 
                 <div>
                   <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                    RG (obrigatório se &ge; 18 anos / opcional se menor)
+                    RG (opcional)
                   </label>
                   <input
                     type="text"
