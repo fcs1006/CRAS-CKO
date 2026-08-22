@@ -41,6 +41,7 @@ import { ModalNovoGrupoScfv } from '@/components/modals/ModalNovoGrupoScfv'
 import { ModalVincularParticipanteScfv } from '@/components/modals/ModalVincularParticipanteScfv'
 import { ModalFrequenciaGrupoScfv } from '@/components/modals/ModalFrequenciaGrupoScfv'
 import { ModalRelatorioGrupoScfv } from '@/components/modals/ModalRelatorioGrupoScfv'
+import { ModalRelatorioGeralGrupoScfv } from '@/components/modals/ModalRelatorioGeralGrupoScfv'
 import { ModalNovoEncaminhamento } from '@/components/modals/ModalNovoEncaminhamento'
 
 // Dados Mock de Fallback para ambiente de desenvolvimento offline
@@ -92,6 +93,7 @@ export default function PainelPage() {
   const [grupoParaVincular, setGrupoParaVincular] = useState<GrupoSCFV | null>(null)
   const [grupoParaFrequencia, setGrupoParaFrequencia] = useState<GrupoSCFV | null>(null)
   const [grupoParaRelatorio, setGrupoParaRelatorio] = useState<GrupoSCFV | null>(null)
+  const [grupoParaRelatorioGeral, setGrupoParaRelatorioGeral] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
 
   // Carregar sessão do usuário e carregar dados
@@ -871,6 +873,7 @@ export default function PainelPage() {
                   onExcluirParticipante={handleExcluirParticipante}
                   onAbrirModalFrequencia={(grupo) => setGrupoParaFrequencia(grupo)}
                   onAbrirModalRelatorioGrupo={(grupo) => setGrupoParaRelatorio(grupo)}
+                  onAbrirModalRelatorioGeralGrupo={(grupo) => setGrupoParaRelatorioGeral(grupo)}
                 />
               )}
 
@@ -1047,6 +1050,17 @@ export default function PainelPage() {
           usuarios={usuarios}
           onClose={() => setGrupoParaRelatorio(null)}
           onSalvarRelatorio={handleSalvarRelatorioGrupo}
+        />
+      )}
+
+      {grupoParaRelatorioGeral && (
+        <ModalRelatorioGeralGrupoScfv
+          grupo={grupoParaRelatorioGeral}
+          participantes={participantes.filter(p => p.grupo_id === grupoParaRelatorioGeral.id)}
+          familias={familias}
+          configuracao={configuracao}
+          usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
+          onClose={() => setGrupoParaRelatorioGeral(null)}
         />
       )}
 

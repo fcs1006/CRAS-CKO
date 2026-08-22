@@ -37,6 +37,8 @@ export function ModalRelatorioGrupoScfv({
   onSalvarRelatorio
 }: ModalRelatorioGrupoScfvProps) {
   const [dataEncontro, setDataEncontro] = useState<string>('')
+  const [modoDataOutra, setModoDataOutra] = useState(false)
+
   const [objetivoEncontro, setObjetivoEncontro] = useState(
     'FORTALECER VÍNCULOS FAMILIARES E COMUNITÁRIOS, DESENVOLVER A AUTONOMIA E PROMOVER A CONVIVÊNCIA SOCIAL.'
   )
@@ -65,34 +67,79 @@ export function ModalRelatorioGrupoScfv({
   )
 
   const [salvando, setSalvando] = useState(false)
+  const [carregandoHistorico, setCarregandoHistorico] = useState(true)
+  const [historicoFrequencias, setHistoricoFrequencias] = useState<any[]>([])
+  const [historicoRelatorios, setHistoricoRelatorios] = useState<any[]>([])
   const [frequenciaEncontro, setFrequenciaEncontro] = useState<any>(null)
-  const [carregandoFrequencia, setCarregandoFrequencia] = useState(false)
+  const [relatorioSalvoNoDia, setRelatorioSalvoNoDia] = useState<boolean>(false)
 
-  // Buscar a frequência registrada para a data do encontro selecionada
-  useEffect(() => {
-    async function carregarFrequenciaData() {
-      if (!grupo?.id || !dataEncontro) {
-        setFrequenciaEncontro(null)
-        return
+  // 1. Carregar Históricos do Grupo da API
+  async function carregarHistoricos() {
+    if (!grupo?.id) return
+    setCarregandoHistorico(true)
+    try {
+      const [resFreq, resRel] = await Promise.all([
+        fetch(`/api/scfv/frequencia?grupo_id=${grupo.id}`),
+        fetch(`/api/scfv/relatorio?grupo_id=${grupo.id}`)
+      ])
+
+      if (resFreq.ok) {
+        const json = await resFreq.json()
+        if (json.ok && Array.isArray(json.data)) setHistoricoFrequencias(json.data)
       }
-      setCarregandoFrequencia(true)
-      try {
-        const res = await fetch(`/api/scfv/frequencia?grupo_id=${grupo.id}`)
-        if (res.ok) {
-          const json = await res.json()
-          if (json.ok && Array.isArray(json.data)) {
-            const freqNoDia = json.data.find((f: any) => f.data === dataEncontro)
-            setFrequenciaEncontro(freqNoDia || null)
-          }
-        }
-      } catch (err) {
-        console.warn('Erro ao carregar frequência do encontro:', err)
-      } finally {
-        setCarregandoFrequencia(false)
+
+      if (resRel.ok) {
+        const json = await resRel.json()
+        if (json.ok && Array.isArray(json.data)) setHistoricoRelatorios(json.data)
       }
+    } catch (err) {
+      console.warn('Erro ao carregar históricos do grupo:', err)
+    } finally {
+      setCarregandoHistorico(false)
     }
-    carregarFrequenciaData()
-  }, [grupo?.id, dataEncontro])
+  }
+
+  useEffect(() => {
+    carregarHistoricos()
+  }, [grupo?.id])
+
+  // Obter datas únicas do histórico
+  const datasHistoricoUnicas = Array.from(
+    new Set([
+      ...historicoFrequencias.map(f => f.data),
+      ...historicoRelatorios.map(r => r.data_encontro)
+    ])
+  ).filter(Boolean).sort().reverse()
+
+  // 2. Quando a Data do Encontro mudar, carregar Frequência e Relatório gravados daquela data
+  useEffect(() => {
+    if (!dataEncontro) {
+      setFrequenciaEncontro(null)
+      setRelatorioSalvoNoDia(false)
+      return
+    }
+
+    const freqNoDia = historicoFrequencias.find(f => f.data === dataEncontro)
+    setFrequenciaEncontro(freqNoDia || null)
+
+    const relNoDia = historicoRelatorios.find(r => r.data_encontro === dataEncontro)
+
+    if (relNoDia) {
+      setRelatorioSalvoNoDia(true)
+      if (relNoDia.objetivo_encontro) setObjetivoEncontro(relNoDia.objetivo_encontro)
+      if (relNoDia.atividade_realizada) setAtividadeRealizada(relNoDia.atividade_realizada)
+      if (relNoDia.detalhamento) setDetalhamento(relNoDia.detalhamento)
+      if (relNoDia.relato) setRelato(relNoDia.relato)
+      if (relNoDia.providencias) setProvidencias(relNoDia.providencias)
+      if (relNoDia.tecnico) setTecnicoAssinatura(relNoDia.tecnico)
+      if (relNoDia.profissionais_participantes) {
+        const profsArr = relNoDia.profissionais_participantes.split(',').map((s: string) => s.trim().toUpperCase())
+        setProfissionaisSelecionados(profsArr)
+      }
+    } else {
+      setRelatorioSalvoNoDia(false)
+    }
+  }, [dataEncontro, historicoFrequencias, historicoRelatorios])
 
   function toggleProfissional(nomeProf: string) {
     const profUpper = nomeProf.toUpperCase()
@@ -134,21 +181,33 @@ export function ModalRelatorioGrupoScfv({
 
     setSalvando(true)
     try {
-      if (onSalvarRelatorio) {
-        await onSalvarRelatorio({
-          grupo_id: grupo.id,
-          grupo_nome: grupo.nome,
-          data_encontro: dataEncontro,
-          objetivo_encontro: objetivoEncontro.trim().toUpperCase(),
-          atividade_realizada: atividadeRealizada.trim().toUpperCase(),
-          detalhamento: detalhamento.trim().toUpperCase(),
-          relato: relato.trim().toUpperCase(),
-          providencias: providencias.trim().toUpperCase(),
-          profissionais_participantes: profissionaisTexto,
-          tecnico: tecnicoAssinatura.trim().toUpperCase()
-        })
+      // Gravar na API de relatorios_scfv
+      const payloadApi = {
+        grupo_id: grupo.id,
+        grupo_nome: grupo.nome,
+        data_encontro: dataEncontro,
+        objetivo_encontro: objetivoEncontro.trim().toUpperCase(),
+        atividade_realizada: atividadeRealizada.trim().toUpperCase(),
+        detalhamento: detalhamento.trim().toUpperCase(),
+        relato: relato.trim().toUpperCase(),
+        providencias: providencias.trim().toUpperCase(),
+        profissionais_participantes: profissionaisTexto,
+        tecnico: tecnicoAssinatura.trim().toUpperCase()
       }
-      alert('Relatório do encontro salvo com sucesso e registrado no histórico dos beneficiários!')
+
+      await fetch('/api/scfv/relatorio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadApi)
+      })
+
+      // Gravar no histórico de prontuários dos beneficiários
+      if (onSalvarRelatorio) {
+        await onSalvarRelatorio(payloadApi)
+      }
+
+      alert('Relatório do encontro salvo com sucesso no banco de dados e nos prontuários!')
+      await carregarHistoricos()
       onClose()
     } catch (err: any) {
       alert('Erro ao salvar relatório do encontro: ' + (err.message || 'Tente novamente.'))
@@ -311,17 +370,60 @@ export function ModalRelatorioGrupoScfv({
               </div>
 
               <div>
-                <span className="text-gray-500 font-bold uppercase text-[10px] block">Data do Encontro *</span>
-                <input
-                  type="date"
-                  required
-                  value={dataEncontro}
-                  onChange={e => setDataEncontro(e.target.value)}
-                  className={`w-full mt-0.5 px-2.5 py-1 border rounded-lg font-bold text-xs bg-white uppercase text-indigo-950 no-print ${
+                <span className="text-gray-500 font-bold uppercase text-[10px] block mb-0.5">Selecione o Encontro do Histórico *</span>
+                
+                <select
+                  value={modoDataOutra ? 'outra' : dataEncontro}
+                  onChange={e => {
+                    if (e.target.value === 'outra') {
+                      setModoDataOutra(true)
+                      setDataEncontro('')
+                    } else {
+                      setModoDataOutra(false)
+                      setDataEncontro(e.target.value)
+                    }
+                  }}
+                  className={`w-full px-2.5 py-1.5 border rounded-lg font-bold text-xs bg-white text-gray-900 no-print ${
                     !dataEncontro ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
                   }`}
-                />
+                >
+                  <option value="">-- SELECIONE O ENCONTRO DO HISTÓRICO --</option>
+                  {datasHistoricoUnicas.map(dStr => {
+                    const dataBrFormat = dStr.split('-').reverse().join('/')
+                    const temFreq = historicoFrequencias.some(f => f.data === dStr)
+                    const temRel = historicoRelatorios.some(r => r.data_encontro === dStr)
+                    
+                    let rotulo = `Encontro de ${dataBrFormat}`
+                    if (temFreq && temRel) rotulo += ' (Frequência & Relatório salvos - Editar)'
+                    else if (temFreq) rotulo += ' (Frequência salva)'
+                    else if (temRel) rotulo += ' (Relatório salvo - Editar)'
+
+                    return (
+                      <option key={dStr} value={dStr}>
+                        {rotulo}
+                      </option>
+                    )
+                  })}
+                  <option value="outra">+ Informar outra data de encontro...</option>
+                </select>
+
+                {modoDataOutra && (
+                  <input
+                    type="date"
+                    required
+                    value={dataEncontro}
+                    onChange={e => setDataEncontro(e.target.value)}
+                    className="w-full mt-1.5 px-2.5 py-1 border border-gray-300 rounded-lg font-bold text-xs bg-white uppercase text-indigo-950 no-print"
+                  />
+                )}
+
                 <strong className="text-indigo-950 font-extrabold text-xs print:block hidden">{dataBr}</strong>
+
+                {relatorioSalvoNoDia && (
+                  <span className="text-[10px] text-emerald-700 font-bold block mt-1 no-print">
+                    <i className="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Relatório deste encontro gravado (Modo Edição)
+                  </span>
+                )}
               </div>
               
               <div>
@@ -506,7 +608,7 @@ export function ModalRelatorioGrupoScfv({
               </div>
             </div>
 
-            {carregandoFrequencia ? (
+            {carregandoHistorico ? (
               <div className="p-4 text-center text-xs text-gray-500 font-semibold">
                 <i className="fa-solid fa-circle-notch animate-spin mr-1"></i> Carregando registro de frequência da data {dataBr}...
               </div>
