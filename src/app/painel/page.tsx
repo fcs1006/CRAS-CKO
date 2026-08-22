@@ -494,22 +494,47 @@ export default function PainelPage() {
     await carregarTodosOsDados()
   }
 
-  async function handleSalvarRelatorioGrupo(dados: { grupo_id: string; grupo_nome: string; relato: string; providencias: string; tecnico: string }) {
+  async function handleSalvarRelatorioGrupo(dados: {
+    grupo_id: string
+    grupo_nome: string
+    data_encontro: string
+    objetivo_encontro?: string
+    atividade_realizada?: string
+    detalhamento?: string
+    relato: string
+    providencias?: string
+    profissionais_participantes?: string
+    tecnico: string
+  }) {
     const integrantesGrupo = participantes.filter(p => p.grupo_id === dados.grupo_id && p.familia_id)
     
     if (integrantesGrupo.length > 0) {
-      const dataHoje = new Date().toISOString().split('T')[0]
-      const registrosHistorico = integrantesGrupo.map(p => ({
-        familia_id: p.familia_id,
-        usuario_visitado: p.nome.toUpperCase(),
-        tecnico: dados.tecnico || usuarioLogado?.nome || 'TÉCNICO RESPONSÁVEL',
-        tipo: 'SCFV / Convivência',
-        local: 'CRAS',
-        relato: `RELATÓRIO TÉCNICO DE GRUPO [${dados.grupo_nome}]: ${dados.relato}`,
-        providencias: dados.providencias || 'Acompanhamento em grupo de convivência.',
-        sigilo: 'equipe_tecnica',
-        data: dataHoje
-      }))
+      const dataRelato = dados.data_encontro || new Date().toISOString().split('T')[0]
+      const dataPartes = dataRelato.split('-')
+      const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : dataRelato
+
+      const registrosHistorico = integrantesGrupo.map(p => {
+        const partesRelato = [
+          `RELATÓRIO DE ENCONTRO SCFV [${dados.grupo_nome}] - DATA: ${dataBr}`,
+          dados.objetivo_encontro ? `OBJETIVO: ${dados.objetivo_encontro}` : '',
+          dados.atividade_realizada ? `ATIVIDADE REALIZADA: ${dados.atividade_realizada}` : '',
+          dados.detalhamento ? `DETALHAMENTO: ${dados.detalhamento}` : '',
+          dados.relato ? `RELATO TÉCNICO: ${dados.relato}` : '',
+          dados.profissionais_participantes ? `PROFISSIONAIS PARTICIPANTES: ${dados.profissionais_participantes}` : ''
+        ].filter(Boolean).join('\n')
+
+        return {
+          familia_id: p.familia_id,
+          usuario_visitado: p.nome.toUpperCase(),
+          tecnico: dados.tecnico || usuarioLogado?.nome || 'TÉCNICO RESPONSÁVEL',
+          tipo: 'SCFV / Convivência',
+          local: 'CRAS',
+          relato: partesRelato,
+          providencias: dados.providencias || 'Acompanhamento continuado em grupo de convivência.',
+          sigilo: 'equipe_tecnica',
+          data: dataRelato
+        }
+      })
 
       await supabase.from('historico_atendimentos').insert(registrosHistorico)
     }
@@ -1019,6 +1044,7 @@ export default function PainelPage() {
           familias={familias}
           configuracao={configuracao}
           usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
+          usuarios={usuarios}
           onClose={() => setGrupoParaRelatorio(null)}
           onSalvarRelatorio={handleSalvarRelatorioGrupo}
         />
