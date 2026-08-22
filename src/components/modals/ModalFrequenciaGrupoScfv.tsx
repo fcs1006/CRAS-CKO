@@ -72,7 +72,7 @@ export function ModalFrequenciaGrupoScfv({
   const [historicoFrequencias, setHistoricoFrequencias] = useState<any[]>([])
   const [jaRegistrado, setJaRegistrado] = useState(false)
 
-  const [dataChamada, setDataChamada] = useState<string>(new Date().toISOString().split('T')[0])
+  const [dataChamada, setDataChamada] = useState<string>('')
   const [tecnico, setTecnico] = useState(usuarioLogadoNome || grupo.tecnico_responsavel || '')
 
   const diasConfiguradosGrupo = grupo.dias_semana || grupo.horario || ''
@@ -105,6 +105,12 @@ export function ModalFrequenciaGrupoScfv({
 
   // 2. Quando a data do encontro ou o histórico mudar, sincronizar os status dos participantes
   useEffect(() => {
+    if (!dataChamada) {
+      setJaRegistrado(false)
+      setFrequencias({})
+      return
+    }
+
     const registroExistente = historicoFrequencias.find(f => f.data === dataChamada)
     const mapaNovasFrequencias: Record<string, { status: StatusFrequencia; observacao: string }> = {}
 
@@ -256,7 +262,11 @@ export function ModalFrequenciaGrupoScfv({
                   value={dataChamada}
                   onChange={e => setDataChamada(e.target.value)}
                   className={`w-full max-w-xs px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
-                    !validacaoDia.valido ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
+                    !dataChamada
+                      ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20'
+                      : !validacaoDia.valido
+                      ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20'
+                      : 'border-gray-300'
                   }`}
                 />
                 {diasConfiguradosGrupo && (
@@ -273,7 +283,12 @@ export function ModalFrequenciaGrupoScfv({
               )}
             </div>
 
-            {!validacaoDia.valido && (
+            {!dataChamada ? (
+              <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-950 font-semibold text-xs flex items-center gap-2.5">
+                <i className="fa-solid fa-calendar-days text-indigo-600 text-base shrink-0"></i>
+                <p>Selecione a <strong>Data do Encontro</strong> no campo acima para carregar ou lançar a frequência do grupo.</p>
+              </div>
+            ) : !validacaoDia.valido ? (
               <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 font-semibold text-xs flex items-center gap-2.5">
                 <i className="fa-solid fa-triangle-exclamation text-amber-600 text-base shrink-0"></i>
                 <div>
@@ -283,7 +298,7 @@ export function ModalFrequenciaGrupoScfv({
                   </p>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Ações de Lote e Resumo de Frequência */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-2 border-t border-gray-200">

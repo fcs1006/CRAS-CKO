@@ -36,7 +36,7 @@ export function ModalRelatorioGrupoScfv({
   onClose,
   onSalvarRelatorio
 }: ModalRelatorioGrupoScfvProps) {
-  const [dataEncontro, setDataEncontro] = useState<string>(new Date().toISOString().split('T')[0])
+  const [dataEncontro, setDataEncontro] = useState<string>('')
   const [objetivoEncontro, setObjetivoEncontro] = useState(
     'FORTALECER VÍNCULOS FAMILIARES E COMUNITÁRIOS, DESENVOLVER A AUTONOMIA E PROMOVER A CONVIVÊNCIA SOCIAL.'
   )
@@ -71,7 +71,10 @@ export function ModalRelatorioGrupoScfv({
   // Buscar a frequência registrada para a data do encontro selecionada
   useEffect(() => {
     async function carregarFrequenciaData() {
-      if (!grupo?.id || !dataEncontro) return
+      if (!grupo?.id || !dataEncontro) {
+        setFrequenciaEncontro(null)
+        return
+      }
       setCarregandoFrequencia(true)
       try {
         const res = await fetch(`/api/scfv/frequencia?grupo_id=${grupo.id}`)
@@ -114,6 +117,7 @@ export function ModalRelatorioGrupoScfv({
   }
 
   async function handleSalvar() {
+    if (!dataEncontro) return alert('Por favor, selecione a Data do Encontro.')
     if (!objetivoEncontro.trim()) return alert('Por favor, informe o Objetivo do Encontro.')
     if (!atividadeRealizada.trim()) return alert('Por favor, informe a Atividade Realizada.')
     if (!detalhamento.trim()) return alert('Por favor, informe o Detalhamento do Encontro.')
@@ -307,12 +311,15 @@ export function ModalRelatorioGrupoScfv({
               </div>
 
               <div>
-                <span className="text-gray-500 font-bold uppercase text-[10px] block">Data do Encontro:</span>
+                <span className="text-gray-500 font-bold uppercase text-[10px] block">Data do Encontro *</span>
                 <input
                   type="date"
+                  required
                   value={dataEncontro}
                   onChange={e => setDataEncontro(e.target.value)}
-                  className="w-full mt-0.5 px-2.5 py-1 border border-gray-300 rounded-lg font-bold text-xs bg-white uppercase text-indigo-950 no-print"
+                  className={`w-full mt-0.5 px-2.5 py-1 border rounded-lg font-bold text-xs bg-white uppercase text-indigo-950 no-print ${
+                    !dataEncontro ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
+                  }`}
                 />
                 <strong className="text-indigo-950 font-extrabold text-xs print:block hidden">{dataBr}</strong>
               </div>
