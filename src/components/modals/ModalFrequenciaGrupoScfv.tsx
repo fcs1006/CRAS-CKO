@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GrupoSCFV, ParticipanteSCFV } from '@/types'
 
 interface ModalFrequenciaGrupoScfvProps {
@@ -68,20 +68,83 @@ export function ModalFrequenciaGrupoScfv({
   onSalvarFrequencia
 }: ModalFrequenciaGrupoScfvProps) {
   const [salvando, setSalvando] = useState(false)
+  const [carregandoHistorico, setCarregandoHistorico] = useState(true)
+  const [historicoFrequencias, setHistoricoFrequencias] = useState<any[]>([])
+  const [jaRegistrado, setJaRegistrado] = useState(false)
+
   const [dataChamada, setDataChamada] = useState<string>(new Date().toISOString().split('T')[0])
   const [tecnico, setTecnico] = useState(usuarioLogadoNome || grupo.tecnico_responsavel || '')
 
   const diasConfiguradosGrupo = grupo.dias_semana || grupo.horario || ''
   const validacaoDia = validarDiaSemanaEncontro(dataChamada, diasConfiguradosGrupo)
 
-  // Inicializa a lista de frequências com 'presente' por padrão
-  const [frequencias, setFrequencias] = useState<Record<string, { status: StatusFrequencia; observacao: string }>>(() => {
-    const inicial: Record<string, { status: StatusFrequencia; observacao: string }> = {}
-    participantes.forEach(p => {
-      inicial[p.id] = { status: 'presente', observacao: '' }
-    })
-    return inicial
-  })
+  const [frequencias, setFrequencias] = useState<Record<string, { status: StatusFrequencia; observacao: string }>>({})
+
+  // 1. Carregar histórico de frequências do grupo da API
+  async function carregarFrequenciasAnteriores() {
+    if (!grupo?.id) return
+    setCarregandoHistorico(true)
+    try {
+      const res = await fetch(`/api/scfv/frequencia?grupo_id=${grupo.id}`)
+      if (res.ok) {
+        const json = await res.json()
+        if (json.ok && Array.isArray(json.data)) {
+          setHistoricoFrequencias(json.data)
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar frequências anteriores do grupo:', err)
+    } finally {
+      setCarregandoHistorico(false)
+    }
+  }
+
+  useEffect(() => {
+    carregarFrequenciasAnteriores()
+  }, [grupo?.id])
+
+  // 2. Quando a data do encontro ou o histórico mudar, sincronizar os status dos participantes
+  useEffect(() => {
+    const registroExistente = historicoFrequencias.find(f => f.data === dataChamada)
+    const mapaNovasFrequencias: Record<string, { status: StatusFrequencia; observacao: string }> = {}
+
+    if (registroExistente) {
+      setJaRegistrado(true)
+      const registrosArr = registroExistente.registros || []
+      const presentesArr = registroExistente.presentes || []
+
+      participantes.forEach(p => {
+        // Buscar por membro_id, id ou nome
+        const regEncontrado = registrosArr.find(
+          (r: any) =>
+            (r.membro_id && (r.membro_id === p.membro_id || r.membro_id === p.id)) ||
+            (r.nome && r.nome.toUpperCase() === p.nome.toUpperCase())
+        )
+
+        if (regEncontrado) {
+          mapaNovasFrequencias[p.id] = {
+            status: regEncontrado.status || 'presente',
+            observacao: regEncontrado.observacao || ''
+          }
+        } else if (presentesArr.length > 0) {
+          const ehPresente = presentesArr.includes(p.membro_id) || presentesArr.includes(p.id)
+          mapaNovasFrequencias[p.id] = {
+            status: ehPresente ? 'presente' : 'falta_nao_justificada',
+            observacao: ''
+          }
+        } else {
+          mapaNovasFrequencias[p.id] = { status: 'presente', observacao: '' }
+        }
+      })
+    } else {
+      setJaRegistrado(false)
+      participantes.forEach(p => {
+        mapaNovasFrequencias[p.id] = { status: 'presente', observacao: '' }
+      })
+    }
+
+    setFrequencias(mapaNovasFrequencias)
+  }, [dataChamada, historicoFrequencias, participantes])
 
   function alterarStatus(partId: string, status: StatusFrequencia) {
     setFrequencias(prev => ({
@@ -142,6 +205,7 @@ export function ModalFrequenciaGrupoScfv({
         registros
       })
 
+      await carregarFrequenciasAnteriores()
       onClose()
     } catch (err: any) {
       alert('Erro ao registrar frequência: ' + (err.message || 'Tente novamente.'))
@@ -181,23 +245,31 @@ export function ModalFrequenciaGrupoScfv({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           {/* Cabeçalho do Formulário (Data, Resumo) */}
           <div className="p-4 bg-gray-50 border-b border-gray-200 shrink-0 space-y-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                Data do Encontro *
-              </label>
-              <input
-                type="date"
-                required
-                value={dataChamada}
-                onChange={e => setDataChamada(e.target.value)}
-                className={`w-full max-w-xs px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
-                  !validacaoDia.valido ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
-                }`}
-              />
-              {diasConfiguradosGrupo && (
-                <span className="text-[10px] text-gray-500 mt-1 block">
-                  Dias cadastrados: <strong className="text-indigo-800">{diasConfiguradosGrupo}</strong>
-                </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
+                  Data do Encontro *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={dataChamada}
+                  onChange={e => setDataChamada(e.target.value)}
+                  className={`w-full max-w-xs px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
+                    !validacaoDia.valido ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
+                  }`}
+                />
+                {diasConfiguradosGrupo && (
+                  <span className="text-[10px] text-gray-500 mt-1 block">
+                    Dias cadastrados: <strong className="text-indigo-800">{diasConfiguradosGrupo}</strong>
+                  </span>
+                )}
+              </div>
+
+              {jaRegistrado && (
+                <div className="px-3 py-1.5 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-1.5 shrink-0">
+                  <i className="fa-solid fa-circle-check text-emerald-600"></i> Chamada já registrada para este dia (Modo Edição)
+                </div>
               )}
             </div>
 

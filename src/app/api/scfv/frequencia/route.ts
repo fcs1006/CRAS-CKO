@@ -52,28 +52,40 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    // Fallback resiliente se a tabela no banco não tiver a coluna 'registros' ainda
-    if (freqErr && (freqErr.message?.includes('registros') || freqErr.message?.includes('column') || freqErr.message?.includes('schema cache'))) {
-      console.warn('Coluna ausente no Supabase para frequencia_scfv, aplicando fallback para array presentes:', freqErr.message)
+    // Fallback resiliente caso o upsert com onConflict apresente erro
+    if (freqErr) {
+      console.warn('Aviso no upsert de frequencia_scfv, aplicando fallback de substituição:', freqErr.message)
+      
+      // Tentar deletar registro anterior daquela mesma data e grupo para reinserir
+      await supabase.from('frequencia_scfv').delete().eq('grupo_id', grupo_id).eq('data', data)
 
-      const presentesArray = registros
-        .filter((r: any) => r.status === 'presente' && r.membro_id && r.membro_id.length === 36)
-        .map((r: any) => r.membro_id)
-
-      const safePayload = {
-        grupo_id,
-        data,
-        presentes: presentesArray
-      }
-
-      const retry = await supabase
+      const retryInsert = await supabase
         .from('frequencia_scfv')
-        .upsert(safePayload, { onConflict: 'grupo_id,data' })
+        .insert(payload)
         .select()
         .single()
 
-      freqSalva = retry.data
-      freqErr = retry.error
+      if (retryInsert.error && (retryInsert.error.message?.includes('registros') || retryInsert.error.message?.includes('column'))) {
+        const presentesArray = registros
+          .filter((r: any) => r.status === 'presente' && r.membro_id && r.membro_id.length === 36)
+          .map((r: any) => r.membro_id)
+
+        const safePayload = {
+          grupo_id,
+          data,
+          presentes: presentesArray
+        }
+
+        const fallbackArr = await supabase
+          .from('frequencia_scfv')
+          .insert(safePayload)
+          .select()
+          .single()
+
+        freqSalva = fallbackArr.data
+      } else {
+        freqSalva = retryInsert.data
+      }
     }
 
     // 2. Gravar no Histórico do Beneficiário (historico_atendimentos) para cada participante
