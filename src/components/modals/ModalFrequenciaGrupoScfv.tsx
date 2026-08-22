@@ -227,7 +227,7 @@ export function ModalFrequenciaGrupoScfv({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:hidden">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden flex flex-col max-h-[92vh] border border-indigo-100">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-6 overflow-hidden flex flex-col max-h-[92vh] border border-indigo-100">
         
         {/* Header */}
         <div className="bg-indigo-900 text-white p-5 flex justify-between items-center shrink-0">
@@ -289,51 +289,51 @@ export function ModalFrequenciaGrupoScfv({
                 <p>Selecione a <strong>Data do Encontro</strong> no campo acima para carregar ou lançar a frequência do grupo.</p>
               </div>
             ) : !validacaoDia.valido ? (
-              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 font-semibold text-xs flex items-center gap-2.5">
-                <i className="fa-solid fa-triangle-exclamation text-amber-600 text-base shrink-0"></i>
-                <div>
-                  <p className="font-bold">Data incompatível com os dias de encontro do grupo!</p>
-                  <p className="text-[11px] text-amber-900 font-medium">
-                    A data selecionada ({dataChamada.split('-').reverse().join('/')}) cai em uma <strong>{validacaoDia.diaFormatado}</strong>, porém este grupo possui encontros configurados em: <strong>{validacaoDia.diasConfigurados}</strong>.
-                  </p>
+              <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 font-semibold text-xs space-y-1">
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-triangle-exclamation text-amber-600 text-base shrink-0"></i>
+                  <strong>Atenção: A data selecionada ({dataChamada.split('-').reverse().join('/')}) não é um dia habitual deste grupo.</strong>
                 </div>
+                <p className="text-[11px] text-amber-800 ml-6">
+                  Este grupo realiza encontros em: <strong>{diasConfiguradosGrupo}</strong>. Certifique-se de selecionar a data correta.
+                </p>
               </div>
             ) : null}
 
-            {/* Ações de Lote e Resumo de Frequência */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-2 border-t border-gray-200">
+            {/* Placar de Resumo & Botões de Marcar Todos */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-gray-200">
               <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-200">
-                  <i className="fa-solid fa-circle-check text-emerald-600 mr-1"></i> {totalPresentes} Presentes
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <i className="fa-solid fa-check text-emerald-600 mr-1"></i> {totalPresentes} Presentes
                 </span>
-                <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-200">
-                  <i className="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i> {totalFaltasJustificadas} Justificadas
+                <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-200">
+                  <i className="fa-solid fa-user-clock text-amber-600 mr-1"></i> {totalFaltasJustificadas} Justificadas
                 </span>
-                <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 border border-rose-200">
-                  <i className="fa-solid fa-circle-xmark text-rose-600 mr-1"></i> {totalFaltasNaoJustificadas} Faltas
+                <span className="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 border border-rose-200">
+                  <i className="fa-solid fa-xmark text-rose-600 mr-1"></i> {totalFaltasNaoJustificadas} Faltas
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase">
-                <span className="text-gray-500">Marcar todos:</span>
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <span className="text-gray-500 font-bold uppercase mr-1">Marcar todos:</span>
                 <button
                   type="button"
                   onClick={() => marcarTodos('presente')}
-                  className="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded transition"
+                  className="px-2 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded font-bold transition"
                 >
                   Presentes
                 </button>
                 <button
                   type="button"
                   onClick={() => marcarTodos('falta_justificada')}
-                  className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded transition"
+                  className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold transition"
                 >
                   Justificados
                 </button>
                 <button
                   type="button"
                   onClick={() => marcarTodos('falta_nao_justificada')}
-                  className="px-2 py-1 bg-rose-700 hover:bg-rose-800 text-white rounded transition"
+                  className="px-2 py-1 bg-rose-700 hover:bg-rose-800 text-white rounded font-bold transition"
                 >
                   Faltas
                 </button>
@@ -342,7 +342,7 @@ export function ModalFrequenciaGrupoScfv({
           </div>
 
           {/* Lista de Integrantes */}
-          <div className="p-4 overflow-y-auto flex-1 space-y-3">
+          <div className="p-4 overflow-y-auto flex-1 space-y-3 bg-gray-50/50">
             {participantes.length === 0 ? (
               <div className="py-12 text-center text-gray-400">
                 <i className="fa-solid fa-users-slash text-3xl block text-gray-300 mb-2"></i>
@@ -356,74 +356,88 @@ export function ModalFrequenciaGrupoScfv({
                 return (
                   <div
                     key={p.id}
-                    className={`p-3.5 rounded-xl border transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
+                    className={`p-4 rounded-xl border transition space-y-3 ${
                       item.status === 'presente'
-                        ? 'bg-emerald-50/30 border-emerald-200'
+                        ? 'bg-emerald-50/40 border-emerald-200 shadow-2xs'
                         : item.status === 'falta_justificada'
-                        ? 'bg-amber-50/40 border-amber-200'
-                        : 'bg-rose-50/40 border-rose-200'
+                        ? 'bg-amber-50/50 border-amber-200 shadow-2xs'
+                        : 'bg-rose-50/50 border-rose-200 shadow-2xs'
                     }`}
                   >
-                    {/* Nome do Participante */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-700 font-bold text-[10px] flex items-center justify-center shrink-0">
+                    {/* Linha 1: Nome Completo do Participante sem truncamento */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/70 pb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-indigo-950 text-white font-extrabold text-xs flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <strong className="text-gray-900 font-bold text-xs uppercase truncate">
+                        <strong className="text-sm font-extrabold text-gray-900 uppercase tracking-wide">
                           {p.nome}
                         </strong>
                       </div>
+
+                      {/* Badge de Status */}
+                      <span className={`self-start sm:self-auto px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
+                        item.status === 'presente'
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          : item.status === 'falta_justificada'
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                          : 'bg-rose-100 text-rose-900 border-rose-300'
+                      }`}>
+                        {item.status === 'presente' ? 'Presente' : item.status === 'falta_justificada' ? 'Falta Justificada' : 'Falta Não Justificada'}
+                      </span>
                     </div>
 
-                    {/* Botões de Seleção de Status */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => alterarStatus(p.id, 'presente')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition flex items-center gap-1 border ${
-                          item.status === 'presente'
-                            ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
-                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <i className="fa-solid fa-check"></i> Presente
-                      </button>
+                    {/* Linha 2: Botões de Ação + Campo de Observação */}
+                    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                      {/* Botões de Seleção de Status */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => alterarStatus(p.id, 'presente')}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition flex items-center gap-1.5 border ${
+                            item.status === 'presente'
+                              ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <i className="fa-solid fa-check"></i> Presente
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => alterarStatus(p.id, 'falta_justificada')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition flex items-center gap-1 border ${
-                          item.status === 'falta_justificada'
-                            ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
-                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <i className="fa-solid fa-user-clock"></i> Justificada
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => alterarStatus(p.id, 'falta_justificada')}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition flex items-center gap-1.5 border ${
+                            item.status === 'falta_justificada'
+                              ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <i className="fa-solid fa-user-clock"></i> Justificada
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => alterarStatus(p.id, 'falta_nao_justificada')}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition flex items-center gap-1 border ${
-                          item.status === 'falta_nao_justificada'
-                            ? 'bg-rose-700 text-white border-rose-800 shadow-xs'
-                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <i className="fa-solid fa-xmark"></i> Falta
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => alterarStatus(p.id, 'falta_nao_justificada')}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition flex items-center gap-1.5 border ${
+                            item.status === 'falta_nao_justificada'
+                              ? 'bg-rose-700 text-white border-rose-800 shadow-xs'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <i className="fa-solid fa-xmark"></i> Falta
+                        </button>
+                      </div>
 
-                    {/* Observação / Justificativa Individual */}
-                    <div className="w-full sm:w-64 shrink-0">
-                      <input
-                        type="text"
-                        value={item.observacao}
-                        onChange={e => alterarObservacao(p.id, e.target.value)}
-                        placeholder="OBSERVAÇÃO / JUSTIFICATIVA..."
-                        className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-[11px] font-medium uppercase bg-white"
-                      />
+                      {/* Observação / Justificativa Individual */}
+                      <div className="flex-1 min-w-0 md:min-w-[240px]">
+                        <input
+                          type="text"
+                          value={item.observacao}
+                          onChange={e => alterarObservacao(p.id, e.target.value)}
+                          placeholder="OBSERVAÇÃO / JUSTIFICATIVA..."
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs font-medium uppercase bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                        />
+                      </div>
                     </div>
                   </div>
                 )
