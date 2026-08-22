@@ -69,7 +69,6 @@ export function ModalFrequenciaGrupoScfv({
 }: ModalFrequenciaGrupoScfvProps) {
   const [salvando, setSalvando] = useState(false)
   const [dataChamada, setDataChamada] = useState<string>(new Date().toISOString().split('T')[0])
-  const [tema, setTema] = useState('')
   const [tecnico, setTecnico] = useState(usuarioLogadoNome || grupo.tecnico_responsavel || '')
 
   const diasConfiguradosGrupo = grupo.dias_semana || grupo.horario || ''
@@ -139,7 +138,6 @@ export function ModalFrequenciaGrupoScfv({
         grupo_id: grupo.id,
         grupo_nome: grupo.nome,
         data: dataChamada,
-        tema: tema.trim().toUpperCase(),
         tecnico: tecnico.trim().toUpperCase() || 'TÉCNICO RESPONSÁVEL',
         registros
       })
@@ -181,41 +179,26 @@ export function ModalFrequenciaGrupoScfv({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          {/* Cabeçalho do Formulário (Data, Tema, Resumo) */}
+          {/* Cabeçalho do Formulário (Data, Resumo) */}
           <div className="p-4 bg-gray-50 border-b border-gray-200 shrink-0 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                  Data do Encontro *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={dataChamada}
-                  onChange={e => setDataChamada(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
-                    !validacaoDia.valido ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
-                  }`}
-                />
-                {diasConfiguradosGrupo && (
-                  <span className="text-[10px] text-gray-500 mt-1 block">
-                    Dias cadastrados: <strong className="text-indigo-800">{diasConfiguradosGrupo}</strong>
-                  </span>
-                )}
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                  Pauta / Tema da Oficina (Opcional)
-                </label>
-                <input
-                  type="text"
-                  value={tema}
-                  onChange={e => setTema(e.target.value)}
-                  placeholder="EX: OFICINA DE AUTOESTIMA, CIDADANIA E DIREITOS DOS IDOSOS"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold uppercase bg-white"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
+                Data do Encontro *
+              </label>
+              <input
+                type="date"
+                required
+                value={dataChamada}
+                onChange={e => setDataChamada(e.target.value)}
+                className={`w-full max-w-xs px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
+                  !validacaoDia.valido ? 'border-amber-500 text-amber-900 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
+                }`}
+              />
+              {diasConfiguradosGrupo && (
+                <span className="text-[10px] text-gray-500 mt-1 block">
+                  Dias cadastrados: <strong className="text-indigo-800">{diasConfiguradosGrupo}</strong>
+                </span>
+              )}
             </div>
 
             {!validacaoDia.valido && (
