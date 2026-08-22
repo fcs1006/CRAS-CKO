@@ -409,14 +409,25 @@ export function ScfvView({
                             <td className="py-2.5 px-3 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center gap-1.5">
                                 {onAbrirModalRelatorioGrupo && (
-                                  <button
-                                    type="button"
-                                    onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
-                                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold rounded-md text-[11px] transition border border-indigo-200 flex items-center gap-1"
-                                    title="Editar relatório e informações deste encontro"
-                                  >
-                                    <i className="fa-solid fa-pen-to-square text-xs"></i> Editar
-                                  </button>
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
+                                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-md text-[11px] transition flex items-center gap-1 shadow-2xs"
+                                      title="Visualizar e imprimir o relatório completo deste encontro"
+                                    >
+                                      <i className="fa-solid fa-eye text-slate-300 text-xs"></i> Visualizar
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
+                                      className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold rounded-md text-[11px] transition border border-indigo-200 flex items-center gap-1"
+                                      title="Editar relatório e informações deste encontro"
+                                    >
+                                      <i className="fa-solid fa-pen-to-square text-xs"></i> Editar
+                                    </button>
+                                  </>
                                 )}
                                 <button
                                   type="button"
