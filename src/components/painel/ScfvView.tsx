@@ -130,39 +130,77 @@ export function ScfvView({
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
           {grupoAtual ? (
             <>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-gray-100">
+              {/* Cabeçalho do Coletivo Selecionado */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-gray-100">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800 uppercase">{grupoAtual.nome}</h3>
-                  <p className="text-xs text-gray-500 uppercase">{grupoAtual.descricao}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-extrabold text-gray-900 uppercase tracking-wide">{grupoAtual.nome}</h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200 uppercase">
+                      {grupoAtual.tipo_grupo || 'SCFV'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 font-medium uppercase mt-0.5">
+                    {grupoAtual.descricao || 'Sem descrição cadastrada'} • Horário: <strong className="text-gray-700">{grupoAtual.horario}</strong>
+                  </p>
                 </div>
-                
-                <div className="flex items-center gap-2 flex-wrap">
+
+                {/* Ações Administrativas de Gestão do Coletivo */}
+                <div className="flex items-center gap-2 shrink-0">
                   {onAbrirModalEditarGrupo && (
                     <button
+                      type="button"
                       onClick={() => onAbrirModalEditarGrupo(grupoAtual)}
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-gray-200"
+                      title="Editar configurações do grupo"
                     >
-                      <i className="fa-solid fa-pen-to-square text-gray-600"></i> Editar Grupo
+                      <i className="fa-solid fa-pen-to-square text-gray-500"></i> Editar Grupo
                     </button>
                   )}
-                  
                   {onExcluirGrupo && (
                     <button
+                      type="button"
                       onClick={async () => {
                         if (confirm(`Deseja realmente excluir o grupo "${grupoAtual.nome}"?`)) {
                           await onExcluirGrupo(grupoAtual.id)
                         }
                       }}
-                      className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border border-rose-200"
+                      title="Excluir grupo"
                     >
                       <i className="fa-solid fa-trash-can text-rose-600"></i> Excluir Grupo
                     </button>
                   )}
+                </div>
+              </div>
 
+              {/* Barra de Ações Operacionais (Frequência, Relatórios, Vincular Participante) */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5 shadow-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
+                  >
+                    <i className="fa-solid fa-user-plus text-emerald-200"></i> Vincular Participante
+                  </button>
+
+                  {onAbrirModalFrequencia && (
+                    <button
+                      type="button"
+                      onClick={() => onAbrirModalFrequencia(grupoAtual)}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
+                    >
+                      <i className="fa-solid fa-clipboard-user text-indigo-200"></i> Lançar Frequência / Chamada
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
                   {onAbrirModalRelatorioGrupo && (
                     <button
+                      type="button"
                       onClick={() => onAbrirModalRelatorioGrupo(grupoAtual)}
-                      className="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
                     >
                       <i className="fa-solid fa-file-invoice text-slate-300"></i> Relatório do Encontro
                     </button>
@@ -170,28 +208,13 @@ export function ScfvView({
 
                   {onAbrirModalRelatorioGeralGrupo && (
                     <button
+                      type="button"
                       onClick={() => onAbrirModalRelatorioGeralGrupo(grupoAtual)}
-                      className="bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
                     >
                       <i className="fa-solid fa-file-lines text-teal-200"></i> Relatório Geral (Todos Encontros)
                     </button>
                   )}
-
-                  {onAbrirModalFrequencia && (
-                    <button
-                      onClick={() => onAbrirModalFrequencia(grupoAtual)}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"
-                    >
-                      <i className="fa-solid fa-clipboard-user text-indigo-200"></i> Lançar Frequência / Chamada
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition flex items-center gap-1"
-                  >
-                    <i className="fa-solid fa-user-plus"></i> Vincular Participante
-                  </button>
                 </div>
               </div>
 
