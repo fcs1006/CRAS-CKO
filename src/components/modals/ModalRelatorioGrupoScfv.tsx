@@ -11,6 +11,7 @@ interface ModalRelatorioGrupoScfvProps {
   configuracao: Configuracao
   usuarioLogadoNome?: string
   usuarios?: Usuario[]
+  dataEncontroInicial?: string
   onClose: () => void
   onSalvarRelatorio?: (dados: {
     grupo_id: string
@@ -33,10 +34,11 @@ export function ModalRelatorioGrupoScfv({
   configuracao,
   usuarioLogadoNome = '',
   usuarios = [],
+  dataEncontroInicial = '',
   onClose,
   onSalvarRelatorio
 }: ModalRelatorioGrupoScfvProps) {
-  const [dataEncontro, setDataEncontro] = useState<string>('')
+  const [dataEncontro, setDataEncontro] = useState<string>(dataEncontroInicial)
   const [modoDataOutra, setModoDataOutra] = useState(false)
 
   const [objetivoEncontro, setObjetivoEncontro] = useState(

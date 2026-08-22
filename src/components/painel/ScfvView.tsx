@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { GrupoSCFV, ParticipanteSCFV } from '@/types'
 
 interface ScfvViewProps {
@@ -12,7 +12,7 @@ interface ScfvViewProps {
   onExcluirGrupo?: (grupoId: string) => Promise<void>
   onExcluirParticipante?: (participanteId: string) => Promise<void>
   onAbrirModalFrequencia?: (grupo: GrupoSCFV) => void
-  onAbrirModalRelatorioGrupo?: (grupo: GrupoSCFV) => void
+  onAbrirModalRelatorioGrupo?: (grupo: GrupoSCFV, dataEncontroInicial?: string) => void
   onAbrirModalRelatorioGeralGrupo?: (grupo: GrupoSCFV) => void
 }
 
@@ -34,6 +34,96 @@ export function ScfvView({
 
   const grupoAtual = grupos.find(g => g.id === grupoSelecionadoId) || grupos[0]
   const participantesGrupo = participantes.filter(p => p.grupo_id === grupoAtual?.id)
+
+  const [frequenciasHistorico, setFrequenciasHistorico] = useState<any[]>([])
+  const [relatoriosHistorico, setRelatoriosHistorico] = useState<any[]>([])
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false)
+
+  // Carregar histórico de frequências e relatórios do grupo atual
+  const carregarHistoricoGrupo = async () => {
+    if (!grupoAtual?.id) return
+    setCarregandoHistorico(true)
+    try {
+      const [resFreq, resRel] = await Promise.all([
+        fetch(`/api/scfv/frequencia?grupo_id=${grupoAtual.id}`),
+        fetch(`/api/scfv/relatorio?grupo_id=${grupoAtual.id}`)
+      ])
+      if (resFreq.ok) {
+        const json = await resFreq.json()
+        if (json.ok && Array.isArray(json.data)) setFrequenciasHistorico(json.data)
+      }
+      if (resRel.ok) {
+        const json = await resRel.json()
+        if (json.ok && Array.isArray(json.data)) setRelatoriosHistorico(json.data)
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar histórico de encontros:', e)
+    } finally {
+      setCarregandoHistorico(false)
+    }
+  }
+
+  useEffect(() => {
+    carregarHistoricoGrupo()
+  }, [grupoAtual?.id])
+
+  // Excluir relatório e encontro gravado
+  const handleExcluirEncontro = async (dataEncontroStr: string) => {
+    const dataBr = dataEncontroStr.split('-').reverse().join('/')
+    if (!confirm(`Deseja realmente excluir o relatório e registro do encontro do dia ${dataBr}?`)) return
+
+    try {
+      const res = await fetch(`/api/scfv/relatorio?grupo_id=${grupoAtual.id}&data_encontro=${dataEncontroStr}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        alert(`Registro do encontro do dia ${dataBr} excluído com sucesso!`)
+        await carregarHistoricoGrupo()
+      } else {
+        alert('Erro ao excluir registro do encontro.')
+      }
+    } catch (err: any) {
+      alert('Erro ao excluir registro: ' + (err.message || 'Tente novamente.'))
+    }
+  }
+
+  // Consolidação dos dados para exibição na tabela de histórico
+  const datasHistoricoUnicas = Array.from(
+    new Set([
+      ...frequenciasHistorico.map(f => f.data),
+      ...relatoriosHistorico.map(r => r.data_encontro)
+    ])
+  ).filter(Boolean).sort().reverse()
+
+  const encontrosConsolidados = datasHistoricoUnicas.map(dStr => {
+    const freq = frequenciasHistorico.find(f => f.data === dStr)
+    const rel = relatoriosHistorico.find(r => r.data_encontro === dStr)
+
+    const dataBr = dStr.split('-').reverse().join('/')
+
+    const registros = freq?.registros || []
+    const presentesArr = freq?.presentes || []
+
+    let qtdPresentes = 0
+    let totalCadastrados = participantesGrupo.length
+
+    if (registros.length > 0) {
+      qtdPresentes = registros.filter((r: any) => r.status === 'presente').length
+    } else if (presentesArr.length > 0) {
+      qtdPresentes = presentesArr.length
+    }
+
+    return {
+      dataStr: dStr,
+      dataBr,
+      objetivo: rel?.objetivo_encontro || 'FORTALECER VÍNCULOS FAMILIARES E COMUNITÁRIOS, DESENVOLVER A AUTONOMIA E PROMOVER A CONVIVÊNCIA SOCIAL.',
+      atividade: rel?.atividade_realizada || 'RODA DE CONVERSA TEMÁTICA E OFICINA PRÁTICA.',
+      qtdPresentes,
+      totalCadastrados,
+      temRelatorio: !!rel,
+      temFrequencia: !!freq
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -268,6 +358,82 @@ export function ScfvView({
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Seção do Histórico dos Relatórios & Encontros Realizados */}
+              <div className="pt-4 border-t border-gray-100 space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <h4 className="text-xs font-extrabold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                    <i className="fa-solid fa-clock-rotate-left text-indigo-600"></i>
+                    Histórico de Encontros & Relatórios Registrados ({encontrosConsolidados.length})
+                  </h4>
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    Consulte, edite ou exclua relatórios gravados por data
+                  </span>
+                </div>
+
+                {carregandoHistorico ? (
+                  <div className="p-4 text-center text-xs text-gray-500 font-semibold bg-gray-50 rounded-xl border border-gray-100">
+                    <i className="fa-solid fa-circle-notch animate-spin mr-1.5"></i> Carregando histórico dos encontros...
+                  </div>
+                ) : encontrosConsolidados.length === 0 ? (
+                  <div className="p-6 bg-gray-50 border border-gray-100 rounded-xl text-center text-xs text-gray-400 font-medium">
+                    <i className="fa-solid fa-folder-open text-2xl block text-gray-300 mb-1.5"></i>
+                    Nenhum encontro ou relatório registrado para este grupo.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-gray-50 text-gray-700 font-extrabold uppercase text-[10px] border-b border-gray-200">
+                        <tr>
+                          <th className="py-2.5 px-3 w-32">Data do Encontro</th>
+                          <th className="py-2.5 px-3 w-36 text-center">Qtd. Participantes</th>
+                          <th className="py-2.5 px-3">Objetivo do Encontro</th>
+                          <th className="py-2.5 px-3 text-center w-36">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {encontrosConsolidados.map((item) => (
+                          <tr key={item.dataStr} className="hover:bg-gray-50/80 transition">
+                            <td className="py-2.5 px-3 font-extrabold text-indigo-950 whitespace-nowrap">
+                              {item.dataBr}
+                            </td>
+                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-900 border border-indigo-200">
+                                {item.qtdPresentes} / {item.totalCadastrados} Presentes
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-gray-800 uppercase leading-relaxed">
+                              {item.objetivo}
+                            </td>
+                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {onAbrirModalRelatorioGrupo && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
+                                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-bold rounded-md text-[11px] transition border border-indigo-200 flex items-center gap-1"
+                                    title="Editar relatório e informações deste encontro"
+                                  >
+                                    <i className="fa-solid fa-pen-to-square text-xs"></i> Editar
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleExcluirEncontro(item.dataStr)}
+                                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-md text-[11px] transition border border-rose-200 flex items-center gap-1"
+                                  title="Excluir este encontro e relatório"
+                                >
+                                  <i className="fa-solid fa-trash-can text-xs"></i> Excluir
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </>
           ) : (

@@ -80,3 +80,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const grupoId = searchParams.get('grupo_id')
+    const dataEncontro = searchParams.get('data_encontro')
+
+    if (!grupoId || !dataEncontro) {
+      return NextResponse.json({ ok: false, error: 'grupo_id e data_encontro são obrigatórios.' }, { status: 400 })
+    }
+
+    const supabase = getSupabaseServer()
+    
+    // Deletar relatório do encontro
+    const { error: errRel } = await supabase
+      .from('relatorios_scfv')
+      .delete()
+      .eq('grupo_id', grupoId)
+      .eq('data_encontro', dataEncontro)
+
+    if (errRel) {
+      console.warn('Erro ao deletar de relatorios_scfv:', errRel.message)
+    }
+
+    // Opcional: Deletar registro de frequência da mesma data
+    await supabase
+      .from('frequencia_scfv')
+      .delete()
+      .eq('grupo_id', grupoId)
+      .eq('data', dataEncontro)
+
+    return NextResponse.json({ ok: true })
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
+  }
+}

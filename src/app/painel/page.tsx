@@ -92,7 +92,7 @@ export default function PainelPage() {
   const [grupoParaEditar, setGrupoParaEditar] = useState<GrupoSCFV | null>(null)
   const [grupoParaVincular, setGrupoParaVincular] = useState<GrupoSCFV | null>(null)
   const [grupoParaFrequencia, setGrupoParaFrequencia] = useState<GrupoSCFV | null>(null)
-  const [grupoParaRelatorio, setGrupoParaRelatorio] = useState<GrupoSCFV | null>(null)
+  const [relatorioModalState, setRelatorioModalState] = useState<{ grupo: GrupoSCFV; dataEncontroInicial?: string } | null>(null)
   const [grupoParaRelatorioGeral, setGrupoParaRelatorioGeral] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
 
@@ -872,7 +872,7 @@ export default function PainelPage() {
                   }}
                   onExcluirParticipante={handleExcluirParticipante}
                   onAbrirModalFrequencia={(grupo) => setGrupoParaFrequencia(grupo)}
-                  onAbrirModalRelatorioGrupo={(grupo) => setGrupoParaRelatorio(grupo)}
+                  onAbrirModalRelatorioGrupo={(grupo, dataEncontroInicial) => setRelatorioModalState({ grupo, dataEncontroInicial })}
                   onAbrirModalRelatorioGeralGrupo={(grupo) => setGrupoParaRelatorioGeral(grupo)}
                 />
               )}
@@ -1040,15 +1040,16 @@ export default function PainelPage() {
         />
       )}
 
-      {grupoParaRelatorio && (
+      {relatorioModalState && (
         <ModalRelatorioGrupoScfv
-          grupo={grupoParaRelatorio}
-          participantes={participantes.filter(p => p.grupo_id === grupoParaRelatorio.id)}
+          grupo={relatorioModalState.grupo}
+          dataEncontroInicial={relatorioModalState.dataEncontroInicial}
+          participantes={participantes.filter(p => p.grupo_id === relatorioModalState.grupo.id)}
           familias={familias}
           configuracao={configuracao}
           usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
           usuarios={usuarios}
-          onClose={() => setGrupoParaRelatorio(null)}
+          onClose={() => setRelatorioModalState(null)}
           onSalvarRelatorio={handleSalvarRelatorioGrupo}
         />
       )}
