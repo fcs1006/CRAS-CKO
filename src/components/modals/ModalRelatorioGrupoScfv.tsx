@@ -342,19 +342,33 @@ export function ModalRelatorioGrupoScfv({
         <div id="documento-relatorio-grupo" className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6 text-gray-900 bg-white">
           
           {/* Cabeçalho Timbrado do Município */}
-          <div className="text-center border-b-2 border-gray-900 pb-4 space-y-1">
-            <h1 className="text-sm sm:text-base font-extrabold uppercase tracking-wide text-gray-900">
-              {configuracao.municipio || 'PREFEITURA MUNICIPAL DE CONCEIÇÃO DO TOCANTINS'}
-            </h1>
-            <h2 className="text-xs sm:text-sm font-bold uppercase text-gray-800">
-              {configuracao.secretaria || 'SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL'}
-            </h2>
-            <h3 className="text-xs font-semibold uppercase text-indigo-900">
-              {configuracao.cras_unidade || 'CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL (CRAS)'}
-            </h3>
-            <p className="text-[11px] text-gray-600 font-bold uppercase tracking-wider pt-1">
-              RELATÓRIO TÉCNICO DE ENCONTRO DE GRUPO / OFICINA DE CONVIVÊNCIA
-            </p>
+          <div className="border-b-2 border-gray-900 pb-3 flex items-center justify-between gap-4 w-full">
+            {configuracao?.logo_url ? (
+              <img
+                src={configuracao.logo_url}
+                alt="Brasão Oficial"
+                className="h-16 w-auto max-w-[90px] object-contain shrink-0"
+              />
+            ) : (
+              <div className="w-16 shrink-0" />
+            )}
+
+            <div className="text-center flex-1 space-y-0.5 min-w-0">
+              <h1 className="text-sm sm:text-base font-extrabold uppercase tracking-wide text-gray-900 leading-tight">
+                {configuracao.municipio || 'PREFEITURA MUNICIPAL DE CONCEIÇÃO DO TOCANTINS'}
+              </h1>
+              <h2 className="text-xs sm:text-sm font-bold uppercase text-gray-800 leading-tight">
+                {configuracao.secretaria || 'SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL'}
+              </h2>
+              <h3 className="text-xs font-semibold uppercase text-indigo-900 leading-tight">
+                {configuracao.cras_unidade || 'CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL (CRAS)'}
+              </h3>
+              <p className="text-[11px] text-gray-700 font-bold uppercase tracking-wider pt-1">
+                RELATÓRIO TÉCNICO DE ENCONTRO DE GRUPO / OFICINA DE CONVIVÊNCIA
+              </p>
+            </div>
+
+            <div className="w-16 shrink-0" />
           </div>
 
           {/* 1. DADOS IDENTIFICADORES DO ENCONTRO E GRUPO */}
@@ -738,6 +752,13 @@ export function ModalRelatorioGrupoScfv({
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Rodapé Institucional Oficial - Fixado no Final Absoluto da Impressão */}
+          <div className="print-fixed-footer print:block pt-2 border-t border-black text-center text-[9px] text-black w-full mt-6">
+            <p className="text-[9px] font-medium text-gray-800">
+              {configuracao?.endereco || 'Rua Central, s/n - Centro, Conceição do Tocantins - TO, CEP: 77305-000'} • Telefone: {configuracao?.telefone || '(63) 3381-1234'} • E-mail: {configuracao?.email || 'cras@conceicao.to.gov.br'}
+            </p>
           </div>
 
         </div>
