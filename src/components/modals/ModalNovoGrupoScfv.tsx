@@ -107,25 +107,20 @@ export function ModalNovoGrupoScfv({
         {/* Modal Header */}
         <div className="bg-indigo-900 text-white p-5 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className="fa-solid fa-people-group text-indigo-300 text-lg"></i> {grupoParaEditar ? 'Editar Coletivo / Grupo' : 'Criar Grupo / Oficina SCFV (SUAS)'}
+            <h3 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wide">
+              <i className="fa-solid fa-people-group text-indigo-300"></i> {grupoParaEditar ? 'Editar Coletivo / Grupo' : 'Criar Grupo / Oficina SCFV (SUAS)'}
             </h3>
-            <p className="text-[11px] text-indigo-200 mt-0.5 font-medium">
+            <p className="text-[11px] text-indigo-200 mt-0.5">
               Serviço de Convivência e Fortalecimento de Vínculos / Oficinas PAIF
             </p>
           </div>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-indigo-100 hover:text-white flex items-center justify-center transition"
-          >
-            <i className="fa-solid fa-xmark text-lg"></i>
+          <button type="button" onClick={onClose} className="text-indigo-200 hover:text-white text-xl">
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
           
           {/* Nome do Coletivo */}
           <div>
@@ -307,39 +302,23 @@ export function ModalNovoGrupoScfv({
             />
           </div>
 
-          </div>
-
-          {/* Rodapé e Botões de Ação */}
-          <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center shrink-0">
-            <p className="text-[11px] text-gray-500 font-medium">
-              Os dados do grupo/oficina serão salvos no sistema.
-            </p>
-
-            <div className="flex gap-2">
-              <button 
-                type="button" 
-                onClick={onClose} 
-                disabled={salvando}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold uppercase transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={salvando}
-                className="px-5 py-2 bg-indigo-800 hover:bg-indigo-900 text-white rounded-xl text-xs font-bold shadow-md uppercase transition flex items-center gap-2 disabled:opacity-50"
-              >
-                {salvando ? (
-                  <>
-                    <i className="fa-solid fa-circle-notch animate-spin"></i> Criando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-check"></i> Concluir & Criar Grupo
-                  </>
-                )}
-              </button>
-            </div>
+          {/* Footer */}
+          <div className="pt-3 border-t flex justify-end gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando}
+              className="px-6 py-2 bg-indigo-800 hover:bg-indigo-900 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5 text-xs disabled:opacity-50"
+            >
+              <i className="fa-solid fa-check"></i>
+              {salvando ? 'Criando...' : 'Concluir & Criar Grupo'}
+            </button>
           </div>
         </form>
       </div>

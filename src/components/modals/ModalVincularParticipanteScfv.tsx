@@ -142,19 +142,15 @@ export function ModalVincularParticipanteScfv({
         {/* Header */}
         <div className="bg-emerald-900 text-white p-5 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className="fa-solid fa-user-plus text-emerald-300 text-lg"></i> Vincular Beneficiário ao Coletivo
+            <h3 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wide">
+              <i className="fa-solid fa-user-plus text-emerald-300"></i> Vincular Beneficiário ao Coletivo
             </h3>
-            <p className="text-[11px] text-emerald-200 mt-0.5 font-medium uppercase">
+            <p className="text-[11px] text-emerald-200 mt-0.5 uppercase">
               Grupo: <strong className="text-white">{grupo.nome}</strong> • Selecione da base cadastral do CRAS
             </p>
           </div>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-emerald-100 hover:text-white flex items-center justify-center transition"
-          >
-            <i className="fa-solid fa-xmark text-lg"></i>
+          <button type="button" onClick={onClose} className="text-emerald-200 hover:text-white text-xl">
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
@@ -247,11 +243,10 @@ export function ModalVincularParticipanteScfv({
           <p className="text-[11px] text-gray-500 font-medium">
             Selecione beneficiários cadastrados no CRAS para vincular a este coletivo.
           </p>
-
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold uppercase transition"
+            className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs"
           >
             Fechar
           </button>

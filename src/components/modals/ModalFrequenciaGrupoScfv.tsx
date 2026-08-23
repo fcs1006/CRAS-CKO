@@ -232,19 +232,15 @@ export function ModalFrequenciaGrupoScfv({
         {/* Header */}
         <div className="bg-indigo-900 text-white p-5 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className="fa-solid fa-clipboard-user text-indigo-300 text-lg"></i> Registrar Frequência / Chamada do Dia
+            <h3 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wide">
+              <i className="fa-solid fa-clipboard-user text-indigo-300"></i> Registrar Frequência / Chamada do Dia
             </h3>
-            <p className="text-[11px] text-indigo-200 mt-0.5 font-medium uppercase">
+            <p className="text-[11px] text-indigo-200 mt-0.5 uppercase">
               Grupo: <strong className="text-white">{grupo.nome}</strong> • {participantes.length} Integrantes Matriculados
             </p>
           </div>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-indigo-100 hover:text-white flex items-center justify-center transition"
-          >
-            <i className="fa-solid fa-xmark text-lg"></i>
+          <button type="button" onClick={onClose} className="text-indigo-200 hover:text-white text-xl">
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
@@ -446,36 +442,22 @@ export function ModalFrequenciaGrupoScfv({
           </div>
 
           {/* Footer */}
-          <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center shrink-0">
-            <p className="text-[11px] text-gray-500 font-medium">
-              As presenças/faltas serão gravadas automaticamente no histórico do beneficiário.
-            </p>
-            
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold uppercase transition"
-              >
-                Cancelar
-              </button>
-              
-              <button
-                type="submit"
-                disabled={salvando || participantes.length === 0 || !validacaoDia.valido}
-                className="px-5 py-2 bg-indigo-700 hover:bg-indigo-800 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-2 disabled:opacity-50"
-              >
-                {salvando ? (
-                  <>
-                    <i className="fa-solid fa-circle-notch animate-spin"></i> Gravando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-floppy-disk"></i> Salvar Chamada & Histórico
-                  </>
-                )}
-              </button>
-            </div>
+          <div className="pt-3 border-t flex justify-end gap-2 shrink-0 p-4 bg-gray-50 border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={salvando || participantes.length === 0 || !validacaoDia.valido}
+              className="px-6 py-2 bg-indigo-800 hover:bg-indigo-900 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5 text-xs disabled:opacity-50"
+            >
+              <i className="fa-solid fa-floppy-disk"></i>
+              {salvando ? 'Gravando...' : 'Salvar Chamada & Histórico'}
+            </button>
           </div>
         </form>
       </div>

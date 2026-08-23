@@ -314,10 +314,10 @@ export function ModalRelatorioGrupoScfv({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-6 overflow-hidden flex flex-col max-h-[95vh] border border-gray-200 print:max-h-none print:shadow-none print:border-none print:rounded-none">
         
         {/* Header Superior (Visível apenas na tela) */}
-        <div className="bg-slate-900 text-white p-4 sm:p-5 flex justify-between items-center shrink-0 no-print">
+        <div className="bg-slate-900 text-white p-5 flex justify-between items-center shrink-0 no-print">
           <div>
-            <h3 className="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className={`fa-solid ${apenasVisualizacao ? 'fa-eye text-indigo-400' : 'fa-file-invoice text-indigo-400'} text-lg`}></i> {apenasVisualizacao ? 'Visualização de Relatório Técnico do Encontro' : 'Relatório Técnico do Encontro de Grupo / SCFV'}
+            <h3 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wide">
+              <i className={`fa-solid ${apenasVisualizacao ? 'fa-eye text-indigo-400' : 'fa-file-invoice text-indigo-400'}`}></i> {apenasVisualizacao ? 'Visualização de Relatório Técnico do Encontro' : 'Relatório Técnico do Encontro de Grupo / SCFV'}
             </h3>
             <p className="text-[11px] text-slate-300 mt-0.5 font-medium">
               Serviço de Convivência e Fortalecimento de Vínculos • {apenasVisualizacao ? 'Modo de Apenas Visualização (Leitura)' : 'Relatório Individual por Encontro'}
@@ -332,12 +332,8 @@ export function ModalRelatorioGrupoScfv({
             >
               <i className="fa-solid fa-print"></i> Imprimir
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white flex items-center justify-center transition"
-            >
-              <i className="fa-solid fa-xmark text-lg"></i>
+            <button type="button" onClick={onClose} className="text-slate-300 hover:text-white text-xl">
+              <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
         </div>
@@ -758,7 +754,7 @@ export function ModalRelatorioGrupoScfv({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold uppercase transition"
+              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs"
             >
               Fechar
             </button>
@@ -766,7 +762,7 @@ export function ModalRelatorioGrupoScfv({
             <button
               type="button"
               onClick={handleImprimir}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5 text-xs"
             >
               <i className="fa-solid fa-print"></i> Imprimir
             </button>
@@ -776,17 +772,10 @@ export function ModalRelatorioGrupoScfv({
                 type="button"
                 disabled={salvando}
                 onClick={handleSalvar}
-                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5 text-xs disabled:opacity-50"
               >
-                {salvando ? (
-                  <>
-                    <i className="fa-solid fa-circle-notch animate-spin"></i> Salvando...
-                  </>
-                ) : (
-                  <>
-                    <i className="fa-solid fa-floppy-disk"></i> Salvar Relatório do Encontro
-                  </>
-                )}
+                <i className="fa-solid fa-floppy-disk"></i>
+                {salvando ? 'Salvando...' : 'Salvar Relatório do Encontro'}
               </button>
             )}
           </div>
