@@ -12,6 +12,7 @@ interface ModalRelatorioGrupoScfvProps {
   usuarioLogadoNome?: string
   usuarios?: Usuario[]
   dataEncontroInicial?: string
+  apenasVisualizacao?: boolean
   onClose: () => void
   onSalvarRelatorio?: (dados: {
     grupo_id: string
@@ -35,6 +36,7 @@ export function ModalRelatorioGrupoScfv({
   usuarioLogadoNome = '',
   usuarios = [],
   dataEncontroInicial = '',
+  apenasVisualizacao = false,
   onClose,
   onSalvarRelatorio
 }: ModalRelatorioGrupoScfvProps) {
@@ -315,10 +317,10 @@ export function ModalRelatorioGrupoScfv({
         <div className="bg-slate-900 text-white p-4 sm:p-5 flex justify-between items-center shrink-0 no-print">
           <div>
             <h3 className="text-base font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className="fa-solid fa-file-invoice text-indigo-400 text-lg"></i> Relatório Técnico do Encontro de Grupo / SCFV
+              <i className={`fa-solid ${apenasVisualizacao ? 'fa-eye text-indigo-400' : 'fa-file-invoice text-indigo-400'} text-lg`}></i> {apenasVisualizacao ? 'Visualização de Relatório Técnico do Encontro' : 'Relatório Técnico do Encontro de Grupo / SCFV'}
             </h3>
             <p className="text-[11px] text-slate-300 mt-0.5 font-medium">
-              Serviço de Convivência e Fortalecimento de Vínculos • Relatório Individual por Encontro
+              Serviço de Convivência e Fortalecimento de Vínculos • {apenasVisualizacao ? 'Modo de Apenas Visualização (Leitura)' : 'Relatório Individual por Encontro'}
             </p>
           </div>
           
@@ -328,7 +330,7 @@ export function ModalRelatorioGrupoScfv({
               onClick={handleImprimir}
               className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
             >
-              <i className="fa-solid fa-print"></i> Imprimir (A4)
+              <i className="fa-solid fa-print"></i> Imprimir
             </button>
             <button
               type="button"
@@ -375,6 +377,7 @@ export function ModalRelatorioGrupoScfv({
                 <span className="text-gray-500 font-bold uppercase text-[10px] block mb-0.5">Selecione o Encontro do Histórico *</span>
                 
                 <select
+                  disabled={apenasVisualizacao}
                   value={modoDataOutra ? 'outra' : dataEncontro}
                   onChange={e => {
                     if (e.target.value === 'outra') {
@@ -387,7 +390,7 @@ export function ModalRelatorioGrupoScfv({
                   }}
                   className={`w-full px-2.5 py-1.5 border rounded-lg font-bold text-xs bg-white text-gray-900 no-print ${
                     !dataEncontro ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20' : 'border-gray-300'
-                  }`}
+                  } ${apenasVisualizacao ? 'opacity-90 cursor-not-allowed bg-gray-100' : ''}`}
                 >
                   <option value="">-- SELECIONE O ENCONTRO DO HISTÓRICO --</option>
                   {datasHistoricoUnicas.map(dStr => {
@@ -396,9 +399,9 @@ export function ModalRelatorioGrupoScfv({
                     const temRel = historicoRelatorios.some(r => r.data_encontro === dStr)
                     
                     let rotulo = `Encontro de ${dataBrFormat}`
-                    if (temFreq && temRel) rotulo += ' (Frequência & Relatório salvos - Editar)'
+                    if (temFreq && temRel) rotulo += apenasVisualizacao ? ' (Frequência & Relatório salvos)' : ' (Frequência & Relatório salvos - Editar)'
                     else if (temFreq) rotulo += ' (Frequência salva)'
-                    else if (temRel) rotulo += ' (Relatório salvo - Editar)'
+                    else if (temRel) rotulo += apenasVisualizacao ? ' (Relatório salvo)' : ' (Relatório salvo - Editar)'
 
                     return (
                       <option key={dStr} value={dStr}>
@@ -406,16 +409,17 @@ export function ModalRelatorioGrupoScfv({
                       </option>
                     )
                   })}
-                  <option value="outra">+ Informar outra data de encontro...</option>
+                  {!apenasVisualizacao && <option value="outra">+ Informar outra data de encontro...</option>}
                 </select>
 
                 {modoDataOutra && (
                   <input
                     type="date"
                     required
+                    disabled={apenasVisualizacao}
                     value={dataEncontro}
                     onChange={e => setDataEncontro(e.target.value)}
-                    className="w-full mt-1.5 px-2.5 py-1 border border-gray-300 rounded-lg font-bold text-xs bg-white uppercase text-indigo-950 no-print"
+                    className="w-full mt-1.5 px-2.5 py-1 border border-gray-300 rounded-lg font-bold text-xs bg-white uppercase text-indigo-950 no-print disabled:bg-gray-100"
                   />
                 )}
 
@@ -423,7 +427,7 @@ export function ModalRelatorioGrupoScfv({
 
                 {relatorioSalvoNoDia && (
                   <span className="text-[10px] text-emerald-700 font-bold block mt-1 no-print">
-                    <i className="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Relatório deste encontro gravado (Modo Edição)
+                    <i className="fa-solid fa-circle-check text-emerald-600 mr-1"></i> {apenasVisualizacao ? 'Relatório deste encontro gravado (Modo Visualização)' : 'Relatório deste encontro gravado (Modo Edição)'}
                   </span>
                 )}
               </div>
@@ -454,55 +458,57 @@ export function ModalRelatorioGrupoScfv({
           <div className="border border-gray-300 rounded-xl p-4 bg-indigo-50/40 space-y-2.5">
             <label className="block text-xs font-extrabold uppercase text-gray-900 flex justify-between items-center">
               <span>2. Profissionais Participantes / Facilitadores do Encontro *</span>
-              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">(selecione os presentes)</span>
+              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(selecione os presentes)'}</span>
             </label>
 
             {/* Seleção Interativa de Profissionais (no-print) */}
-            <div className="no-print space-y-2">
-              <div className="flex flex-wrap gap-1.5">
-                {usuarios.length > 0 ? (
-                  usuarios.map(u => {
-                    const nomeProf = `${u.nome || u.usuario} (${u.cargo || 'Técnico'})`.toUpperCase()
-                    const selecionado = profissionaisSelecionados.includes(nomeProf)
-                    return (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => toggleProfissional(nomeProf)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition border ${
-                          selecionado
-                            ? 'bg-indigo-700 text-white border-indigo-800'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-                        }`}
-                      >
-                        <i className={`fa-solid ${selecionado ? 'fa-check-double text-indigo-200 mr-1' : 'fa-user text-gray-400 mr-1'}`}></i>
-                        {u.nome || u.usuario}
-                      </button>
-                    )
-                  })
-                ) : (
-                  <span className="text-xs text-gray-500 italic">Nenhum outro profissional cadastrado no sistema.</span>
-                )}
-              </div>
+            {!apenasVisualizacao && (
+              <div className="no-print space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {usuarios.length > 0 ? (
+                    usuarios.map(u => {
+                      const nomeProf = `${u.nome || u.usuario} (${u.cargo || 'Técnico'})`.toUpperCase()
+                      const selecionado = profissionaisSelecionados.includes(nomeProf)
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => toggleProfissional(nomeProf)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition border ${
+                            selecionado
+                              ? 'bg-indigo-700 text-white border-indigo-800'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                          }`}
+                        >
+                          <i className={`fa-solid ${selecionado ? 'fa-check-double text-indigo-200 mr-1' : 'fa-user text-gray-400 mr-1'}`}></i>
+                          {u.nome || u.usuario}
+                        </button>
+                      )
+                    })
+                  ) : (
+                    <span className="text-xs text-gray-500 italic">Nenhum outro profissional cadastrado no sistema.</span>
+                  )}
+                </div>
 
-              {/* Campo para adicionar outro profissional de fora */}
-              <div className="flex gap-2 pt-1">
-                <input
-                  type="text"
-                  value={outroProfissional}
-                  onChange={e => setOutroProfissional(e.target.value)}
-                  placeholder="DIGITE O NOME DE OUTRO PROFISSIONAL PARTICIPANTE..."
-                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs uppercase bg-white font-semibold"
-                />
-                <button
-                  type="button"
-                  onClick={handleAdicionarOutroProfissional}
-                  className="px-3 py-1.5 bg-indigo-800 text-white rounded-lg text-xs font-bold uppercase transition"
-                >
-                  <i className="fa-solid fa-plus"></i> Adicionar
-                </button>
+                {/* Campo para adicionar outro profissional de fora */}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={outroProfissional}
+                    onChange={e => setOutroProfissional(e.target.value)}
+                    placeholder="DIGITE O NOME DE OUTRO PROFISSIONAL PARTICIPANTE..."
+                    className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs uppercase bg-white font-semibold"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAdicionarOutroProfissional}
+                    className="px-3 py-1.5 bg-indigo-800 text-white rounded-lg text-xs font-bold uppercase transition"
+                  >
+                    <i className="fa-solid fa-plus"></i> Adicionar
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Exibição Oficial na Impressão e Resumo */}
             <div className="pt-1">
@@ -519,14 +525,17 @@ export function ModalRelatorioGrupoScfv({
           <div className="space-y-1.5">
             <label className="block text-xs font-extrabold text-gray-900 uppercase tracking-wider flex justify-between items-center">
               <span>3. Objetivo do Encontro *</span>
-              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">(editável)</span>
+              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
               rows={2}
+              readOnly={apenasVisualizacao}
               value={objetivoEncontro}
               onChange={e => setObjetivoEncontro(e.target.value)}
               placeholder="DESCREVA O OBJETIVO PRINCIPAL DO ENCONTRO..."
-              className="w-full p-3 border border-gray-300 rounded-xl text-xs leading-relaxed font-medium uppercase bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 print:border-none print:p-0 print:bg-transparent print:resize-none"
+              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+                apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
+              }`}
             />
           </div>
 
@@ -534,14 +543,17 @@ export function ModalRelatorioGrupoScfv({
           <div className="space-y-1.5">
             <label className="block text-xs font-extrabold text-gray-900 uppercase tracking-wider flex justify-between items-center">
               <span>4. Atividade Realizada *</span>
-              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">(editável)</span>
+              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
               rows={2}
+              readOnly={apenasVisualizacao}
               value={atividadeRealizada}
               onChange={e => setAtividadeRealizada(e.target.value)}
               placeholder="DESCREVA A ATIVIDADE / DINÂMICA REALIZADA..."
-              className="w-full p-3 border border-gray-300 rounded-xl text-xs leading-relaxed font-medium uppercase bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 print:border-none print:p-0 print:bg-transparent print:resize-none"
+              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+                apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
+              }`}
             />
           </div>
 
@@ -549,14 +561,17 @@ export function ModalRelatorioGrupoScfv({
           <div className="space-y-1.5">
             <label className="block text-xs font-extrabold text-gray-900 uppercase tracking-wider flex justify-between items-center">
               <span>5. Detalhamento do Encontro & Metodologia *</span>
-              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">(editável)</span>
+              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
               rows={3}
+              readOnly={apenasVisualizacao}
               value={detalhamento}
               onChange={e => setDetalhamento(e.target.value)}
               placeholder="DESCREVA O PASSO A PASSO DA METODOLOGIA UTILIZADA NO ENCONTRO..."
-              className="w-full p-3 border border-gray-300 rounded-xl text-xs leading-relaxed font-medium uppercase bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 print:border-none print:p-0 print:bg-transparent print:resize-none"
+              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+                apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
+              }`}
             />
           </div>
 
@@ -564,14 +579,17 @@ export function ModalRelatorioGrupoScfv({
           <div className="space-y-1.5">
             <label className="block text-xs font-extrabold text-gray-900 uppercase tracking-wider flex justify-between items-center">
               <span>6. Relato Técnico / Síntese da Escuta Coletiva & Avaliação *</span>
-              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">(editável)</span>
+              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
               rows={4}
+              readOnly={apenasVisualizacao}
               value={relato}
               onChange={e => setRelato(e.target.value)}
               placeholder="DESCREVA AS SÍNTESES, ENGAJAMENTO E ESCUTA QUALIFICADA..."
-              className="w-full p-3 border border-gray-300 rounded-xl text-xs leading-relaxed font-medium uppercase bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 print:border-none print:p-0 print:bg-transparent print:resize-none"
+              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+                apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
+              }`}
             />
           </div>
 
@@ -579,14 +597,17 @@ export function ModalRelatorioGrupoScfv({
           <div className="space-y-1.5">
             <label className="block text-xs font-extrabold text-gray-900 uppercase tracking-wider flex justify-between items-center">
               <span>7. Providências, Articulações da Rede & Encaminhamentos</span>
-              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">(editável)</span>
+              <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
               rows={2}
+              readOnly={apenasVisualizacao}
               value={providencias}
               onChange={e => setProvidencias(e.target.value)}
               placeholder="DESCREVA OS ENCAMINHAMENTOS ADOTADOS..."
-              className="w-full p-3 border border-gray-300 rounded-xl text-xs leading-relaxed font-medium uppercase bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 print:border-none print:p-0 print:bg-transparent print:resize-none"
+              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+                apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
+              }`}
             />
           </div>
 
@@ -705,6 +726,7 @@ export function ModalRelatorioGrupoScfv({
               <div className="w-80 border-t border-gray-900 pt-2 space-y-1">
                 <input
                   type="text"
+                  readOnly={apenasVisualizacao}
                   value={tecnicoAssinatura}
                   onChange={e => setTecnicoAssinatura(e.target.value)}
                   className="w-full text-center font-bold text-xs uppercase bg-transparent border-none p-0 focus:ring-0 text-gray-900 no-print"
@@ -727,7 +749,9 @@ export function ModalRelatorioGrupoScfv({
         {/* Footer Inferior de Ações (Apenas na Tela) */}
         <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center shrink-0 no-print">
           <p className="text-[11px] text-gray-500 font-medium">
-            Ao salvar, o relatório deste encontro será gravado no histórico dos beneficiários.
+            {apenasVisualizacao
+              ? 'Modo de visualização. Para alterar informações deste relatório, utilize o botão de edição na tabela de encontros.'
+              : 'Ao salvar, o relatório deste encontro será gravado no histórico dos beneficiários.'}
           </p>
 
           <div className="flex gap-2">
@@ -744,25 +768,27 @@ export function ModalRelatorioGrupoScfv({
               onClick={handleImprimir}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
             >
-              <i className="fa-solid fa-print"></i> Imprimir (A4)
+              <i className="fa-solid fa-print"></i> Imprimir
             </button>
 
-            <button
-              type="button"
-              disabled={salvando}
-              onClick={handleSalvar}
-              className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-2 disabled:opacity-50"
-            >
-              {salvando ? (
-                <>
-                  <i className="fa-solid fa-circle-notch animate-spin"></i> Salvando...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-floppy-disk"></i> Salvar Relatório do Encontro
-                </>
-              )}
-            </button>
+            {!apenasVisualizacao && (
+              <button
+                type="button"
+                disabled={salvando}
+                onClick={handleSalvar}
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-2 disabled:opacity-50"
+              >
+                {salvando ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch animate-spin"></i> Salvando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-floppy-disk"></i> Salvar Relatório do Encontro
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

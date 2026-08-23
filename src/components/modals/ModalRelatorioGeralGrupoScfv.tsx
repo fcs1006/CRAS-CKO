@@ -223,7 +223,7 @@ export function ModalRelatorioGeralGrupoScfv({
               onClick={handleImprimir}
               className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
             >
-              <i className="fa-solid fa-print"></i> Imprimir Relatório Geral (A4)
+              <i className="fa-solid fa-print"></i> Imprimir Relatório Geral
             </button>
             <button
               type="button"
@@ -466,7 +466,7 @@ export function ModalRelatorioGeralGrupoScfv({
               onClick={handleImprimir}
               className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
             >
-              <i className="fa-solid fa-print"></i> Imprimir Relatório Geral (A4)
+              <i className="fa-solid fa-print"></i> Imprimir Relatório Geral
             </button>
           </div>
         </div>

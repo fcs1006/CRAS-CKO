@@ -243,7 +243,11 @@ export function ModalVincularParticipanteScfv({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-end shrink-0">
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center shrink-0">
+          <p className="text-[11px] text-gray-500 font-medium">
+            Selecione beneficiários cadastrados no CRAS para vincular a este coletivo.
+          </p>
+
           <button
             type="button"
             onClick={onClose}

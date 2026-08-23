@@ -124,7 +124,8 @@ export function ModalNovoGrupoScfv({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
           
           {/* Nome do Coletivo */}
           <div>
@@ -306,31 +307,39 @@ export function ModalNovoGrupoScfv({
             />
           </div>
 
+          </div>
+
           {/* Rodapé e Botões de Ação */}
-          <div className="pt-3 border-t flex justify-end gap-2 shrink-0">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              disabled={salvando}
-              className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 uppercase transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={salvando}
-              className="px-6 py-2 bg-indigo-800 hover:bg-indigo-900 text-white rounded-xl text-xs font-bold shadow-md uppercase transition flex items-center gap-2 disabled:opacity-50"
-            >
-              {salvando ? (
-                <>
-                  <i className="fa-solid fa-circle-notch animate-spin"></i> Criando...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-check"></i> Concluir & Criar Grupo
-                </>
-              )}
-            </button>
+          <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center shrink-0">
+            <p className="text-[11px] text-gray-500 font-medium">
+              Os dados do grupo/oficina serão salvos no sistema.
+            </p>
+
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={onClose} 
+                disabled={salvando}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold uppercase transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={salvando}
+                className="px-5 py-2 bg-indigo-800 hover:bg-indigo-900 text-white rounded-xl text-xs font-bold shadow-md uppercase transition flex items-center gap-2 disabled:opacity-50"
+              >
+                {salvando ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch animate-spin"></i> Criando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-check"></i> Concluir & Criar Grupo
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

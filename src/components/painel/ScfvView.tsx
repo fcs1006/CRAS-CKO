@@ -12,7 +12,7 @@ interface ScfvViewProps {
   onExcluirGrupo?: (grupoId: string) => Promise<void>
   onExcluirParticipante?: (participanteId: string) => Promise<void>
   onAbrirModalFrequencia?: (grupo: GrupoSCFV) => void
-  onAbrirModalRelatorioGrupo?: (grupo: GrupoSCFV, dataEncontroInicial?: string) => void
+  onAbrirModalRelatorioGrupo?: (grupo: GrupoSCFV, dataEncontroInicial?: string, apenasVisualizacao?: boolean) => void
   onAbrirModalRelatorioGeralGrupo?: (grupo: GrupoSCFV) => void
 }
 
@@ -412,7 +412,7 @@ export function ScfvView({
                                   <>
                                     <button
                                       type="button"
-                                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
+                                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr, true)}
                                       className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white transition flex items-center justify-center border border-slate-200"
                                       title="Visualizar Relatório do Encontro"
                                     >
@@ -421,7 +421,7 @@ export function ScfvView({
 
                                     <button
                                       type="button"
-                                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr)}
+                                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual, item.dataStr, false)}
                                       className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white transition flex items-center justify-center border border-indigo-200"
                                       title="Editar Relatório do Encontro"
                                     >

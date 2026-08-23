@@ -92,7 +92,7 @@ export default function PainelPage() {
   const [grupoParaEditar, setGrupoParaEditar] = useState<GrupoSCFV | null>(null)
   const [grupoParaVincular, setGrupoParaVincular] = useState<GrupoSCFV | null>(null)
   const [grupoParaFrequencia, setGrupoParaFrequencia] = useState<GrupoSCFV | null>(null)
-  const [relatorioModalState, setRelatorioModalState] = useState<{ grupo: GrupoSCFV; dataEncontroInicial?: string } | null>(null)
+  const [relatorioModalState, setRelatorioModalState] = useState<{ grupo: GrupoSCFV; dataEncontroInicial?: string; apenasVisualizacao?: boolean } | null>(null)
   const [grupoParaRelatorioGeral, setGrupoParaRelatorioGeral] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
 
@@ -872,7 +872,7 @@ export default function PainelPage() {
                   }}
                   onExcluirParticipante={handleExcluirParticipante}
                   onAbrirModalFrequencia={(grupo) => setGrupoParaFrequencia(grupo)}
-                  onAbrirModalRelatorioGrupo={(grupo, dataEncontroInicial) => setRelatorioModalState({ grupo, dataEncontroInicial })}
+                  onAbrirModalRelatorioGrupo={(grupo, dataEncontroInicial, apenasVisualizacao) => setRelatorioModalState({ grupo, dataEncontroInicial, apenasVisualizacao })}
                   onAbrirModalRelatorioGeralGrupo={(grupo) => setGrupoParaRelatorioGeral(grupo)}
                 />
               )}
@@ -1044,6 +1044,7 @@ export default function PainelPage() {
         <ModalRelatorioGrupoScfv
           grupo={relatorioModalState.grupo}
           dataEncontroInicial={relatorioModalState.dataEncontroInicial}
+          apenasVisualizacao={relatorioModalState.apenasVisualizacao}
           participantes={participantes.filter(p => p.grupo_id === relatorioModalState.grupo.id)}
           familias={familias}
           configuracao={configuracao}
