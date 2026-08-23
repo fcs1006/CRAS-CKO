@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { GrupoSCFV, ParticipanteSCFV, Familia, Configuracao, Usuario } from '@/types'
 import { maskCPF, maskNIS } from '@/utils/masks'
+import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
 
 interface ModalRelatorioGrupoScfvProps {
   grupo: GrupoSCFV
@@ -283,35 +284,142 @@ export function ModalRelatorioGrupoScfv({
   })()
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static">
-      {/* Estilos Específicos para Impressão A4 */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media print {
-          body * {
-            visibility: hidden;
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:static print:inset-auto print:p-0 print:m-0 print:bg-transparent print:backdrop-blur-none print:overflow-visible print:block print:w-full print:h-auto">
+      
+      {/* Área de Impressão Oficial (Renderizada exclusivamente durante a impressão A4) */}
+      <div className="hidden print:block print:w-full print-document-area">
+        <DocumentoOficialLayout
+          configuracao={configuracao}
+          tituloDocumento="RELATÓRIO TÉCNICO DE ENCONTRO"
+          subtituloDocumento={`GRUPO: ${grupo.nome.toUpperCase()}`}
+          dataExtensa={dataBr}
+          assinaturas={
+            <div className="pt-8 flex justify-center text-center uppercase text-[10px] break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <div className="border-t-[1.5px] border-black pt-1.5 min-w-[280px] max-w-[360px] mx-auto space-y-0.5">
+                <p className="font-extrabold text-black text-[11px] leading-tight">{tecnicoAssinatura}</p>
+                <p className="text-black font-semibold text-[9.5px] leading-tight">TÉCNICO / ORIENTADOR SOCIAL RESPONSÁVEL</p>
+                <p className="text-black text-[9px] leading-tight">{configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}</p>
+              </div>
+            </div>
           }
-          #documento-relatorio-grupo, #documento-relatorio-grupo * {
-            visibility: visible;
-          }
-          #documento-relatorio-grupo {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            background: white !important;
-            color: black !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      ` }} />
+        >
+          <div className="space-y-3.5 text-[10.5px]">
+            {/* 1. DADOS IDENTIFICADORES DO ENCONTRO E GRUPO */}
+            <div className="border border-black rounded p-3 space-y-2 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                1. Dados Identificadores do Coletivo & Data do Encontro
+              </h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-0.5">
+                <div>
+                  <strong className="font-extrabold">Nome do Coletivo / Grupo:</strong> {grupo.nome}
+                </div>
+                <div>
+                  <strong className="font-extrabold">Data do Encontro:</strong> {dataBr}
+                </div>
+                <div>
+                  <strong className="font-extrabold">Modalidade / Serviço:</strong> {grupo.tipo_grupo || 'SCFV'}
+                </div>
+                <div>
+                  <strong className="font-extrabold">Faixa Etária / Perfil:</strong> {faixaEtariaRotulo}
+                </div>
+                <div>
+                  <strong className="font-extrabold">Horário e Dias:</strong> {grupo.dias_semana ? `${grupo.dias_semana} (${grupo.horario})` : grupo.horario}
+                </div>
+                <div>
+                  <strong className="font-extrabold">Local de Realização:</strong> {grupo.local_encontro || 'CRAS (SEDE)'}
+                </div>
+              </div>
+            </div>
 
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-6 overflow-hidden flex flex-col max-h-[95vh] border border-gray-200 print:max-h-none print:shadow-none print:border-none print:rounded-none">
+            {/* 2. PROFISSIONAIS PARTICIPANTES / FACILITADORES */}
+            <div className="border border-black rounded p-3 space-y-1 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                2. Profissionais Participantes / Facilitadores do Encontro
+              </h4>
+              <p className="pt-0.5">
+                <strong className="font-extrabold">Equipe de Facilitadores Registrada:</strong> {profissionaisSelecionados.join(', ') || tecnicoAssinatura}
+              </p>
+            </div>
+
+            {/* 3. OBJETIVO DO ENCONTRO */}
+            <div className="border border-black rounded p-3 space-y-1 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                3. Objetivo do Encontro
+              </h4>
+              <p className="pt-0.5 whitespace-pre-wrap">{objetivoEncontro || 'Não informado.'}</p>
+            </div>
+
+            {/* 4. ATIVIDADE REALIZADA */}
+            <div className="border border-black rounded p-3 space-y-1 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                4. Atividade Realizada
+              </h4>
+              <p className="pt-0.5 whitespace-pre-wrap">{atividadeRealizada || 'Não informada.'}</p>
+            </div>
+
+            {/* 5. DETALHAMENTO DO ENCONTRO & METODOLOGIA */}
+            <div className="border border-black rounded p-3 space-y-1 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                5. Detalhamento do Encontro & Metodologia
+              </h4>
+              <p className="pt-0.5 whitespace-pre-wrap">{detalhamento || 'Não informado.'}</p>
+            </div>
+
+            {/* 6. RELATO TÉCNICO / SÍNTESE DA ESCUTA COLETIVA & AVALIAÇÃO */}
+            <div className="border border-black rounded p-3 space-y-1 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                6. Relato Técnico / Síntese da Escuta Coletiva & Avaliação
+              </h4>
+              <p className="pt-0.5 whitespace-pre-wrap">{relato || 'Não informado.'}</p>
+            </div>
+
+            {/* 7. PROVIDÊNCIAS, ARTICULAÇÕES DA REDE & ENCAMINHAMENTOS */}
+            <div className="border border-black rounded p-3 space-y-1 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1">
+                7. Providências, Articulações da Rede & Encaminhamentos
+              </h4>
+              <p className="pt-0.5 whitespace-pre-wrap">{providencias || 'Não informadas.'}</p>
+            </div>
+
+            {/* 8. RELAÇÃO DE INTEGRANTES E FREQUÊNCIA DO ENCONTRO */}
+            <div className="border border-black rounded p-3 space-y-2 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <h4 className="text-[11px] font-black uppercase text-black border-b border-black pb-1 flex justify-between items-center">
+                <span>8. Relação de Integrantes e Frequência do Encontro ({dataBr})</span>
+                <span className="text-[10px]">
+                  {totalPresentes} Presentes • {totalFaltasJustificadas} Justificadas • {totalFaltasNaoJustificadas} Faltas
+                </span>
+              </h4>
+              <table className="w-full text-left border-collapse text-[10px]">
+                <thead>
+                  <tr className="border-b border-black bg-gray-100">
+                    <th className="py-1 px-1.5 font-bold border-r border-black w-8 text-center">Nº</th>
+                    <th className="py-1 px-1.5 font-bold border-r border-black">Nome do Integrante</th>
+                    <th className="py-1 px-1.5 font-bold border-r border-black">Responsável Familiar</th>
+                    <th className="py-1 px-1.5 font-bold border-r border-black">CPF / NIS</th>
+                    <th className="py-1 px-1.5 font-bold text-center">Frequência no Encontro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listaDetalhadaComFrequencia.map((p, idx) => (
+                    <tr key={p.id} className="border-b border-gray-300 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+                      <td className="py-1 px-1.5 border-r border-gray-300 text-center font-bold">{idx + 1}</td>
+                      <td className="py-1 px-1.5 border-r border-gray-300 font-bold uppercase">{p.nome}</td>
+                      <td className="py-1 px-1.5 border-r border-gray-300 uppercase">{p.responsavel}</td>
+                      <td className="py-1 px-1.5 border-r border-gray-300">{p.cpf ? maskCPF(p.cpf) : p.nis || '—'}</td>
+                      <td className="py-1 px-1.5 text-center font-bold uppercase">
+                        {p.statusFrequencia === 'presente' ? 'PRESENTE' : p.statusFrequencia === 'falta_justificada' ? 'FALTA JUSTIFICADA' : 'FALTA NÃO JUSTIFICADA'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </DocumentoOficialLayout>
+      </div>
+
+      {/* Modal Interativo de Tela (Visível exclusivamente na tela) */}
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-6 overflow-hidden flex flex-col max-h-[95vh] border border-gray-200 print:hidden">
         
         {/* Header Superior (Visível apenas na tela) */}
         <div className="bg-slate-900 text-white p-5 flex justify-between items-center shrink-0 no-print">
@@ -752,13 +860,6 @@ export function ModalRelatorioGrupoScfv({
                 </p>
               </div>
             </div>
-          </div>
-
-          {/* Rodapé Institucional Oficial - Fixado no Final Absoluto da Impressão */}
-          <div className="print-fixed-footer print:block pt-2 border-t border-black text-center text-[9px] text-black w-full mt-6">
-            <p className="text-[9px] font-medium text-gray-800">
-              {configuracao?.endereco || 'Rua Central, s/n - Centro, Conceição do Tocantins - TO, CEP: 77305-000'} • Telefone: {configuracao?.telefone || '(63) 3381-1234'} • E-mail: {configuracao?.email || 'cras@conceicao.to.gov.br'}
-            </p>
           </div>
 
         </div>
