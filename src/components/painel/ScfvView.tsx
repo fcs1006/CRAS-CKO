@@ -127,7 +127,8 @@ export function ScfvView({
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
+      <div className="space-y-6 print:hidden">
+        {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -455,5 +456,6 @@ export function ScfvView({
         </div>
       </div>
     </div>
-  )
+  </div>
+)
 }

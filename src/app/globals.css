@@ -98,7 +98,9 @@ html, body {
     footer,
     .no-print,
     .print\:hidden,
-    .print\:hidden * {
+    .print\:hidden *,
+    body:has(.print-document-area) main > *:not(:has(.print-document-area)),
+    body:has(.print-document-area) > *:not(:has(.print-document-area)) {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
