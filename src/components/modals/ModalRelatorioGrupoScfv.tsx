@@ -146,19 +146,38 @@ export function ModalRelatorioGrupoScfv({
     }
   }, [dataEncontro, historicoFrequencias, historicoRelatorios])
 
+  function isProfissionalSelecionado(nomeProf: string) {
+    const target = nomeProf.toUpperCase().trim()
+    const nomeLimpo = target.split('(')[0].trim()
+
+    return profissionaisSelecionados.some(p => {
+      const pUpper = p.toUpperCase().trim()
+      const pLimpo = pUpper.split('(')[0].trim()
+      return pUpper === target || (pLimpo && (pLimpo === nomeLimpo || pUpper.includes(nomeLimpo) || target.includes(pLimpo)))
+    })
+  }
+
   function toggleProfissional(nomeProf: string) {
-    const profUpper = nomeProf.toUpperCase()
-    if (profissionaisSelecionados.includes(profUpper)) {
-      setProfissionaisSelecionados(profissionaisSelecionados.filter(p => p !== profUpper))
+    const target = nomeProf.toUpperCase().trim()
+    const nomeLimpo = target.split('(')[0].trim()
+
+    if (isProfissionalSelecionado(nomeProf)) {
+      setProfissionaisSelecionados(
+        profissionaisSelecionados.filter(p => {
+          const pUpper = p.toUpperCase().trim()
+          const pLimpo = pUpper.split('(')[0].trim()
+          return pUpper !== target && pLimpo !== nomeLimpo && !pUpper.includes(nomeLimpo) && !target.includes(pLimpo)
+        })
+      )
     } else {
-      setProfissionaisSelecionados([...profissionaisSelecionados, profUpper])
+      setProfissionaisSelecionados([...profissionaisSelecionados, target])
     }
   }
 
   function handleAdicionarOutroProfissional() {
     if (!outroProfissional.trim()) return
     const novoUpper = outroProfissional.trim().toUpperCase()
-    if (!profissionaisSelecionados.includes(novoUpper)) {
+    if (!isProfissionalSelecionado(novoUpper)) {
       setProfissionaisSelecionados([...profissionaisSelecionados, novoUpper])
     }
     setOutroProfissional('')
@@ -283,6 +302,49 @@ export function ModalRelatorioGrupoScfv({
     }
   })()
 
+  // Lista unificada de profissionais com assinaturas
+  const listaAssinaturasFinais = (() => {
+    const items: { nome: string; cargo: string }[] = []
+    const nomesAdicionados = new Set<string>()
+
+    // 1. Técnico Responsável (Assinatura principal)
+    const tecnicoNome = tecnicoAssinatura.trim().toUpperCase()
+    if (tecnicoNome) {
+      items.push({
+        nome: tecnicoNome,
+        cargo: 'TÉCNICO / ORIENTADOR SOCIAL RESPONSÁVEL'
+      })
+      nomesAdicionados.add(tecnicoNome)
+    }
+
+    // 2. Todos os profissionais participantes selecionados
+    profissionaisSelecionados.forEach(prof => {
+      const profUpper = prof.trim().toUpperCase()
+      if (!profUpper) return
+
+      let nome = profUpper
+      let cargo = 'PROFISSIONAL PARTICIPANTE / FACILITADOR'
+
+      const matchCargo = profUpper.match(/^(.*?)\s*\((.*?)\)$/)
+      if (matchCargo) {
+        nome = matchCargo[1].trim()
+        cargo = matchCargo[2].trim()
+      }
+
+      // Verifica se o profissional já foi incluído no técnico principal ou na lista
+      const jaExiste = Array.from(nomesAdicionados).some(n => 
+        nome === n || (nome.length > 3 && n.includes(nome)) || (n.length > 3 && nome.includes(n))
+      )
+
+      if (!jaExiste && nome) {
+        items.push({ nome, cargo })
+        nomesAdicionados.add(nome)
+      }
+    })
+
+    return items
+  })()
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:static print:inset-auto print:p-0 print:m-0 print:bg-transparent print:backdrop-blur-none print:overflow-visible print:block print:w-full print:h-auto">
       
@@ -294,11 +356,15 @@ export function ModalRelatorioGrupoScfv({
           subtituloDocumento={`GRUPO: ${grupo.nome.toUpperCase()}`}
           dataExtensa={dataBr}
           assinaturas={
-            <div className="pt-8 flex justify-center text-center uppercase text-[10px] break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
-              <div className="border-t-[1.5px] border-black pt-1.5 min-w-[280px] max-w-[360px] mx-auto space-y-0.5">
-                <p className="font-extrabold text-black text-[11px] leading-tight">{tecnicoAssinatura}</p>
-                <p className="text-black font-semibold text-[9.5px] leading-tight">TÉCNICO / ORIENTADOR SOCIAL RESPONSÁVEL</p>
-                <p className="text-black text-[9px] leading-tight">{configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}</p>
+            <div className="pt-8 space-y-4 break-inside-avoid page-break-inside-avoid print:break-inside-avoid">
+              <div className="flex flex-wrap justify-center gap-x-8 gap-y-6 text-center uppercase text-[10px]">
+                {listaAssinaturasFinais.map((sig, idx) => (
+                  <div key={idx} className="border-t-[1.5px] border-black pt-1.5 min-w-[220px] max-w-[320px] flex-1">
+                    <p className="font-extrabold text-black text-[10.5px] leading-tight">{sig.nome}</p>
+                    <p className="text-black font-semibold text-[9px] leading-tight mt-0.5">{sig.cargo}</p>
+                    <p className="text-black text-[8.5px] leading-tight">{configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}</p>
+                  </div>
+                ))}
               </div>
             </div>
           }
@@ -586,7 +652,7 @@ export function ModalRelatorioGrupoScfv({
                   {usuarios.length > 0 ? (
                     usuarios.map(u => {
                       const nomeProf = `${u.nome || u.usuario} (${u.cargo || 'Técnico'})`.toUpperCase()
-                      const selecionado = profissionaisSelecionados.includes(nomeProf)
+                      const selecionado = isProfissionalSelecionado(nomeProf)
                       return (
                         <button
                           key={u.id}
@@ -829,36 +895,40 @@ export function ModalRelatorioGrupoScfv({
             </div>
           </div>
 
-          {/* DADOS DE EMISSÃO E CAMPO DE ASSINATURA TÉCNICA */}
-          <div className="pt-6 border-t border-gray-300 space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
-              <div className="text-right w-full">
-                <p className="font-semibold text-gray-800">
-                  {configuracao.municipio ? configuracao.municipio.replace(/PREFEITURA MUNICIPAL DE /i, '') : 'Conceição do Tocantins - TO'}, {dataBr}.
-                </p>
-              </div>
+          {/* DADOS DE EMISSÃO E CAMPO DE ASSINATURAS TÉCNICAS */}
+          <div className="pt-6 border-t border-gray-300 space-y-6">
+            <div className="flex justify-end text-xs font-semibold text-gray-800">
+              {configuracao.municipio ? configuracao.municipio.replace(/PREFEITURA MUNICIPAL DE /i, '') : 'Conceição do Tocantins - TO'}, {dataBr}.
             </div>
 
-            {/* Linha de Assinatura */}
-            <div className="pt-10 flex justify-center text-center">
-              <div className="w-80 border-t border-gray-900 pt-2 space-y-1">
-                <input
-                  type="text"
-                  readOnly={apenasVisualizacao}
-                  value={tecnicoAssinatura}
-                  onChange={e => setTecnicoAssinatura(e.target.value)}
-                  className="w-full text-center font-bold text-xs uppercase bg-transparent border-none p-0 focus:ring-0 text-gray-900 no-print"
-                />
-                <p className="font-extrabold text-xs text-gray-900 uppercase tracking-wide print:block hidden">
-                  {tecnicoAssinatura}
-                </p>
-                <p className="text-[11px] text-gray-600 font-semibold uppercase">
-                  TÉCNICO / ORIENTADOR SOCIAL RESPONSÁVEL
-                </p>
-                <p className="text-[10px] text-gray-500 uppercase">
-                  {configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}
-                </p>
-              </div>
+            {/* Linhas de Assinatura para Todos os Profissionais Participantes */}
+            <div className="pt-4 flex flex-wrap justify-center gap-x-8 gap-y-6 text-center">
+              {listaAssinaturasFinais.map((sig, idx) => (
+                <div key={idx} className="w-72 border-t border-gray-900 pt-2 space-y-1">
+                  {idx === 0 ? (
+                    <input
+                      type="text"
+                      readOnly={apenasVisualizacao}
+                      value={tecnicoAssinatura}
+                      onChange={e => setTecnicoAssinatura(e.target.value)}
+                      className="w-full text-center font-bold text-xs uppercase bg-transparent border-none p-0 focus:ring-0 text-gray-900 no-print"
+                    />
+                  ) : (
+                    <p className="font-extrabold text-xs text-gray-900 uppercase tracking-wide">
+                      {sig.nome}
+                    </p>
+                  )}
+                  <p className="font-extrabold text-xs text-gray-900 uppercase tracking-wide print:block hidden">
+                    {sig.nome}
+                  </p>
+                  <p className="text-[11px] text-gray-600 font-semibold uppercase">
+                    {sig.cargo}
+                  </p>
+                  <p className="text-[10px] text-gray-500 uppercase">
+                    {configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
