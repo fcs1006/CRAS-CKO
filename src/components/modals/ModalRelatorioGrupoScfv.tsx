@@ -44,23 +44,11 @@ export function ModalRelatorioGrupoScfv({
   const [dataEncontro, setDataEncontro] = useState<string>(dataEncontroInicial)
   const [modoDataOutra, setModoDataOutra] = useState(false)
 
-  const [objetivoEncontro, setObjetivoEncontro] = useState(
-    'FORTALECER VÍNCULOS FAMILIARES E COMUNITÁRIOS, DESENVOLVER A AUTONOMIA E PROMOVER A CONVIVÊNCIA SOCIAL.'
-  )
-  const [atividadeRealizada, setAtividadeRealizada] = useState(
-    'RODA DE CONVERSA TEMÁTICA, DINÂMICA INTERATIVA E OFICINA PRÁTICA.'
-  )
-  const [detalhamento, setDetalhamento] = useState(
-    'ACOLHIMENTO INICIAL DOS INTEGRANTES, APRESENTAÇÃO DA PAUTA DO DIA, DESENVOLVIMENTO DA ATIVIDADE EM GRUPO COM PARTICIPAÇÃO ATIVA E ESPAÇO PARA DÚVIDAS E DEBATES.'
-  )
-  const [relato, setRelato] = useState(
-    grupo.descricao
-      ? `RELATÓRIO DO ENCONTRO DO GRUPO: ${grupo.nome.toUpperCase()}\nAVALIAÇÃO TÉCNICA: ${grupo.descricao.toUpperCase()}\n\nO encontro ocorreu conforme o planejado com engajamento dos integrantes e escuta qualificada da equipe.`
-      : 'O ENCONTRO FOI REALIZADO COM ABUNDANTE PARTICIPAÇÃO DOS INTEGRANTES, PROPICIANDO A TROCA DE EXPERIÊNCIAS E O FORTALECIMENTO DA REDE DE APOIO MÚTUO.'
-  )
-  const [providencias, setProvidencias] = useState(
-    'PROVIDÊNCIAS E ENCAMINHAMENTOS: MANUTENÇÃO DO ACOMPANHAMENTO CONTINUADO, ARTICULAÇÃO COM A REDE INTERSETORIAL (SAÚDE E EDUCAÇÃO) E REGISTRO DE FREQUÊNCIA.'
-  )
+  const [objetivoEncontro, setObjetivoEncontro] = useState('')
+  const [atividadeRealizada, setAtividadeRealizada] = useState('')
+  const [detalhamento, setDetalhamento] = useState('')
+  const [relato, setRelato] = useState('')
+  const [providencias, setProvidencias] = useState('')
   
   const [profissionaisSelecionados, setProfissionaisSelecionados] = useState<string[]>(() => {
     const padrao = usuarioLogadoNome || grupo.tecnico_responsavel || ''
@@ -131,11 +119,11 @@ export function ModalRelatorioGrupoScfv({
 
     if (relNoDia) {
       setRelatorioSalvoNoDia(true)
-      if (relNoDia.objetivo_encontro) setObjetivoEncontro(relNoDia.objetivo_encontro)
-      if (relNoDia.atividade_realizada) setAtividadeRealizada(relNoDia.atividade_realizada)
-      if (relNoDia.detalhamento) setDetalhamento(relNoDia.detalhamento)
-      if (relNoDia.relato) setRelato(relNoDia.relato)
-      if (relNoDia.providencias) setProvidencias(relNoDia.providencias)
+      setObjetivoEncontro(relNoDia.objetivo_encontro || '')
+      setAtividadeRealizada(relNoDia.atividade_realizada || '')
+      setDetalhamento(relNoDia.detalhamento || '')
+      setRelato(relNoDia.relato || '')
+      setProvidencias(relNoDia.providencias || '')
       if (relNoDia.tecnico) setTecnicoAssinatura(relNoDia.tecnico)
       if (relNoDia.profissionais_participantes) {
         const profsArr = relNoDia.profissionais_participantes.split(',').map((s: string) => s.trim().toUpperCase())
@@ -143,6 +131,11 @@ export function ModalRelatorioGrupoScfv({
       }
     } else {
       setRelatorioSalvoNoDia(false)
+      setObjetivoEncontro('')
+      setAtividadeRealizada('')
+      setDetalhamento('')
+      setRelato('')
+      setProvidencias('')
     }
   }, [dataEncontro, historicoFrequencias, historicoRelatorios])
 
