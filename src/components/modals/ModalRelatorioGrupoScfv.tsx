@@ -224,6 +224,7 @@ export function ModalRelatorioGrupoScfv({
       }
 
       alert('Relatório do encontro salvo com sucesso no banco de dados e nos prontuários!')
+      window.print()
       await carregarHistoricos()
       onClose()
     } catch (err: any) {
@@ -285,15 +286,38 @@ export function ModalRelatorioGrupoScfv({
   // Formatador amigável da faixa etária
   const faixaEtariaRotulo = (() => {
     switch (grupo.faixa_etaria) {
-      case '0_a_6': return '0 a 6 Anos (Primeira Infância)'
-      case '6_a_15': return '6 a 15 Anos (Crianças e Adolescentes)'
-      case '15_a_17': return '15 a 17 Anos (Jovens)'
-      case '18_a_59': return '18 a 59 Anos (Adultos)'
-      case '60_mais': return '60 Anos ou Mais (Pessoas Idosas)'
-      case 'Intergeracional': return 'Intergeracional (Todas as Idades)'
-      default: return grupo.faixa_etaria || 'Todas as Idades'
+      case '0_a_6': return '0 a 6 Anos'
+      case '6_a_15': return '6 a 15 Anos'
+      case '15_a_17': return '15 a 17 Anos'
+      case '18_a_59': return '18 a 59 Anos'
+      case '60_mais': return '60 Anos ou Mais'
+      case 'Intergeracional': return 'Intergeracional'
+      default: return (grupo.faixa_etaria || 'Todas as Idades').replace(/\s*\([^)]*\)/g, '')
     }
   })()
+
+  // Formatador limpo de Horário e Dias (evita duplicações como "Terça (Terça das 09:00 às 10:30)")
+  const horarioDiasFormatado = (() => {
+    const h = (grupo.horario || '').trim()
+    const d = (grupo.dias_semana || '').trim()
+    if (!d) return h || 'Não informado'
+    if (!h) return d
+    if (h.toLowerCase().includes(d.toLowerCase())) return h
+    return `${d} - ${h}`
+  })()
+
+  // Lista de outros usuários cadastrados excluindo o técnico responsável / usuário logado
+  const usuariosOutros = usuarios.filter(u => {
+    const nomeU = (u.nome || u.usuario || '').toUpperCase().trim()
+    const tecNome = tecnicoAssinatura.toUpperCase().trim()
+    const logadoNome = (usuarioLogadoNome || '').toUpperCase().trim()
+    
+    if (!nomeU) return false
+    if (tecNome && (nomeU === tecNome || tecNome.includes(nomeU) || nomeU.includes(tecNome))) return false
+    if (logadoNome && (nomeU === logadoNome || logadoNome.includes(nomeU) || nomeU.includes(logadoNome))) return false
+
+    return true
+  })
 
   // Lista unificada de profissionais com assinaturas
   const listaAssinaturasFinais = (() => {
@@ -382,7 +406,7 @@ export function ModalRelatorioGrupoScfv({
                   <strong className="font-extrabold">Faixa Etária / Perfil:</strong> {faixaEtariaRotulo}
                 </div>
                 <div>
-                  <strong className="font-extrabold">Horário e Dias:</strong> {grupo.dias_semana ? `${grupo.dias_semana} (${grupo.horario})` : grupo.horario}
+                  <strong className="font-extrabold">Horário e Dias:</strong> {horarioDiasFormatado}
                 </div>
                 <div>
                   <strong className="font-extrabold">Local de Realização:</strong> {grupo.local_encontro || 'CRAS (SEDE)'}
@@ -492,14 +516,7 @@ export function ModalRelatorioGrupoScfv({
           </div>
           
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleImprimir}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
-            >
-              <i className="fa-solid fa-print"></i> Imprimir
-            </button>
-            <button type="button" onClick={onClose} className="text-slate-300 hover:text-white text-xl">
+            <button type="button" onClick={onClose} className="text-slate-300 hover:text-white text-xl p-1">
               <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -621,7 +638,7 @@ export function ModalRelatorioGrupoScfv({
 
               <div>
                 <span className="text-gray-500 font-bold uppercase text-[10px] block">Horário e Dias dos Encontros:</span>
-                <strong className="text-gray-900 font-bold text-xs block">{grupo.horario}</strong>
+                <strong className="text-gray-900 font-bold text-xs block">{horarioDiasFormatado}</strong>
               </div>
 
               <div>
@@ -642,8 +659,8 @@ export function ModalRelatorioGrupoScfv({
             {!apenasVisualizacao && (
               <div className="no-print space-y-2">
                 <div className="flex flex-wrap gap-1.5">
-                  {usuarios.length > 0 ? (
-                    usuarios.map(u => {
+                  {usuariosOutros.length > 0 ? (
+                    usuariosOutros.map(u => {
                       const nomeProf = `${u.nome || u.usuario} (${u.cargo || 'Técnico'})`.toUpperCase()
                       const selecionado = isProfissionalSelecionado(nomeProf)
                       return (
@@ -663,7 +680,7 @@ export function ModalRelatorioGrupoScfv({
                       )
                     })
                   ) : (
-                    <span className="text-xs text-gray-500 italic">Nenhum outro profissional cadastrado no sistema.</span>
+                    <span className="text-xs text-gray-500 italic font-medium">Nenhum outro profissional cadastrado para adicionar como co-facilitador.</span>
                   )}
                 </div>
 
@@ -944,13 +961,6 @@ export function ModalRelatorioGrupoScfv({
               Fechar
             </button>
 
-            <button
-              type="button"
-              onClick={handleImprimir}
-              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5 text-xs"
-            >
-              <i className="fa-solid fa-print"></i> Imprimir
-            </button>
 
             {!apenasVisualizacao && (
               <button

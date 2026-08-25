@@ -166,13 +166,13 @@ export function ModalRelatorioGeralGrupoScfv({
 
   const faixaEtariaRotulo = (() => {
     switch (grupo.faixa_etaria) {
-      case '0_a_6': return '0 a 6 Anos (Primeira Infância)'
-      case '6_a_15': return '6 a 15 Anos (Crianças e Adolescentes)'
-      case '15_a_17': return '15 a 17 Anos (Jovens)'
-      case '18_a_59': return '18 a 59 Anos (Adultos)'
-      case '60_mais': return '60 Anos ou Mais (Pessoas Idosas)'
-      case 'Intergeracional': return 'Intergeracional (Todas as Idades)'
-      default: return grupo.faixa_etaria || 'Todas as Idades'
+      case '0_a_6': return '0 a 6 Anos'
+      case '6_a_15': return '6 a 15 Anos'
+      case '15_a_17': return '15 a 17 Anos'
+      case '18_a_59': return '18 a 59 Anos'
+      case '60_mais': return '60 Anos ou Mais'
+      case 'Intergeracional': return 'Intergeracional'
+      default: return (grupo.faixa_etaria || 'Todas as Idades').replace(/\s*\([^)]*\)/g, '')
     }
   })()
 
