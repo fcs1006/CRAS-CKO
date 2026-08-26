@@ -5,30 +5,68 @@ function parseRelatoAtendimento(relatoTexto: string, providenciasTexto?: string,
   let objetivo = ''
   let atividade = ''
   let detalhamento = ''
-  let relato = relatoTexto
+  let relato = ''
   let profissionais = ''
 
-  if (relatoTexto.includes('OBJETIVO:') || relatoTexto.includes('RELATO TÉCNICO:')) {
-    const pegarTrecho = (rotulo: string, proximosRotulos: string[]) => {
-      const idx = relatoTexto.indexOf(rotulo)
-      if (idx === -1) return ''
-      const inicio = idx + rotulo.length
-      let fim = relatoTexto.length
-      for (const prox of proximosRotulos) {
-        const pIdx = relatoTexto.indexOf(prox, inicio)
-        if (pIdx !== -1 && pIdx < fim) {
-          fim = pIdx
-        }
-      }
-      return relatoTexto.substring(inicio, fim).trim()
+  if (!relatoTexto) {
+    return {
+      objetivo_encontro: '',
+      atividade_realizada: '',
+      detalhamento: '',
+      relato: '',
+      providencias: providenciasTexto || '',
+      profissionais_participantes: '',
+      tecnico: tecnicoTexto || 'TÉCNICO RESPONSÁVEL'
     }
+  }
 
-    const rotulos = ['OBJETIVO:', 'ATIVIDADE REALIZADA:', 'DETALHAMENTO:', 'RELATO TÉCNICO:', 'PROFISSIONAIS PARTICIPANTES:']
-    objetivo = pegarTrecho('OBJETIVO:', rotulos.slice(1))
-    atividade = pegarTrecho('ATIVIDADE REALIZADA:', rotulos.slice(2))
-    detalhamento = pegarTrecho('DETALHAMENTO:', rotulos.slice(3))
-    relato = pegarTrecho('RELATO TÉCNICO:', rotulos.slice(4)) || relatoTexto
-    profissionais = pegarTrecho('PROFISSIONAIS PARTICIPANTES:', [])
+  const linhas = relatoTexto.split('\n')
+  let campoAtual: 'objetivo' | 'atividade' | 'detalhamento' | 'relato' | 'profissionais' | 'outro' = 'outro'
+  const buffers: Record<string, string[]> = {
+    objetivo: [],
+    atividade: [],
+    detalhamento: [],
+    relato: [],
+    profissionais: []
+  }
+
+  for (const linha of linhas) {
+    const lTrim = linha.trim()
+    if (lTrim.startsWith('OBJETIVO:')) {
+      campoAtual = 'objetivo'
+      const valor = lTrim.replace('OBJETIVO:', '').trim()
+      if (valor) buffers.objetivo.push(valor)
+    } else if (lTrim.startsWith('ATIVIDADE REALIZADA:')) {
+      campoAtual = 'atividade'
+      const valor = lTrim.replace('ATIVIDADE REALIZADA:', '').trim()
+      if (valor) buffers.atividade.push(valor)
+    } else if (lTrim.startsWith('DETALHAMENTO:')) {
+      campoAtual = 'detalhamento'
+      const valor = lTrim.replace('DETALHAMENTO:', '').trim()
+      if (valor) buffers.detalhamento.push(valor)
+    } else if (lTrim.startsWith('RELATO TÉCNICO:')) {
+      campoAtual = 'relato'
+      const valor = lTrim.replace('RELATO TÉCNICO:', '').trim()
+      if (valor) buffers.relato.push(valor)
+    } else if (lTrim.startsWith('PROFISSIONAIS PARTICIPANTES:')) {
+      campoAtual = 'profissionais'
+      const valor = lTrim.replace('PROFISSIONAIS PARTICIPANTES:', '').trim()
+      if (valor) buffers.profissionais.push(valor)
+    } else if (lTrim.startsWith('RELATÓRIO DE ENCONTRO SCFV')) {
+      campoAtual = 'outro'
+    } else if (campoAtual !== 'outro') {
+      buffers[campoAtual].push(linha)
+    }
+  }
+
+  objetivo = buffers.objetivo.join('\n').trim()
+  atividade = buffers.atividade.join('\n').trim()
+  detalhamento = buffers.detalhamento.join('\n').trim()
+  relato = buffers.relato.join('\n').trim()
+  profissionais = buffers.profissionais.join(', ').trim()
+
+  if (!objetivo && !atividade && !detalhamento && !relato) {
+    relato = relatoTexto
   }
 
   return {
@@ -55,50 +93,63 @@ export async function GET(request: NextRequest) {
       query = query.eq('grupo_id', grupoId)
     }
 
-    const { data: relatoriosDirect, error: relError } = await query
-    const relatoriosSalvos = (relatoriosDirect || []).filter((r: any) => r.objetivo_encontro || r.relato || r.atividade_realizada)
+    const { data: relatoriosDirect } = await query
 
-    // 2. Se encontrou relatórios completos em relatorios_scfv, retorna direto
-    if (!relError && relatoriosSalvos.length > 0) {
-      return NextResponse.json({ ok: true, data: relatoriosSalvos })
-    }
-
-    // 3. Fallback inteligente: Reconstruir a partir de historico_atendimentos caso relatorios_scfv esteja vazio
+    // 2. Buscar também no historico_atendimentos
     const { data: atendimentos } = await supabase
       .from('historico_atendimentos')
       .select('*')
       .ilike('tipo', '%SCFV%')
       .order('criado_em', { ascending: false })
 
-    const relatoriosReconstruidos: any[] = []
-    const datasJaProcessadas = new Set<string>()
-
+    const atendimentosMap = new Map<string, any>()
     if (Array.isArray(atendimentos)) {
       atendimentos.forEach(atd => {
-        const dataEncontroStr = atd.data || atd.criado_em?.split('T')[0]
-        if (!dataEncontroStr || datasJaProcessadas.has(dataEncontroStr)) return
+        const dataStr = atd.data || atd.criado_em?.split('T')[0]
+        if (dataStr && !atendimentosMap.has(dataStr)) {
+          const parsed = parseRelatoAtendimento(atd.relato || '', atd.providencias, atd.tecnico, dataStr)
+          atendimentosMap.set(dataStr, {
+            id: atd.id,
+            grupo_id: grupoId || 'geral',
+            data_encontro: dataStr,
+            ...parsed
+          })
+        }
+      })
+    }
 
-        datasJaProcessadas.add(dataEncontroStr)
-        const parsed = parseRelatoAtendimento(atd.relato || '', atd.providencias, atd.tecnico, dataEncontroStr)
+    const relatoriosCompletos: any[] = []
+    const datasProcessadas = new Set<string>()
 
-        relatoriosReconstruidos.push({
-          id: atd.id,
-          grupo_id: grupoId || 'geral',
-          data_encontro: dataEncontroStr,
-          ...parsed
+    if (Array.isArray(relatoriosDirect)) {
+      relatoriosDirect.forEach((r: any) => {
+        const d = r.data_encontro?.split('T')[0]?.split(' ')[0]
+        if (!d) return
+        datasProcessadas.add(d)
+
+        const fallback = atendimentosMap.get(d) || {}
+        relatoriosCompletos.push({
+          id: r.id || fallback.id,
+          grupo_id: r.grupo_id || grupoId || 'geral',
+          data_encontro: d,
+          objetivo_encontro: r.objetivo_encontro || fallback.objetivo_encontro || '',
+          atividade_realizada: r.atividade_realizada || fallback.atividade_realizada || '',
+          detalhamento: r.detalhamento || fallback.detalhamento || '',
+          relato: r.relato || fallback.relato || '',
+          providencias: r.providencias || fallback.providencias || '',
+          profissionais_participantes: r.profissionais_participantes || fallback.profissionais_participantes || '',
+          tecnico: r.tecnico || fallback.tecnico || 'TÉCNICO RESPONSÁVEL'
         })
       })
     }
 
-    // Mesclar resultados priorizando os registros diretos de relatorios_scfv
-    const relatoriosFinais = [...relatoriosSalvos]
-    relatoriosReconstruidos.forEach(rRec => {
-      if (!relatoriosFinais.some(rf => rf.data_encontro === rRec.data_encontro)) {
-        relatoriosFinais.push(rRec)
+    atendimentosMap.forEach((val, key) => {
+      if (!datasProcessadas.has(key)) {
+        relatoriosCompletos.push(val)
       }
     })
 
-    return NextResponse.json({ ok: true, data: relatoriosFinais })
+    return NextResponse.json({ ok: true, data: relatoriosCompletos })
   } catch (e: any) {
     return NextResponse.json({ ok: true, data: [] })
   }

@@ -253,8 +253,52 @@ export function ScfvView({
                   </p>
                 </div>
 
-                {/* Ações Administrativas de Gestão do Coletivo */}
-                <div className="flex items-center gap-1.5 shrink-0">
+                {/* Ações Operacionais e Administrativas de Gestão do Coletivo (Exclusivamente Ícones) */}
+                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
+                    className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition flex items-center justify-center border border-emerald-700"
+                    title="Vincular Participante ao Grupo"
+                  >
+                    <i className="fa-solid fa-user-plus text-xs"></i>
+                  </button>
+
+                  {onAbrirModalFrequencia && (
+                    <button
+                      type="button"
+                      onClick={() => onAbrirModalFrequencia(grupoAtual)}
+                      className="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center justify-center border border-indigo-700"
+                      title="Lançar Frequência / Chamada"
+                    >
+                      <i className="fa-solid fa-clipboard-user text-xs"></i>
+                    </button>
+                  )}
+
+                  {onAbrirModalRelatorioGrupo && (
+                    <button
+                      type="button"
+                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual)}
+                      className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-900 text-white shadow-xs transition flex items-center justify-center border border-slate-900"
+                      title="Novo Relatório Técnico do Encontro"
+                    >
+                      <i className="fa-solid fa-file-circle-plus text-xs"></i>
+                    </button>
+                  )}
+
+                  {onAbrirModalRelatorioGeralGrupo && (
+                    <button
+                      type="button"
+                      onClick={() => onAbrirModalRelatorioGeralGrupo(grupoAtual)}
+                      className="w-8 h-8 rounded-lg bg-teal-700 hover:bg-teal-800 text-white shadow-xs transition flex items-center justify-center border border-teal-800"
+                      title="Relatório Geral Consolidado (Todos os Encontros)"
+                    >
+                      <i className="fa-solid fa-file-contract text-xs"></i>
+                    </button>
+                  )}
+
+                  <div className="h-5 w-px bg-gray-200 mx-0.5"></div>
+
                   {onAbrirModalEditarGrupo && (
                     <button
                       type="button"
@@ -265,6 +309,7 @@ export function ScfvView({
                       <i className="fa-solid fa-pen-to-square text-xs"></i>
                     </button>
                   )}
+
                   {onExcluirGrupo && (
                     <button
                       type="button"
@@ -277,57 +322,6 @@ export function ScfvView({
                       title="Excluir Grupo"
                     >
                       <i className="fa-solid fa-trash-can text-xs"></i>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Barra de Ações Operacionais (Em linha única compacta com ícones) */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 shadow-xs">
-                <div className="flex items-center gap-2 overflow-x-auto w-full">
-                  <button
-                    type="button"
-                    onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
-                    title="Vincular Participante ao Grupo"
-                  >
-                    <i className="fa-solid fa-user-plus text-emerald-200"></i>
-                    <span>Vincular Participante</span>
-                  </button>
-
-                  {onAbrirModalFrequencia && (
-                    <button
-                      type="button"
-                      onClick={() => onAbrirModalFrequencia(grupoAtual)}
-                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
-                      title="Lançar Frequência / Chamada"
-                    >
-                      <i className="fa-solid fa-clipboard-user text-indigo-200"></i>
-                      <span>Lançar Frequência</span>
-                    </button>
-                  )}
-
-                  {onAbrirModalRelatorioGrupo && (
-                    <button
-                      type="button"
-                      onClick={() => onAbrirModalRelatorioGrupo(grupoAtual)}
-                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
-                      title="Novo Relatório do Encontro"
-                    >
-                      <i className="fa-solid fa-file-circle-plus text-slate-300"></i>
-                      <span>Relatório do Encontro</span>
-                    </button>
-                  )}
-
-                  {onAbrirModalRelatorioGeralGrupo && (
-                    <button
-                      type="button"
-                      onClick={() => onAbrirModalRelatorioGeralGrupo(grupoAtual)}
-                      className="px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
-                      title="Relatório Geral Consolidado (Todos Encontros)"
-                    >
-                      <i className="fa-solid fa-file-contract text-teal-200"></i>
-                      <span>Relatório Geral</span>
                     </button>
                   )}
                 </div>

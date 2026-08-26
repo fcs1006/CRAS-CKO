@@ -96,6 +96,12 @@ export function ModalRelatorioGrupoScfv({
     carregarHistoricos()
   }, [grupo?.id])
 
+  useEffect(() => {
+    if (dataEncontroInicial) {
+      setDataEncontro(dataEncontroInicial)
+    }
+  }, [dataEncontroInicial])
+
   // Obter datas únicas do histórico
   const datasHistoricoUnicas = Array.from(
     new Set([
