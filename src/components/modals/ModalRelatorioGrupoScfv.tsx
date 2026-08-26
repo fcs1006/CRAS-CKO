@@ -104,6 +104,24 @@ export function ModalRelatorioGrupoScfv({
     ])
   ).filter(Boolean).sort().reverse()
 
+  function compararDatas(d1?: string, d2?: string) {
+    if (!d1 || !d2) return false
+    const s1 = d1.split('T')[0].split(' ')[0].trim()
+    const s2 = d2.split('T')[0].split(' ')[0].trim()
+
+    if (s1 === s2) return true
+
+    const toIso = (str: string) => {
+      if (str.includes('/')) {
+        const parts = str.split('/')
+        if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+      }
+      return str
+    }
+
+    return toIso(s1) === toIso(s2)
+  }
+
   // 2. Quando a Data do Encontro mudar, carregar Frequência e Relatório gravados daquela data
   useEffect(() => {
     if (!dataEncontro) {
@@ -112,10 +130,12 @@ export function ModalRelatorioGrupoScfv({
       return
     }
 
-    const freqNoDia = historicoFrequencias.find(f => f.data === dataEncontro)
+    if (carregandoHistorico) return
+
+    const freqNoDia = historicoFrequencias.find(f => compararDatas(f.data, dataEncontro))
     setFrequenciaEncontro(freqNoDia || null)
 
-    const relNoDia = historicoRelatorios.find(r => r.data_encontro === dataEncontro)
+    const relNoDia = historicoRelatorios.find(r => compararDatas(r.data_encontro, dataEncontro))
 
     if (relNoDia) {
       setRelatorioSalvoNoDia(true)
@@ -137,7 +157,7 @@ export function ModalRelatorioGrupoScfv({
       setRelato('')
       setProvidencias('')
     }
-  }, [dataEncontro, historicoFrequencias, historicoRelatorios])
+  }, [dataEncontro, historicoFrequencias, historicoRelatorios, carregandoHistorico])
 
   function isProfissionalSelecionado(nomeProf: string) {
     const target = nomeProf.toUpperCase().trim()
