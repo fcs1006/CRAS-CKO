@@ -435,18 +435,20 @@ export function ScfvView({
                       <tbody className="divide-y divide-gray-100 bg-white">
                         {encontrosConsolidados.map((item) => (
                           <tr key={item.dataStr} className="hover:bg-gray-50/80 transition">
-                            <td className="py-2.5 px-3 font-extrabold text-indigo-950 whitespace-nowrap">
+                            <td className="py-3 px-3 font-extrabold text-indigo-950 whitespace-nowrap align-top">
                               {item.dataBr}
                             </td>
-                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-900 border border-indigo-200">
+                            <td className="py-3 px-3 text-center whitespace-nowrap align-top">
+                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-900 border border-indigo-200">
                                 {item.qtdPresentes} / {item.totalCadastrados} Presentes
                               </span>
                             </td>
-                            <td className="py-2.5 px-3 font-semibold text-gray-800 uppercase leading-relaxed">
-                              {item.objetivo}
+                            <td className="py-3 px-3 font-medium text-gray-800 uppercase leading-relaxed align-top">
+                              <p className="line-clamp-3 text-xs" title={item.objetivo}>
+                                {item.objetivo}
+                              </p>
                             </td>
-                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                            <td className="py-3 px-3 text-center whitespace-nowrap align-top">
                               <div className="flex items-center justify-center gap-1.5">
                                 {onAbrirModalRelatorioGrupo && (
                                   <>
