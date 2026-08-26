@@ -65,19 +65,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    // Registrar Inclusão no Histórico do Beneficiário se houver familia_id
-    if (safeFamiliaId) {
+    // Registrar Inclusão no Histórico do Beneficiário
+    let targetFamiliaId = safeFamiliaId
+    if (!targetFamiliaId) {
       try {
-        await supabase.from('historico_atendimentos').insert({
-          familia_id: safeFamiliaId,
+        const { data: fams } = await supabase.from('familias').select('id, responsavel, membros')
+        if (fams) {
+          const nomeP = dados.nome.trim().toUpperCase()
+          const famEncontrada = fams.find(f => {
+            if (f.responsavel && f.responsavel.trim().toUpperCase() === nomeP) return true
+            if (Array.isArray(f.membros)) {
+              return f.membros.some((m: any) => m.nome && m.nome.trim().toUpperCase() === nomeP)
+            }
+            return false
+          })
+          if (famEncontrada) targetFamiliaId = famEncontrada.id
+        }
+      } catch (e) {
+        console.warn('Aviso na busca de família para histórico:', e)
+      }
+    }
+
+    if (targetFamiliaId) {
+      try {
+        const payloadHist = {
+          familia_id: targetFamiliaId,
           usuario_visitado: dados.nome.trim().toUpperCase(),
           tecnico: dados.tecnico || 'TÉCNICO RESPONSÁVEL',
           tipo: 'SCFV / Convivência',
           local: 'CRAS',
           relato: `INCLUSÃO EM GRUPO SCFV: O(a) beneficiário(a) ${dados.nome.trim().toUpperCase()} foi vinculado(a) e matriculado(a) no grupo "${grupoNome}".`,
           providencias: 'Matrícula efetuada no Serviço de Convivência e Fortalecimento de Vínculos (SCFV).',
-          sigilo: 'equipe_tecnica'
-        })
+          data: new Date().toISOString().split('T')[0]
+        }
+        const insertHist = await supabase.from('historico_atendimentos').insert(payloadHist)
+        if (insertHist.error) {
+          console.warn('Erro ao inserir histórico de inclusão SCFV:', insertHist.error.message)
+        }
       } catch (hErr) {
         console.warn('Erro ao inserir histórico de inclusão:', hErr)
       }
@@ -117,19 +141,39 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    // Registrar Exclusão no Histórico do Beneficiário se houver familia_id
-    if (partExistente && partExistente.familia_id) {
+    // Registrar Exclusão no Histórico do Beneficiário
+    let targetFamiliaId = partExistente?.familia_id
+    if (!targetFamiliaId && partExistente?.nome) {
+      try {
+        const { data: fams } = await supabase.from('familias').select('id, responsavel, membros')
+        if (fams) {
+          const nomeP = partExistente.nome.trim().toUpperCase()
+          const famEncontrada = fams.find(f => {
+            if (f.responsavel && f.responsavel.trim().toUpperCase() === nomeP) return true
+            if (Array.isArray(f.membros)) {
+              return f.membros.some((m: any) => m.nome && m.nome.trim().toUpperCase() === nomeP)
+            }
+            return false
+          })
+          if (famEncontrada) targetFamiliaId = famEncontrada.id
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (targetFamiliaId && partExistente) {
       try {
         const grupoNome = (partExistente as any).grupos_scfv?.nome || 'GRUPO SCFV'
         await supabase.from('historico_atendimentos').insert({
-          familia_id: partExistente.familia_id,
-          usuario_visitado: partExistente.nome,
+          familia_id: targetFamiliaId,
+          usuario_visitado: partExistente.nome.toUpperCase(),
           tecnico: 'TÉCNICO RESPONSÁVEL',
           tipo: 'SCFV / Convivência',
           local: 'CRAS',
-          relato: `DESVINCULAÇÃO DE GRUPO SCFV: O(a) beneficiário(a) ${partExistente.nome} foi desvinculado(a) do grupo "${grupoNome}".`,
+          relato: `DESVINCULAÇÃO DE GRUPO SCFV: O(a) beneficiário(a) ${partExistente.nome.toUpperCase()} foi desvinculado(a) do grupo "${grupoNome}".`,
           providencias: 'Desvinculação efetuada no módulo SCFV.',
-          sigilo: 'equipe_tecnica'
+          data: new Date().toISOString().split('T')[0]
         })
       } catch (hErr) {
         console.warn('Erro ao inserir histórico de exclusão:', hErr)

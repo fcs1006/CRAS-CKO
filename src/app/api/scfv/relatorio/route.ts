@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       relSalvo = retry.data
     }
 
-    // 2. Gravar no historico_atendimentos como garantia de persistência dupla
+    // 2. Gravar no historico_atendimentos para CADA participante do grupo
     const dataPartes = data_encontro.split('-')
     const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : data_encontro
 
@@ -217,22 +217,68 @@ export async function POST(request: NextRequest) {
     ].filter(Boolean).join('\n')
 
     try {
-      const { data: fams } = await supabase.from('familias').select('id').limit(1)
-      const famId = fams && fams[0] ? fams[0].id : '00000000-0000-0000-0000-000000000000'
+      // Buscar integrantes do grupo
+      const { data: partList } = await supabase
+        .from('participantes_scfv')
+        .select('*')
+        .eq('grupo_id', grupo_id)
 
-      await supabase.from('historico_atendimentos').insert({
-        familia_id: famId,
-        usuario_visitado: `ENCONTRO SCFV - ${grupo_nome || 'COLETIVO'}`,
-        tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
-        tipo: 'SCFV / Convivência',
-        local: 'CRAS',
-        relato: partesRelato,
-        providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
-        sigilo: 'equipe_tecnica',
-        data: data_encontro
-      })
+      const { data: todasFamilias } = await supabase
+        .from('familias')
+        .select('id, responsavel, membros')
+
+      const registrosHistorico: any[] = []
+
+      if (Array.isArray(partList) && partList.length > 0) {
+        for (const p of partList) {
+          let famId = p.familia_id
+
+          if (!famId && todasFamilias) {
+            const nomeP = (p.nome || '').trim().toUpperCase()
+            const famEncontrada = todasFamilias.find(f => {
+              if (f.responsavel && f.responsavel.trim().toUpperCase() === nomeP) return true
+              if (Array.isArray(f.membros)) {
+                return f.membros.some((m: any) => m.nome && m.nome.trim().toUpperCase() === nomeP)
+              }
+              return false
+            })
+            if (famEncontrada) famId = famEncontrada.id
+          }
+
+          if (famId) {
+            registrosHistorico.push({
+              familia_id: famId,
+              usuario_visitado: (p.nome || '').toUpperCase(),
+              tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
+              tipo: 'SCFV / Convivência',
+              local: 'CRAS',
+              relato: partesRelato,
+              providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
+              data: data_encontro
+            })
+          }
+        }
+      }
+
+      // Se nenhum integrante tinha família ou o grupo não tinha participantes, inserir registro geral com a 1ª família
+      if (registrosHistorico.length === 0 && todasFamilias && todasFamilias.length > 0) {
+        registrosHistorico.push({
+          familia_id: todasFamilias[0].id,
+          usuario_visitado: `COLETIVO SCFV - ${grupo_nome || 'GRUPO'}`,
+          tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
+          tipo: 'SCFV / Convivência',
+          local: 'CRAS',
+          relato: partesRelato,
+          providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
+          data: data_encontro
+        })
+      }
+
+      if (registrosHistorico.length > 0) {
+        await supabase.from('historico_atendimentos').insert(registrosHistorico)
+      }
     } catch (e) {
-      console.warn('Aviso ao inserir em historico_atendimentos:', e)
+      console.warn('Aviso ao inserir no historico_atendimentos:', e)
     }
 
     return NextResponse.json({ ok: true, data: relSalvo || payload })

@@ -92,36 +92,68 @@ export async function POST(request: NextRequest) {
     const dataPartes = data.split('-')
     const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : data
 
+    let todasFamilias: any[] | null = null
+    try {
+      const { data: fams } = await supabase.from('familias').select('id, responsavel, membros')
+      todasFamilias = fams
+    } catch (e) {
+      // ignore
+    }
+
     const registrosHistorico: any[] = []
 
     for (const reg of registros) {
-      if (reg.familia_id && reg.nome) {
-        let statusTexto = 'PRESENÇA CONFIRMADA'
-        let tipoAtendimento = 'SCFV / Convivência'
-
-        if (reg.status === 'falta_justificada') {
-          statusTexto = 'FALTA JUSTIFICADA'
-          tipoAtendimento = 'Falta / Não Comparecimento'
-        } else if (reg.status === 'falta_nao_justificada') {
-          statusTexto = 'FALTA NÃO JUSTIFICADA'
-          tipoAtendimento = 'Falta / Não Comparecimento'
+      if (reg.nome) {
+        let famId = reg.familia_id
+        if (!famId && todasFamilias) {
+          const nomeP = reg.nome.trim().toUpperCase()
+          const famEncontrada = todasFamilias.find(f => {
+            if (f.responsavel && f.responsavel.trim().toUpperCase() === nomeP) return true
+            if (Array.isArray(f.membros)) {
+              return f.membros.some((m: any) => m.nome && m.nome.trim().toUpperCase() === nomeP)
+            }
+            return false
+          })
+          if (famEncontrada) famId = famEncontrada.id
         }
 
-        const obsTexto = reg.observacao ? ` (Obs: ${reg.observacao})` : ''
-        const relato = `FREQUÊNCIA SCFV [${statusTexto}]: Registrado encontro do grupo "${grupo_nome || 'COLETIVO SCFV'}" na data ${dataBr}.${obsTexto}`
-        const providencias = tema ? `Pauta/Tema do dia: ${tema}` : `Registro de frequência em encontro de convivência.`
+        if (famId) {
+          let statusTexto = 'PRESENÇA CONFIRMADA'
+          let tipoAtendimento = 'SCFV / Convivência'
 
-        registrosHistorico.push({
-          familia_id: reg.familia_id,
-          usuario_visitado: reg.nome.toUpperCase(),
-          tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
-          tipo: tipoAtendimento,
-          local: 'CRAS',
-          relato,
-          providencias,
-          sigilo: 'equipe_tecnica',
-          data
-        })
+          if (reg.status === 'falta_justificada') {
+            statusTexto = 'FALTA JUSTIFICADA'
+            tipoAtendimento = 'Falta / Não Comparecimento'
+          } else if (reg.status === 'falta_nao_justificada') {
+            statusTexto = 'FALTA NÃO JUSTIFICADA'
+            tipoAtendimento = 'Falta / Não Comparecimento'
+          }
+
+          const obsTexto = reg.observacao ? ` (Obs: ${reg.observacao})` : ''
+          let pautaTemaTexto = tema || ''
+          if (pautaTemaTexto.startsWith('RELATORIO_JSON:')) {
+            try {
+              const parsedTema = JSON.parse(pautaTemaTexto.replace('RELATORIO_JSON:', ''))
+              pautaTemaTexto = parsedTema.objetivo_encontro || parsedTema.atividade_realizada || ''
+            } catch (e) {
+              pautaTemaTexto = ''
+            }
+          }
+
+          const relato = `FREQUÊNCIA SCFV [${statusTexto}]: Registrado encontro do grupo "${grupo_nome || 'COLETIVO SCFV'}" na data ${dataBr}.${obsTexto}`
+          const providencias = pautaTemaTexto ? `Objetivo/Pauta do encontro: ${pautaTemaTexto}` : `Registro de frequência em encontro de convivência.`
+
+          registrosHistorico.push({
+            familia_id: famId,
+            usuario_visitado: reg.nome.toUpperCase(),
+            tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
+            tipo: tipoAtendimento,
+            local: 'CRAS',
+            relato,
+            providencias,
+            data
+          })
+        }
       }
     }
 
