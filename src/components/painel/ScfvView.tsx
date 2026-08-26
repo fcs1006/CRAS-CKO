@@ -87,6 +87,24 @@ export function ScfvView({
     }
   }
 
+  function compararDatas(d1?: string, d2?: string) {
+    if (!d1 || !d2) return false
+    const s1 = d1.split('T')[0].split(' ')[0].trim()
+    const s2 = d2.split('T')[0].split(' ')[0].trim()
+
+    if (s1 === s2) return true
+
+    const toIso = (str: string) => {
+      if (str.includes('/')) {
+        const parts = str.split('/')
+        if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+      }
+      return str
+    }
+
+    return toIso(s1) === toIso(s2)
+  }
+
   // Consolidação dos dados para exibição na tabela de histórico
   const datasHistoricoUnicas = Array.from(
     new Set([
@@ -96,8 +114,8 @@ export function ScfvView({
   ).filter(Boolean).sort().reverse()
 
   const encontrosConsolidados = datasHistoricoUnicas.map(dStr => {
-    const freq = frequenciasHistorico.find(f => f.data === dStr)
-    const rel = relatoriosHistorico.find(r => r.data_encontro === dStr)
+    const freq = frequenciasHistorico.find(f => compararDatas(f.data, dStr))
+    const rel = relatoriosHistorico.find(r => compararDatas(r.data_encontro, dStr))
 
     const dataBr = dStr.split('-').reverse().join('/')
 
@@ -116,8 +134,8 @@ export function ScfvView({
     return {
       dataStr: dStr,
       dataBr,
-      objetivo: rel?.objetivo_encontro || 'FORTALECER VÍNCULOS FAMILIARES E COMUNITÁRIOS, DESENVOLVER A AUTONOMIA E PROMOVER A CONVIVÊNCIA SOCIAL.',
-      atividade: rel?.atividade_realizada || 'RODA DE CONVERSA TEMÁTICA E OFICINA PRÁTICA.',
+      objetivo: rel?.objetivo_encontro || rel?.atividade_realizada || rel?.relato || '—',
+      atividade: rel?.atividade_realizada || '—',
       qtdPresentes,
       totalCadastrados,
       temRelatorio: !!rel,
@@ -264,36 +282,40 @@ export function ScfvView({
                 </div>
               </div>
 
-              {/* Barra de Ações Operacionais (Frequência, Relatórios, Vincular Participante) */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5 shadow-xs">
-                <div className="flex items-center gap-2 flex-wrap">
+              {/* Barra de Ações Operacionais (Em linha única compacta com ícones) */}
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 flex items-center justify-between gap-2 shadow-xs">
+                <div className="flex items-center gap-2 overflow-x-auto w-full">
                   <button
                     type="button"
                     onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
-                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
+                    title="Vincular Participante ao Grupo"
                   >
-                    <i className="fa-solid fa-user-plus text-emerald-200"></i> Vincular Participante
+                    <i className="fa-solid fa-user-plus text-emerald-200"></i>
+                    <span>Vincular Participante</span>
                   </button>
 
                   {onAbrirModalFrequencia && (
                     <button
                       type="button"
                       onClick={() => onAbrirModalFrequencia(grupoAtual)}
-                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
+                      title="Lançar Frequência / Chamada"
                     >
-                      <i className="fa-solid fa-clipboard-user text-indigo-200"></i> Lançar Frequência / Chamada
+                      <i className="fa-solid fa-clipboard-user text-indigo-200"></i>
+                      <span>Lançar Frequência</span>
                     </button>
                   )}
-                </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
                   {onAbrirModalRelatorioGrupo && (
                     <button
                       type="button"
                       onClick={() => onAbrirModalRelatorioGrupo(grupoAtual)}
-                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
+                      className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
+                      title="Novo Relatório do Encontro"
                     >
-                      <i className="fa-solid fa-file-invoice text-slate-300"></i> Relatório do Encontro
+                      <i className="fa-solid fa-file-circle-plus text-slate-300"></i>
+                      <span>Relatório do Encontro</span>
                     </button>
                   )}
 
@@ -301,9 +323,11 @@ export function ScfvView({
                     <button
                       type="button"
                       onClick={() => onAbrirModalRelatorioGeralGrupo(grupoAtual)}
-                      className="px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2"
+                      className="px-3.5 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-2 shrink-0"
+                      title="Relatório Geral Consolidado (Todos Encontros)"
                     >
-                      <i className="fa-solid fa-file-lines text-teal-200"></i> Relatório Geral (Todos Encontros)
+                      <i className="fa-solid fa-file-contract text-teal-200"></i>
+                      <span>Relatório Geral</span>
                     </button>
                   )}
                 </div>

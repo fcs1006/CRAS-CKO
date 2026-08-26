@@ -559,6 +559,15 @@ export function ModalRelatorioGrupoScfv({
           </div>
           
           <div className="flex items-center gap-2">
+            {apenasVisualizacao && (
+              <button
+                type="button"
+                onClick={handleImprimir}
+                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs uppercase tracking-wide transition shadow flex items-center gap-1.5"
+              >
+                <i className="fa-solid fa-print"></i> Imprimir
+              </button>
+            )}
             <button type="button" onClick={onClose} className="text-slate-300 hover:text-white text-xl p-1">
               <i className="fa-solid fa-xmark"></i>
             </button>
@@ -991,7 +1000,7 @@ export function ModalRelatorioGrupoScfv({
         <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center shrink-0 no-print">
           <p className="text-[11px] text-gray-500 font-medium">
             {apenasVisualizacao
-              ? 'Modo de visualização. Para alterar informações deste relatório, utilize o botão de edição na tabela de encontros.'
+              ? 'Modo de visualização. Utilize o botão "Imprimir Relatório" para gerar a versão física em folha A4.'
               : 'Ao salvar, o relatório deste encontro será gravado no histórico dos beneficiários.'}
           </p>
 
@@ -1004,8 +1013,15 @@ export function ModalRelatorioGrupoScfv({
               Fechar
             </button>
 
-
-            {!apenasVisualizacao && (
+            {apenasVisualizacao ? (
+              <button
+                type="button"
+                onClick={handleImprimir}
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5 text-xs"
+              >
+                <i className="fa-solid fa-print"></i> Imprimir Relatório
+              </button>
+            ) : (
               <button
                 type="button"
                 disabled={salvando}
