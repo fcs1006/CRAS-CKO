@@ -46,22 +46,44 @@ export function FamiliasView({
 
   return (
     <div className="space-y-6 print:hidden">
-      {/* Cabeçalho da Seção */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-        <div>
-          <h2 className="text-2xl font-black text-teal-900 flex items-center gap-2.5 tracking-tight">
-            <i className="fa-solid fa-address-book text-teal-600"></i> Prontuário Familiar SUAS
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Gestão normativa do Prontuário SUAS: Folha de Rosto, Composição Familiar, Territorialização e Plano PAIF (PAF).
-          </p>
+      {/* Banner Principal Padronizado */}
+      <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-teal-900 rounded-2xl p-6 text-white shadow-xl border border-teal-800/40 relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-32 bottom-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-teal-500/30 text-teal-200 border border-teal-400/30 tracking-wider">
+                Proteção Social Básica • SUAS Digital
+              </span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <i className="fa-solid fa-address-book text-teal-400 text-xl"></i>
+              <span>Prontuário Familiar SUAS</span>
+            </h2>
+            <p className="text-xs text-teal-200/90 leading-relaxed font-normal">
+              Gestão normativa do Prontuário SUAS: Folha de Rosto, Composição Familiar, Territorialização e Plano PAIF (PAF).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            <div className="hidden lg:flex items-center gap-3 bg-white/5 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-xs">
+              <div className="px-3 py-1 text-center">
+                <span className="text-[10px] uppercase text-teal-300 block font-semibold">Total de Famílias</span>
+                <strong className="text-base font-black text-white">{familias.length}</strong>
+              </div>
+            </div>
+
+            <button
+              onClick={onAbrirModalNovaFamilia}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+            >
+              <i className="fa-solid fa-plus text-sm"></i>
+              <span>Novo Prontuário</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={onAbrirModalNovaFamilia}
-          className="bg-teal-800 hover:bg-teal-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow transition flex items-center gap-2 whitespace-nowrap uppercase tracking-wider"
-        >
-          <i className="fa-solid fa-plus text-xs"></i> Novo Prontuário
-        </button>
       </div>
 
       {/* Barra de Busca e Filtros Harmonizados */}

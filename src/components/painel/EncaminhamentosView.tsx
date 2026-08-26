@@ -156,23 +156,45 @@ export function EncaminhamentosView({
   return (
     <div className="space-y-6">
       <div className="space-y-6 print:hidden">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <i className="fa-solid fa-route text-rose-600"></i> Encaminhamentos Intersetoriais
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Articulação com a Rede Socioassistencial (Saúde, Educação, INSS, Conselho Tutelar, Habitação).
-          </p>
+        {/* Banner Principal Padronizado */}
+        <div className="bg-gradient-to-r from-slate-900 via-rose-950 to-rose-900 rounded-2xl p-6 text-white shadow-xl border border-rose-800/40 relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute right-32 bottom-0 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-500/30 text-rose-200 border border-rose-400/30 tracking-wider">
+                  Rede de Proteção • SUAS Digital
+                </span>
+              </div>
+              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                <i className="fa-solid fa-route text-rose-400 text-xl"></i>
+                <span>Encaminhamentos Intersetoriais</span>
+              </h2>
+              <p className="text-xs text-rose-100/90 leading-relaxed font-normal">
+                Articulação integrada com a Rede Socioassistencial e Intersetorial (Saúde, Educação, INSS, Conselho Tutelar, Habitação e Justiça).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <div className="hidden lg:flex items-center gap-3 bg-white/5 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-xs">
+                <div className="px-3 py-1 text-center">
+                  <span className="text-[10px] uppercase text-rose-300 block font-semibold">Total Emitidos</span>
+                  <strong className="text-base font-black text-white">{encaminhamentos.length}</strong>
+                </div>
+              </div>
+
+              <button
+                onClick={onAbrirModalNovoEncaminhamento}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+              >
+                <i className="fa-solid fa-share text-sm"></i>
+                <span>Emitir Novo Encaminhamento</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={onAbrirModalNovoEncaminhamento}
-          className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2"
-        >
-          <i className="fa-solid fa-share font-bold"></i> Emitir Novo Encaminhamento
-        </button>
-      </div>
 
       {/* Filtros Padronizados */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">

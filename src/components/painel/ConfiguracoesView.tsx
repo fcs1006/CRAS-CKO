@@ -58,14 +58,27 @@ export function ConfiguracoesView({ configuracao, onSalvarConfiguracao }: Config
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* Cabeçalho */}
-      <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-          <i className="fa-solid fa-gears text-gray-700"></i> Configurações Institucionais do CRAS
-        </h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Personalização de cabeçalhos de relatórios, logomarca oficial da Prefeitura/Secretaria e contatos.
-        </p>
+      {/* Banner Principal Padronizado */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-teal-950 rounded-2xl p-6 text-white shadow-xl border border-slate-700/40 relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-32 bottom-0 w-48 h-48 bg-slate-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-700/50 text-slate-200 border border-slate-600/40 tracking-wider">
+                Parâmetros Globais • SUAS Digital
+              </span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <i className="fa-solid fa-gears text-teal-400 text-xl"></i>
+              <span>Configurações Institucionais</span>
+            </h2>
+            <p className="text-xs text-slate-300/90 leading-relaxed font-normal">
+              Personalização de cabeçalhos de relatórios, logomarca oficial da Prefeitura/Secretaria e contatos institucionais.
+            </p>
+          </div>
+        </div>
       </div>
 
       {mensagem && (

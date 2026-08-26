@@ -368,40 +368,48 @@ export function RmaView({
       {/* ========================================================
           CABEÇALHO EM TELA (INTERATIVO)
           ======================================================== */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm print:hidden">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 bg-teal-100 text-teal-900 rounded-lg text-xs font-black uppercase tracking-wider">
-              RMA SUAS / MDS
-            </span>
-            <h2 className="text-xl font-extrabold text-gray-900">
-              Registro Mensal de Atendimentos do CRAS
+      {/* Banner Principal Padronizado */}
+      <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-teal-900 rounded-2xl p-6 text-white shadow-xl border border-teal-800/40 relative overflow-hidden print:hidden">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-32 bottom-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-teal-500/30 text-teal-200 border border-teal-400/30 tracking-wider">
+                Relatórios Oficiais • SUAS / MDS
+              </span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <i className="fa-solid fa-file-invoice text-teal-400 text-xl"></i>
+              <span>Registro Mensal de Atendimentos (RMA)</span>
             </h2>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Espelho oficial dos Blocos 1, 2 e 3 alinhado às normativas do MDS e ao Manual do Prontuário SUAS.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl">
-            <label className="text-xs font-bold text-gray-700 whitespace-nowrap">
-              <i className="fa-solid fa-calendar-days text-teal-700 mr-1"></i> Mês de Referência:
-            </label>
-            <input
-              type="month"
-              value={mesAno}
-              onChange={e => setMesAno(e.target.value)}
-              className="px-2 py-1 bg-white border border-gray-300 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
-            />
+            <p className="text-xs text-teal-200/90 leading-relaxed font-normal">
+              Espelho oficial dos Blocos 1, 2 e 3 alinhado às normativas do MDS e ao Manual do Prontuário SUAS.
+            </p>
           </div>
 
-          <button
-            onClick={() => window.print()}
-            className="bg-teal-800 hover:bg-teal-900 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition flex items-center gap-2 uppercase tracking-wide"
-          >
-            <i className="fa-solid fa-print"></i> Imprimir RMA Oficial
-          </button>
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 text-xs">
+              <label className="text-xs font-bold text-teal-200 whitespace-nowrap">
+                <i className="fa-solid fa-calendar-days text-teal-400 mr-1.5"></i> Mês:
+              </label>
+              <input
+                type="month"
+                value={mesAno}
+                onChange={e => setMesAno(e.target.value)}
+                className="px-2 py-1 bg-slate-900 text-white border border-teal-500/40 rounded-lg text-xs font-bold focus:outline-none focus:ring-2 focus:ring-teal-400 font-mono"
+              />
+            </div>
+
+            <button
+              onClick={() => window.print()}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+            >
+              <i className="fa-solid fa-print text-sm"></i>
+              <span>Imprimir RMA Oficial</span>
+            </button>
+          </div>
         </div>
       </div>
 

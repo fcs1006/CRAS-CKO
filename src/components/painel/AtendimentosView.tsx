@@ -362,34 +362,47 @@ export function AtendimentosView({
   return (
     <div className="space-y-6">
       <div className="space-y-6 print:hidden">
-        {/* 1. Page Header (Estilo Legado SUAS Digital) */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-gray-200/80 shadow-sm print:hidden">
-        <div>
-          <h2 className="text-lg font-extrabold text-teal-950 uppercase tracking-wide flex items-center gap-2">
-            <i className="fa-solid fa-file-signature text-teal-700"></i> Atendimentos e Visitas Domiciliares
-          </h2>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Registre atendimentos realizados e gerencie o cronograma de agendamentos técnicos do CRAS.
-          </p>
-        </div>
+        {/* Banner Principal Padronizado */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 rounded-2xl p-6 text-white shadow-xl border border-indigo-800/40 relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute right-32 bottom-0 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="flex flex-wrap gap-2 shrink-0">
-          {onAbrirModalNovoAgendamento && (
-            <button
-              onClick={onAbrirModalNovoAgendamento}
-              className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow uppercase"
-            >
-              <i className="fa-solid fa-calendar-day"></i> Agendar Visita / Atendimento
-            </button>
-          )}
-          <button
-            onClick={() => onAbrirModalNovoAtendimento()}
-            className="px-4 py-2 bg-teal-800 hover:bg-teal-900 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow uppercase"
-          >
-            <i className="fa-solid fa-plus"></i> Registrar Atendimento
-          </button>
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 tracking-wider">
+                  Atendimento Técnico • SUAS Digital
+                </span>
+              </div>
+              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                <i className="fa-solid fa-file-signature text-indigo-400 text-xl"></i>
+                <span>Atendimentos e Visitas Domiciliares</span>
+              </h2>
+              <p className="text-xs text-indigo-200/90 leading-relaxed font-normal">
+                Registre atendimentos realizados, visitas domiciliares, escuta qualificada, acompanhamentos e evoluções do Prontuário SUAS.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              {onAbrirModalNovoAgendamento && (
+                <button
+                  onClick={onAbrirModalNovoAgendamento}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold px-4 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2 hover:scale-[1.02] active:scale-95 border border-indigo-400/40"
+                >
+                  <i className="fa-solid fa-calendar-plus text-sm"></i>
+                  <span>Agendar Visita / Atendimento</span>
+                </button>
+              )}
+              <button
+                onClick={() => onAbrirModalNovoAtendimento()}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+              >
+                <i className="fa-solid fa-plus text-sm"></i>
+                <span>Registrar Atendimento</span>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* 2. BLOCO PRIMEIRO (TOPO): Agenda Técnica de Visitas/Atendimentos */}
       <div className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-sm space-y-4 print:hidden">

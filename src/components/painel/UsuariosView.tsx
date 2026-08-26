@@ -46,29 +46,42 @@ export function UsuariosView({
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <i className="fa-solid fa-users-gear text-slate-700"></i> Gestão de Usuários & Técnicos do CRAS
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Controle de acessos, habilitação de técnicos e perfis administrativos.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {pendentesCount > 0 && (
-            <span className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-bold flex items-center gap-2 animate-pulse">
-              <i className="fa-solid fa-triangle-exclamation"></i> {pendentesCount} Pendente(s)
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => setMostrarModalCadastro(true)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shadow uppercase"
-          >
-            <i className="fa-solid fa-user-plus text-emerald-400"></i> Cadastrar Profissional
-          </button>
+      {/* Banner Principal Padronizado */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 rounded-2xl p-6 text-white shadow-xl border border-slate-800/40 relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-slate-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-32 bottom-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-700/50 text-slate-200 border border-slate-600/40 tracking-wider">
+                Gestão de Equipe • SUAS Digital
+              </span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <i className="fa-solid fa-users-gear text-indigo-400 text-xl"></i>
+              <span>Gestão de Técnicos & Operadores</span>
+            </h2>
+            <p className="text-xs text-slate-300/90 leading-relaxed font-normal">
+              Controle de credenciais de acesso, habilitação de técnicos de referência e perfis administrativos do CRAS.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            {pendentesCount > 0 && (
+              <span className="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black flex items-center gap-2 animate-pulse">
+                <i className="fa-solid fa-triangle-exclamation text-amber-400"></i> {pendentesCount} Pendente(s)
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setMostrarModalCadastro(true)}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+            >
+              <i className="fa-solid fa-user-plus text-sm"></i>
+              <span>Cadastrar Profissional</span>
+            </button>
+          </div>
         </div>
       </div>
 

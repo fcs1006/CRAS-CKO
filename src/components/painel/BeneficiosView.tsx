@@ -205,23 +205,45 @@ export function BeneficiosView({
   return (
     <div className="space-y-6">
       <div className="space-y-6 print:hidden">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-        <div>
-          <h2 className="text-xl font-black text-teal-950 flex items-center gap-2 tracking-tight">
-            <i className="fa-solid fa-hand-holding-heart text-amber-600"></i> Benefícios Eventuais & Almoxarifado (SUAS / LOAS)
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            Gestão normativa das 4 situações da LOAS: Nascimento (C.7), Morte (C.8), Vulnerabilidade Temporária (C.9) e Calamidade (C.9).
-          </p>
+        {/* Banner Principal Padronizado */}
+        <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-amber-900 rounded-2xl p-6 text-white shadow-xl border border-amber-800/40 relative overflow-hidden">
+          <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute right-32 bottom-0 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/30 text-amber-200 border border-amber-400/30 tracking-wider">
+                  Provisões Suplementares • LOAS / SUAS Digital
+                </span>
+              </div>
+              <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                <i className="fa-solid fa-hand-holding-heart text-amber-400 text-xl"></i>
+                <span>Benefícios Eventuais & Almoxarifado</span>
+              </h2>
+              <p className="text-xs text-amber-100/90 leading-relaxed font-normal">
+                Gestão normativa das 4 situações da LOAS: Nascimento (C.7), Morte (C.8), Vulnerabilidade Temporária (C.9) e Calamidade (C.9).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <div className="hidden lg:flex items-center gap-3 bg-white/5 backdrop-blur-md p-2.5 rounded-xl border border-white/10 text-xs">
+                <div className="px-3 py-1 text-center">
+                  <span className="text-[10px] uppercase text-amber-300 block font-semibold">Total Concedido</span>
+                  <strong className="text-base font-black text-white">{beneficios.length}</strong>
+                </div>
+              </div>
+
+              <button
+                onClick={onAbrirModalConcederBeneficio}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+              >
+                <i className="fa-solid fa-gift text-sm"></i>
+                <span>Conceder Benefício Eventual</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={onAbrirModalConcederBeneficio}
-          className="bg-teal-800 hover:bg-teal-900 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow transition flex items-center gap-2 uppercase tracking-wider"
-        >
-          <i className="fa-solid fa-gift"></i> Conceder Benefício Eventual
-        </button>
-      </div>
 
       {/* Grid de Almoxarifado / Estoque */}
       <div>

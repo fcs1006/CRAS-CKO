@@ -56,33 +56,44 @@ export function DashboardView({
 
   return (
     <div className="space-y-6 print:hidden">
-      {/* Banner de Boas-Vindas e Ações Rápidas */}
-      <div className="bg-gradient-to-r from-teal-900 via-teal-800 to-cyan-900 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <span className="px-3 py-1 bg-teal-700/80 border border-teal-500/40 rounded-full text-xs font-semibold uppercase tracking-wider text-teal-200">
-            Painel de Gestão SUAS Digital
-          </span>
-          <h2 className="text-2xl font-black mt-2 tracking-tight">
-            Centro de Referência de Assistência Social (CRAS)
-          </h2>
-          <p className="text-xs text-teal-100/90 mt-1 max-w-xl">
-            Acompanhamento integral de prontuários familiares, atendimentos PAIF, serviços de convivência e geração oficial do RMA.
-          </p>
-        </div>
+      {/* Banner Principal Padronizado */}
+      <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-teal-900 rounded-2xl p-6 text-white shadow-xl border border-teal-800/40 relative overflow-hidden">
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-32 bottom-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="flex flex-wrap gap-2.5 shrink-0">
-          <button
-            onClick={onAbrirModalNovaFamilia}
-            className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2 uppercase tracking-wider"
-          >
-            <i className="fa-solid fa-user-plus"></i> Novo Prontuário
-          </button>
-          <button
-            onClick={onAbrirModalNovoAtendimento}
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 uppercase tracking-wider backdrop-blur-sm"
-          >
-            <i className="fa-solid fa-notes-medical"></i> Registrar Atendimento
-          </button>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-teal-500/30 text-teal-200 border border-teal-400/30 tracking-wider">
+                Painel de Gestão SUAS Digital
+              </span>
+            </div>
+            <h2 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <i className="fa-solid fa-house-user text-teal-400 text-xl"></i>
+              <span>Centro de Referência de Assistência Social (CRAS)</span>
+            </h2>
+            <p className="text-xs text-teal-200/90 leading-relaxed font-normal">
+              Acompanhamento integral de prontuários familiares, atendimentos PAIF, serviços de convivência e geração oficial do RMA.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
+            <button
+              onClick={onAbrirModalNovoAtendimento}
+              className="bg-teal-700 hover:bg-teal-600 text-white font-extrabold px-4 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2 hover:scale-[1.02] active:scale-95 border border-teal-500/40"
+            >
+              <i className="fa-solid fa-notes-medical text-sm"></i>
+              <span>Registrar Atendimento</span>
+            </button>
+
+            <button
+              onClick={onAbrirModalNovaFamilia}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+            >
+              <i className="fa-solid fa-user-plus text-sm"></i>
+              <span>Novo Prontuário</span>
+            </button>
+          </div>
         </div>
       </div>
 
