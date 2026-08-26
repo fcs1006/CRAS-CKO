@@ -41,7 +41,9 @@ export function ModalRelatorioGrupoScfv({
   onClose,
   onSalvarRelatorio
 }: ModalRelatorioGrupoScfvProps) {
-  const [dataEncontro, setDataEncontro] = useState<string>(dataEncontroInicial)
+  const [dataEncontro, setDataEncontro] = useState<string>(
+    dataEncontroInicial ? dataEncontroInicial.split('T')[0].split(' ')[0].trim() : ''
+  )
   const [modoDataOutra, setModoDataOutra] = useState(false)
 
   const [objetivoEncontro, setObjetivoEncontro] = useState('')
@@ -98,15 +100,15 @@ export function ModalRelatorioGrupoScfv({
 
   useEffect(() => {
     if (dataEncontroInicial) {
-      setDataEncontro(dataEncontroInicial)
+      setDataEncontro(dataEncontroInicial.split('T')[0].split(' ')[0].trim())
     }
   }, [dataEncontroInicial])
 
   // Obter datas únicas do histórico
   const datasHistoricoUnicas = Array.from(
     new Set([
-      ...historicoFrequencias.map(f => f.data),
-      ...historicoRelatorios.map(r => r.data_encontro)
+      ...historicoFrequencias.map(f => f.data ? f.data.split('T')[0].split(' ')[0].trim() : ''),
+      ...historicoRelatorios.map(r => r.data_encontro ? r.data_encontro.split('T')[0].split(' ')[0].trim() : '')
     ])
   ).filter(Boolean).sort().reverse()
 
@@ -155,6 +157,9 @@ export function ModalRelatorioGrupoScfv({
         const profsArr = relNoDia.profissionais_participantes.split(',').map((s: string) => s.trim().toUpperCase())
         setProfissionaisSelecionados(profsArr)
       }
+    } else if (freqNoDia && freqNoDia.tema) {
+      setRelatorioSalvoNoDia(true)
+      setObjetivoEncontro(freqNoDia.tema)
     } else {
       setRelatorioSalvoNoDia(false)
       setObjetivoEncontro('')

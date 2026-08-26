@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       tecnico: tecnico || 'TÉCNICO RESPONSÁVEL'
     }
 
-    // Tentar upsert por grupo_id e data_encontro
+    // 1. Tentar upsert por grupo_id e data_encontro
     let { data: relSalvo, error: relErr } = await supabase
       .from('relatorios_scfv')
       .upsert(payload, { onConflict: 'grupo_id,data_encontro' })
@@ -201,6 +201,38 @@ export async function POST(request: NextRequest) {
       await supabase.from('relatorios_scfv').delete().eq('grupo_id', grupo_id).eq('data_encontro', data_encontro)
       const retry = await supabase.from('relatorios_scfv').insert(payload).select().single()
       relSalvo = retry.data
+    }
+
+    // 2. Gravar no historico_atendimentos como garantia de persistência dupla
+    const dataPartes = data_encontro.split('-')
+    const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : data_encontro
+
+    const partesRelato = [
+      `RELATÓRIO DE ENCONTRO SCFV [${grupo_nome || 'COLETIVO SCFV'}] - DATA: ${dataBr}`,
+      objetivo_encontro ? `OBJETIVO: ${objetivo_encontro}` : '',
+      atividade_realizada ? `ATIVIDADE REALIZADA: ${atividade_realizada}` : '',
+      detalhamento ? `DETALHAMENTO: ${detalhamento}` : '',
+      relato ? `RELATO TÉCNICO: ${relato}` : '',
+      profissionais_participantes ? `PROFISSIONAIS PARTICIPANTES: ${profissionais_participantes}` : ''
+    ].filter(Boolean).join('\n')
+
+    try {
+      const { data: fams } = await supabase.from('familias').select('id').limit(1)
+      const famId = fams && fams[0] ? fams[0].id : '00000000-0000-0000-0000-000000000000'
+
+      await supabase.from('historico_atendimentos').insert({
+        familia_id: famId,
+        usuario_visitado: `ENCONTRO SCFV - ${grupo_nome || 'COLETIVO'}`,
+        tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
+        tipo: 'SCFV / Convivência',
+        local: 'CRAS',
+        relato: partesRelato,
+        providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
+        sigilo: 'equipe_tecnica',
+        data: data_encontro
+      })
+    } catch (e) {
+      console.warn('Aviso ao inserir em historico_atendimentos:', e)
     }
 
     return NextResponse.json({ ok: true, data: relSalvo || payload })
