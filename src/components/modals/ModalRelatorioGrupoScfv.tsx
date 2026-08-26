@@ -819,12 +819,12 @@ export function ModalRelatorioGrupoScfv({
               <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
-              rows={2}
+              rows={3}
               readOnly={apenasVisualizacao}
               value={objetivoEncontro}
               onChange={e => setObjetivoEncontro(e.target.value)}
               placeholder="DESCREVA O OBJETIVO PRINCIPAL DO ENCONTRO..."
-              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+              className={`w-full p-3 min-h-[90px] border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
                 apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
               }`}
             />
@@ -837,12 +837,12 @@ export function ModalRelatorioGrupoScfv({
               <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
-              rows={2}
+              rows={3}
               readOnly={apenasVisualizacao}
               value={atividadeRealizada}
               onChange={e => setAtividadeRealizada(e.target.value)}
               placeholder="DESCREVA A ATIVIDADE / DINÂMICA REALIZADA..."
-              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+              className={`w-full p-3 min-h-[90px] border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
                 apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
               }`}
             />
@@ -860,7 +860,7 @@ export function ModalRelatorioGrupoScfv({
               value={detalhamento}
               onChange={e => setDetalhamento(e.target.value)}
               placeholder="DESCREVA O PASSO A PASSO DA METODOLOGIA UTILIZADA NO ENCONTRO..."
-              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+              className={`w-full p-3 min-h-[90px] border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
                 apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
               }`}
             />
@@ -873,12 +873,12 @@ export function ModalRelatorioGrupoScfv({
               <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
-              rows={4}
+              rows={3}
               readOnly={apenasVisualizacao}
               value={relato}
               onChange={e => setRelato(e.target.value)}
               placeholder="DESCREVA AS SÍNTESES, ENGAJAMENTO E ESCUTA QUALIFICADA..."
-              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+              className={`w-full p-3 min-h-[90px] border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
                 apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
               }`}
             />
@@ -891,12 +891,12 @@ export function ModalRelatorioGrupoScfv({
               <span className="text-[10px] text-gray-500 font-semibold lowercase no-print">{apenasVisualizacao ? '(somente leitura)' : '(editável)'}</span>
             </label>
             <textarea
-              rows={2}
+              rows={3}
               readOnly={apenasVisualizacao}
               value={providencias}
               onChange={e => setProvidencias(e.target.value)}
               placeholder="DESCREVA OS ENCAMINHAMENTOS ADOTADOS..."
-              className={`w-full p-3 border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
+              className={`w-full p-3 min-h-[90px] border rounded-xl text-xs leading-relaxed font-medium uppercase print:border-none print:p-0 print:bg-transparent print:resize-none ${
                 apenasVisualizacao ? 'bg-gray-50/70 border-gray-200 text-gray-800 focus:ring-0' : 'bg-white border-gray-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600'
               }`}
             />
