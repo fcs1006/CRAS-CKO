@@ -467,7 +467,6 @@ export function ModalRelatorioGrupoScfv({
                   <div key={idx} className="border-t-[1.5px] border-black pt-1.5 min-w-[220px] max-w-[320px] flex-1">
                     <p className="font-extrabold text-black text-[10.5px] leading-tight">{sig.nome}</p>
                     <p className="text-black font-semibold text-[9px] leading-tight mt-0.5">{sig.cargo}</p>
-                    <p className="text-black text-[8.5px] leading-tight">{configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}</p>
                   </div>
                 ))}
               </div>
@@ -1030,9 +1029,6 @@ export function ModalRelatorioGrupoScfv({
                   </p>
                   <p className="text-[11px] text-gray-600 font-semibold uppercase">
                     {sig.cargo}
-                  </p>
-                  <p className="text-[10px] text-gray-500 uppercase">
-                    {configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}
                   </p>
                 </div>
               ))}

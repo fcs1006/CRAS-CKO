@@ -131,14 +131,35 @@ export function ScfvView({
       qtdPresentes = presentesArr.length
     }
 
+    let objetivoTexto = rel?.objetivo_encontro || ''
+    let atividadeTexto = rel?.atividade_realizada || ''
+
+    if (!objetivoTexto && freq?.tema) {
+      if (freq.tema.startsWith('RELATORIO_JSON:')) {
+        try {
+          const parsed = JSON.parse(freq.tema.replace('RELATORIO_JSON:', ''))
+          objetivoTexto = parsed.objetivo_encontro || ''
+          atividadeTexto = parsed.atividade_realizada || ''
+        } catch (e) {
+          objetivoTexto = freq.tema
+        }
+      } else {
+        objetivoTexto = freq.tema
+      }
+    }
+
+    if (!objetivoTexto) {
+      objetivoTexto = rel?.atividade_realizada || rel?.relato || '—'
+    }
+
     return {
       dataStr: dStr,
       dataBr,
-      objetivo: rel?.objetivo_encontro || rel?.atividade_realizada || rel?.relato || '—',
-      atividade: rel?.atividade_realizada || '—',
+      objetivo: objetivoTexto,
+      atividade: atividadeTexto || '—',
       qtdPresentes,
       totalCadastrados,
-      temRelatorio: !!rel,
+      temRelatorio: !!rel || (!!freq?.tema && freq.tema.startsWith('RELATORIO_JSON:')),
       temFrequencia: !!freq
     }
   })

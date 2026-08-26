@@ -191,7 +191,6 @@ export function ModalRelatorioGeralGrupoScfv({
               <div className="border-t-[1.5px] border-black pt-1.5 min-w-[280px] max-w-[360px] mx-auto space-y-0.5">
                 <p className="font-extrabold text-black text-[11px] leading-tight">{tecnicoAssinatura}</p>
                 <p className="text-black font-semibold text-[9.5px] leading-tight">TÉCNICO / ORIENTADOR SOCIAL RESPONSÁVEL</p>
-                <p className="text-black text-[9px] leading-tight">{configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}</p>
               </div>
             </div>
           }
@@ -565,9 +564,6 @@ export function ModalRelatorioGeralGrupoScfv({
                 </p>
                 <p className="text-[11px] text-gray-600 font-semibold uppercase">
                   TÉCNICO / ORIENTADOR SOCIAL RESPONSÁVEL
-                </p>
-                <p className="text-[10px] text-gray-500 uppercase">
-                  {configuracao.cras_unidade || 'CRAS - CENTRO DE REFERÊNCIA DE ASSISTÊNCIA SOCIAL'}
                 </p>
               </div>
             </div>
