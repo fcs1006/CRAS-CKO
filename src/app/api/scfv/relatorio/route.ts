@@ -8,13 +8,13 @@ function parseRelatoAtendimento(relatoTexto: string, providenciasTexto?: string,
   let relato = ''
   let profissionais = ''
 
-  if (!relatoTexto) {
+  if (!relatoTexto || relatoTexto.startsWith('FREQUÊNCIA SCFV [')) {
     return {
       objetivo_encontro: '',
       atividade_realizada: '',
       detalhamento: '',
       relato: '',
-      providencias: providenciasTexto || '',
+      providencias: '',
       profissionais_participantes: '',
       tecnico: tecnicoTexto || 'TÉCNICO RESPONSÁVEL'
     }
@@ -65,7 +65,7 @@ function parseRelatoAtendimento(relatoTexto: string, providenciasTexto?: string,
   relato = buffers.relato.join('\n').trim()
   profissionais = buffers.profissionais.join(', ').trim()
 
-  if (!objetivo && !atividade && !detalhamento && !relato) {
+  if (!objetivo && !atividade && !detalhamento && !relato && !relatoTexto.startsWith('FREQUÊNCIA SCFV [')) {
     relato = relatoTexto
   }
 
@@ -95,11 +95,12 @@ export async function GET(request: NextRequest) {
 
     const { data: relatoriosDirect } = await query
 
-    // 2. Buscar também no historico_atendimentos
+    // 2. Buscar no historico_atendimentos SOMENTE os relatórios técnicos de encontros salvos (ignorando logs puros de frequência)
     const { data: atendimentos } = await supabase
       .from('historico_atendimentos')
       .select('*')
       .ilike('tipo', '%SCFV%')
+      .ilike('relato', '%RELATÓRIO DE ENCONTRO SCFV%')
       .order('criado_em', { ascending: false })
 
     const atendimentosMap = new Map<string, any>()
@@ -108,12 +109,14 @@ export async function GET(request: NextRequest) {
         const dataStr = atd.data || atd.criado_em?.split('T')[0]
         if (dataStr && !atendimentosMap.has(dataStr)) {
           const parsed = parseRelatoAtendimento(atd.relato || '', atd.providencias, atd.tecnico, dataStr)
-          atendimentosMap.set(dataStr, {
-            id: atd.id,
-            grupo_id: grupoId || 'geral',
-            data_encontro: dataStr,
-            ...parsed
-          })
+          if (parsed.objetivo_encontro || parsed.atividade_realizada || parsed.relato) {
+            atendimentosMap.set(dataStr, {
+              id: atd.id,
+              grupo_id: grupoId || 'geral',
+              data_encontro: dataStr,
+              ...parsed
+            })
+          }
         }
       })
     }

@@ -130,15 +130,7 @@ export async function POST(request: NextRequest) {
           }
 
           const obsTexto = reg.observacao ? ` (Obs: ${reg.observacao})` : ''
-          let pautaTemaTexto = tema || ''
-          if (pautaTemaTexto.startsWith('RELATORIO_JSON:')) {
-            try {
-              const parsedTema = JSON.parse(pautaTemaTexto.replace('RELATORIO_JSON:', ''))
-              pautaTemaTexto = parsedTema.objetivo_encontro || parsedTema.atividade_realizada || ''
-            } catch (e) {
-              pautaTemaTexto = ''
-            }
-          }
+          const pautaTemaTexto = (tema && !tema.startsWith('RELATORIO_JSON:')) ? tema : ''
 
           const relato = `FREQUÊNCIA SCFV [${statusTexto}]: Registrado encontro do grupo "${grupo_nome || 'COLETIVO SCFV'}" na data ${dataBr}.${obsTexto}`
           const providencias = pautaTemaTexto ? `Objetivo/Pauta do encontro: ${pautaTemaTexto}` : `Registro de frequência em encontro de convivência.`
