@@ -158,8 +158,27 @@ export function ModalRelatorioGrupoScfv({
         setProfissionaisSelecionados(profsArr)
       }
     } else if (freqNoDia && freqNoDia.tema) {
-      setRelatorioSalvoNoDia(true)
-      setObjetivoEncontro(freqNoDia.tema)
+      if (freqNoDia.tema.startsWith('RELATORIO_JSON:')) {
+        try {
+          const parsed = JSON.parse(freqNoDia.tema.replace('RELATORIO_JSON:', ''))
+          setRelatorioSalvoNoDia(true)
+          setObjetivoEncontro(parsed.objetivo_encontro || '')
+          setAtividadeRealizada(parsed.atividade_realizada || '')
+          setDetalhamento(parsed.detalhamento || '')
+          setRelato(parsed.relato || '')
+          setProvidencias(parsed.providencias || '')
+          if (parsed.tecnico) setTecnicoAssinatura(parsed.tecnico)
+          if (parsed.profissionais_participantes) {
+            const profsArr = parsed.profissionais_participantes.split(',').map((s: string) => s.trim().toUpperCase())
+            setProfissionaisSelecionados(profsArr)
+          }
+        } catch (e) {
+          setObjetivoEncontro(freqNoDia.tema)
+        }
+      } else {
+        setRelatorioSalvoNoDia(true)
+        setObjetivoEncontro(freqNoDia.tema)
+      }
     } else {
       setRelatorioSalvoNoDia(false)
       setObjetivoEncontro('')
@@ -185,7 +204,7 @@ export function ModalRelatorioGrupoScfv({
     const target = nomeProf.toUpperCase().trim()
     const nomeLimpo = target.split('(')[0].trim()
 
-    if (isProfissionalSelecionado(nomeProf)) {
+    if (isProfissionalSelecionado(target)) {
       setProfissionaisSelecionados(
         profissionaisSelecionados.filter(p => {
           const pUpper = p.toUpperCase().trim()
@@ -270,6 +289,21 @@ export function ModalRelatorioGrupoScfv({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadApi)
+      })
+
+      // Sincronizar também no registro da frequência para redundância total
+      const relatorioJsonStr = `RELATORIO_JSON:${JSON.stringify(payloadApi)}`
+      await fetch('/api/scfv/frequencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grupo_id: grupo.id,
+          grupo_nome: grupo.nome,
+          data: dataEncontro,
+          tema: relatorioJsonStr,
+          tecnico: tecnicoAssinatura.trim().toUpperCase(),
+          registros: frequenciaEncontro?.registros || []
+        })
       })
 
       // Gravar no histórico de prontuários dos beneficiários
