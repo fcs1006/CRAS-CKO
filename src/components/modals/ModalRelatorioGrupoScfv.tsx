@@ -202,6 +202,29 @@ export function ModalRelatorioGrupoScfv({
 
   async function handleSalvar() {
     if (!dataEncontro) return alert('Por favor, selecione a Data do Encontro.')
+
+    // Validar se a frequência/chamada já foi realizada para esta data
+    const registrosFreq = frequenciaEncontro?.registros || []
+    if (!frequenciaEncontro || registrosFreq.length === 0) {
+      return alert(`Só é possível salvar o Relatório do Encontro após lançar a frequência/chamada dos integrantes na data ${dataBr}! Por favor, utilize a opção "Lançar Frequência / Chamada" primeiro.`)
+    }
+
+    // Validar se TODOS os participantes possuem frequência registrada
+    if (participantes.length > 0) {
+      const participantesSemFrequencia = participantes.filter(p => {
+        const reg = registrosFreq.find(
+          (r: any) =>
+            (r.membro_id && (r.membro_id === p.membro_id || r.membro_id === p.id)) ||
+            (r.nome && r.nome.toUpperCase() === p.nome.toUpperCase())
+        )
+        return !reg || !reg.status
+      })
+
+      if (participantesSemFrequencia.length > 0) {
+        return alert(`A frequência não foi lançada para todos os integrantes matriculados (${participantesSemFrequencia.length} participante(s) pendente(s)). Só é possível salvar o relatório após registrar a presença/falta de todos os integrantes.`)
+      }
+    }
+
     if (!objetivoEncontro.trim()) return alert('Por favor, informe o Objetivo do Encontro.')
     if (!atividadeRealizada.trim()) return alert('Por favor, informe a Atividade Realizada.')
     if (!detalhamento.trim()) return alert('Por favor, informe o Detalhamento do Encontro.')

@@ -69,7 +69,13 @@ export function ModalNovoGrupoScfv({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!nome.trim()) return alert('Por favor, informe o nome do coletivo/grupo.')
+    if (!tipoGrupo) return alert('Por favor, selecione o tipo de serviço / modalidade.')
+    if (!faixaEtaria) return alert('Por favor, selecione a faixa etária / ciclo de vida.')
+    if (diasSelecionados.length === 0) return alert('Por favor, selecione pelo menos um dia da semana para os encontros.')
     if (!horaInicio || !horaFim) return alert('Por favor, informe os horários de início e término dos encontros.')
+    if (!localEncontro.trim()) return alert('Por favor, informe o local de realização dos encontros.')
+    if (!tecnico.trim()) return alert('Por favor, selecione ou informe o técnico responsável.')
+    if (!vagasLimite || Number(vagasLimite) <= 0) return alert('Por favor, informe o limite de vagas do grupo.')
     if (!descricao.trim()) return alert('Por favor, informe o Objetivo e Descrição das Atividades / Plano de Trabalho.')
     setSalvando(true)
 
@@ -85,7 +91,7 @@ export function ModalNovoGrupoScfv({
         horario: horarioFinal,
         dias_semana: diasTexto,
         local_encontro: localEncontro.trim(),
-        vagas_limite: vagasLimite === '' ? undefined : Number(vagasLimite),
+        vagas_limite: !vagasLimite ? undefined : Number(vagasLimite),
         tecnico_responsavel: tecnico.trim() || usuarioLogadoNome || 'TÉCNICO RESPONSÁVEL',
         descricao: descricao.trim().toUpperCase(),
         status: grupoParaEditar?.status || 'Ativo'
@@ -176,7 +182,7 @@ export function ModalNovoGrupoScfv({
           {/* Dias da Semana Selecionáveis */}
           <div>
             <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5 flex justify-between items-center">
-              <span>Dias dos Encontros</span>
+              <span>Dias dos Encontros <span className="text-rose-600 font-bold">*</span></span>
               <span className="text-[10px] font-semibold text-indigo-700">Clique para selecionar os dias</span>
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -231,10 +237,11 @@ export function ModalNovoGrupoScfv({
 
             <div>
               <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                Local de Realização
+                Local de Realização <span className="text-rose-600 font-bold">*</span>
               </label>
               <input
                 type="text"
+                required
                 value={localEncontro}
                 onChange={e => setLocalEncontro(e.target.value)}
                 placeholder="EX: CRAS (SEDE), CENTRO DE CONVIVÊNCIA..."
@@ -247,10 +254,11 @@ export function ModalNovoGrupoScfv({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
               <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <i className="fa-solid fa-user-tie text-indigo-700"></i> Técnico / Orientador Responsável *
+                <i className="fa-solid fa-user-tie text-indigo-700"></i> Técnico / Orientador Responsável <span className="text-rose-600 font-bold">*</span>
               </label>
               {usuarios && usuarios.length > 0 ? (
                 <select
+                  required
                   value={tecnico}
                   onChange={e => setTecnico(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold uppercase bg-white text-indigo-950"
@@ -264,6 +272,7 @@ export function ModalNovoGrupoScfv({
               ) : (
                 <input
                   type="text"
+                  required
                   value={tecnico}
                   onChange={e => setTecnico(e.target.value)}
                   placeholder="NOME DO TÉCNICO RESPONSÁVEL"
@@ -274,10 +283,11 @@ export function ModalNovoGrupoScfv({
 
             <div>
               <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
-                Limite de Vagas
+                Limite de Vagas <span className="text-rose-600 font-bold">*</span>
               </label>
               <input
                 type="number"
+                required
                 min={1}
                 value={vagasLimite}
                 onChange={e => setVagasLimite(e.target.value === '' ? '' : Number(e.target.value))}
