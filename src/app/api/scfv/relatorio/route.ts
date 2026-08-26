@@ -1,27 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
 
+function parseRelatoAtendimento(relatoTexto: string, providenciasTexto?: string, tecnicoTexto?: string, dataAtendimento?: string) {
+  let objetivo = ''
+  let atividade = ''
+  let detalhamento = ''
+  let relato = relatoTexto
+  let profissionais = ''
+
+  if (relatoTexto.includes('OBJETIVO:') || relatoTexto.includes('RELATO TÉCNICO:')) {
+    const pegarTrecho = (rotulo: string, proximosRotulos: string[]) => {
+      const idx = relatoTexto.indexOf(rotulo)
+      if (idx === -1) return ''
+      const inicio = idx + rotulo.length
+      let fim = relatoTexto.length
+      for (const prox of proximosRotulos) {
+        const pIdx = relatoTexto.indexOf(prox, inicio)
+        if (pIdx !== -1 && pIdx < fim) {
+          fim = pIdx
+        }
+      }
+      return relatoTexto.substring(inicio, fim).trim()
+    }
+
+    const rotulos = ['OBJETIVO:', 'ATIVIDADE REALIZADA:', 'DETALHAMENTO:', 'RELATO TÉCNICO:', 'PROFISSIONAIS PARTICIPANTES:']
+    objetivo = pegarTrecho('OBJETIVO:', rotulos.slice(1))
+    atividade = pegarTrecho('ATIVIDADE REALIZADA:', rotulos.slice(2))
+    detalhamento = pegarTrecho('DETALHAMENTO:', rotulos.slice(3))
+    relato = pegarTrecho('RELATO TÉCNICO:', rotulos.slice(4)) || relatoTexto
+    profissionais = pegarTrecho('PROFISSIONAIS PARTICIPANTES:', [])
+  }
+
+  return {
+    objetivo_encontro: objetivo,
+    atividade_realizada: atividade,
+    detalhamento: detalhamento,
+    relato: relato,
+    providencias: providenciasTexto || '',
+    profissionais_participantes: profissionais,
+    tecnico: tecnicoTexto || 'TÉCNICO RESPONSÁVEL'
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const grupoId = searchParams.get('grupo_id')
 
     const supabase = getSupabaseServer()
+    
+    // 1. Buscar na tabela relatorios_scfv
     let query = supabase.from('relatorios_scfv').select('*').order('data_encontro', { ascending: false })
-
     if (grupoId) {
       query = query.eq('grupo_id', grupoId)
     }
 
-    const { data, error } = await query
+    const { data: relatoriosDirect, error: relError } = await query
+    const relatoriosSalvos = (relatoriosDirect || []).filter((r: any) => r.objetivo_encontro || r.relato || r.atividade_realizada)
 
-    if (error) {
-      // Se a tabela ainda não existir no Supabase, retorna lista vazia de forma segura
-      console.warn('Aviso/Erro ao buscar relatórios SCFV:', error.message)
-      return NextResponse.json({ ok: true, data: [] })
+    // 2. Se encontrou relatórios completos em relatorios_scfv, retorna direto
+    if (!relError && relatoriosSalvos.length > 0) {
+      return NextResponse.json({ ok: true, data: relatoriosSalvos })
     }
 
-    return NextResponse.json({ ok: true, data: data || [] })
+    // 3. Fallback inteligente: Reconstruir a partir de historico_atendimentos caso relatorios_scfv esteja vazio
+    const { data: atendimentos } = await supabase
+      .from('historico_atendimentos')
+      .select('*')
+      .ilike('tipo', '%SCFV%')
+      .order('criado_em', { ascending: false })
+
+    const relatoriosReconstruidos: any[] = []
+    const datasJaProcessadas = new Set<string>()
+
+    if (Array.isArray(atendimentos)) {
+      atendimentos.forEach(atd => {
+        const dataEncontroStr = atd.data || atd.criado_em?.split('T')[0]
+        if (!dataEncontroStr || datasJaProcessadas.has(dataEncontroStr)) return
+
+        datasJaProcessadas.add(dataEncontroStr)
+        const parsed = parseRelatoAtendimento(atd.relato || '', atd.providencias, atd.tecnico, dataEncontroStr)
+
+        relatoriosReconstruidos.push({
+          id: atd.id,
+          grupo_id: grupoId || 'geral',
+          data_encontro: dataEncontroStr,
+          ...parsed
+        })
+      })
+    }
+
+    // Mesclar resultados priorizando os registros diretos de relatorios_scfv
+    const relatoriosFinais = [...relatoriosSalvos]
+    relatoriosReconstruidos.forEach(rRec => {
+      if (!relatoriosFinais.some(rf => rf.data_encontro === rRec.data_encontro)) {
+        relatoriosFinais.push(rRec)
+      }
+    })
+
+    return NextResponse.json({ ok: true, data: relatoriosFinais })
   } catch (e: any) {
     return NextResponse.json({ ok: true, data: [] })
   }
