@@ -346,27 +346,25 @@ export function ScfvView({
                     </p>
                   </div>
 
-                  {/* Actions Toolbar: Pure Action Buttons */}
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  {/* Actions Toolbar: Exclusively Icon Buttons in a Single Row */}
+                  <div className="flex items-center gap-1.5 shrink-0 flex-nowrap">
                     <button
                       type="button"
                       onClick={() => onAbrirModalAdicionarParticipante(grupoAtual.id)}
-                      className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 border border-emerald-700 active:scale-95"
-                      title="Vincular Novo Integrante ao Grupo"
+                      className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition flex items-center justify-center border border-emerald-700"
+                      title="Vincular Participante ao Grupo"
                     >
                       <i className="fa-solid fa-user-plus text-xs"></i>
-                      <span>Vincular</span>
                     </button>
 
                     {onAbrirModalFrequencia && (
                       <button
                         type="button"
                         onClick={() => onAbrirModalFrequencia(grupoAtual)}
-                        className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 border border-indigo-700 active:scale-95"
+                        className="w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition flex items-center justify-center border border-indigo-700"
                         title="Lançar Frequência / Chamada"
                       >
                         <i className="fa-solid fa-clipboard-user text-xs"></i>
-                        <span>Frequência</span>
                       </button>
                     )}
 
@@ -374,11 +372,10 @@ export function ScfvView({
                       <button
                         type="button"
                         onClick={() => onAbrirModalRelatorioGrupo(grupoAtual)}
-                        className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 border border-slate-950 active:scale-95"
+                        className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-900 text-white shadow-xs transition flex items-center justify-center border border-slate-900"
                         title="Novo Relatório Técnico do Encontro"
                       >
                         <i className="fa-solid fa-file-circle-plus text-xs"></i>
-                        <span>Relatório</span>
                       </button>
                     )}
 
@@ -386,21 +383,20 @@ export function ScfvView({
                       <button
                         type="button"
                         onClick={() => onAbrirModalRelatorioGeralGrupo(grupoAtual)}
-                        className="px-3 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs shadow-xs transition flex items-center gap-1.5 border border-teal-800 active:scale-95"
+                        className="w-8 h-8 rounded-lg bg-teal-700 hover:bg-teal-800 text-white shadow-xs transition flex items-center justify-center border border-teal-800"
                         title="Relatório Geral Consolidado (Todos os Encontros)"
                       >
                         <i className="fa-solid fa-file-contract text-xs"></i>
-                        <span>Relatório Geral</span>
                       </button>
                     )}
 
-                    <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
+                    <div className="h-5 w-px bg-gray-200 mx-0.5"></div>
 
                     {onAbrirModalEditarGrupo && (
                       <button
                         type="button"
                         onClick={() => onAbrirModalEditarGrupo(grupoAtual)}
-                        className="w-8 h-8 bg-gray-100 hover:bg-indigo-600 text-gray-600 hover:text-white rounded-xl transition flex items-center justify-center border border-gray-200"
+                        className="w-8 h-8 bg-gray-100 hover:bg-indigo-600 text-gray-600 hover:text-white rounded-lg transition flex items-center justify-center border border-gray-200"
                         title="Editar Configurações do Grupo"
                       >
                         <i className="fa-solid fa-pen-to-square text-xs"></i>
@@ -415,7 +411,7 @@ export function ScfvView({
                             await onExcluirGrupo(grupoAtual.id)
                           }
                         }}
-                        className="w-8 h-8 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-xl transition flex items-center justify-center border border-rose-200"
+                        className="w-8 h-8 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-lg transition flex items-center justify-center border border-rose-200"
                         title="Excluir Coletivo"
                       >
                         <i className="fa-solid fa-trash-can text-xs"></i>
