@@ -223,61 +223,89 @@ export function EncaminhamentosView({
       </div>
 
       {/* Tabela de Encaminhamentos */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead className="bg-gray-50 text-gray-700 font-semibold text-xs uppercase tracking-wider border-b border-gray-100">
+          <table className="w-full text-left text-xs text-gray-600">
+            <thead className="bg-gray-50 text-gray-700 font-extrabold uppercase text-[10px] border-b border-gray-200">
               <tr>
-                <th className="py-3 px-4">Data Envio</th>
+                <th className="py-3 px-4 w-32">Data Envio</th>
                 <th className="py-3 px-4">Beneficiário</th>
                 <th className="py-3 px-4">Órgão / Destino</th>
                 <th className="py-3 px-4">Motivo / Síntese</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 w-32">Status</th>
                 <th className="py-3 px-4">Técnico Emissor</th>
-                <th className="py-3 px-4 text-center">Ações</th>
+                <th className="py-3 px-4 text-center w-24">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 bg-white">
               {encaminhamentosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-400">
-                    <i className="fa-solid fa-envelope-open-text text-3xl mb-2 text-gray-300"></i>
-                    <p>Nenhum encaminhamento registrado.</p>
+                  <td colSpan={7} className="py-12 text-center text-gray-400">
+                    <i className="fa-solid fa-envelope-open-text text-3xl mb-2 text-gray-300 block"></i>
+                    <p className="font-semibold">Nenhum encaminhamento registrado.</p>
                   </td>
                 </tr>
               ) : (
-                encaminhamentosFiltrados.map(enc => (
-                  <tr key={enc.id} className="hover:bg-gray-50/80 transition">
-                    <td className="py-3 px-4 font-medium text-gray-800">{enc.data_envio}</td>
-                    <td className="py-3 px-4 font-semibold text-gray-800">{enc.beneficiario}</td>
-                    <td className="py-3 px-4 font-bold text-rose-700">{enc.destino}</td>
-                    <td className="py-3 px-4 text-xs text-gray-600 max-w-xs truncate">{enc.motivo}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        enc.status === 'Respondido'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {enc.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-xs text-gray-600">{enc.tecnico}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => {
-                          setEncaminhamentoParaImprimir(enc)
-                          setTimeout(() => {
-                            window.print()
-                          }, 50)
-                        }}
-                        className="w-7 h-7 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg font-bold transition border border-rose-200 inline-flex items-center justify-center shadow-xs"
-                        title="Imprimir Guia Oficial de Encaminhamento"
-                      >
-                        <i className="fa-solid fa-print text-xs"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                encaminhamentosFiltrados.map(enc => {
+                  const dataBr = enc.data_envio ? enc.data_envio.split('-').reverse().join('/') : '—'
+                  const isRespondido = enc.status === 'Respondido' || enc.status === 'Concluído'
+
+                  return (
+                    <tr key={enc.id} className="hover:bg-gray-50/80 transition">
+                      <td className="py-3.5 px-4 font-extrabold text-rose-950 whitespace-nowrap align-top">
+                        <div className="flex items-center gap-1.5">
+                          <i className="fa-solid fa-calendar-day text-rose-500 text-xs"></i>
+                          <span>{dataBr}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-gray-900 uppercase align-top">
+                        {enc.beneficiario}
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-rose-700 uppercase align-top">
+                        <div className="flex items-center gap-1.5">
+                          <i className="fa-solid fa-building-columns text-rose-500 text-xs"></i>
+                          <span>{enc.destino}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-gray-800 uppercase leading-relaxed align-top">
+                        <p className="line-clamp-2 text-xs" title={enc.motivo}>
+                          {enc.motivo || '—'}
+                        </p>
+                      </td>
+                      <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                        {isRespondido ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase shadow-xs">
+                            <i className="fa-solid fa-circle-check text-[9px]"></i> Respondido
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200 uppercase shadow-xs">
+                            <i className="fa-solid fa-clock text-[9px]"></i> Pendente
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-xs font-semibold text-gray-600 uppercase align-top">
+                        {enc.tecnico || 'TÉCNICO CRAS'}
+                      </td>
+                      <td className="py-3.5 px-4 text-center align-top whitespace-nowrap">
+                        <div className="flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEncaminhamentoParaImprimir(enc)
+                              setTimeout(() => {
+                                window.print()
+                              }, 50)
+                            }}
+                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white transition flex items-center justify-center border border-slate-200"
+                            title="Imprimir Guia Oficial de Encaminhamento"
+                          >
+                            <i className="fa-solid fa-print text-xs"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
