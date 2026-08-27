@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Encaminhamento, Configuracao, Familia, Usuario } from '@/types'
 import { maskCPF, maskPhone } from '@/utils/masks'
+import { ModalEditarEncaminhamento } from '@/components/modals/ModalEditarEncaminhamento'
 
 interface EncaminhamentosViewProps {
   encaminhamentos: Encaminhamento[]
@@ -10,6 +11,8 @@ interface EncaminhamentosViewProps {
   usuarios?: Usuario[]
   configuracao?: Configuracao
   onAbrirModalNovoEncaminhamento: () => void
+  onEditarEncaminhamento?: (id: string, updates: Partial<Encaminhamento>) => Promise<void>
+  onExcluirEncaminhamento?: (id: string) => Promise<void>
 }
 
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
@@ -137,11 +140,14 @@ export function EncaminhamentosView({
   familias = [],
   usuarios = [],
   configuracao,
-  onAbrirModalNovoEncaminhamento
+  onAbrirModalNovoEncaminhamento,
+  onEditarEncaminhamento,
+  onExcluirEncaminhamento
 }: EncaminhamentosViewProps) {
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('TODOS')
   const [encaminhamentoParaImprimir, setEncaminhamentoParaImprimir] = useState<Encaminhamento | null>(null)
+  const [encaminhamentoParaEditar, setEncaminhamentoParaEditar] = useState<Encaminhamento | null>(null)
 
   const encaminhamentosFiltrados = encaminhamentos.filter(e => {
     const termo = busca.toLowerCase().trim()
@@ -232,9 +238,9 @@ export function EncaminhamentosView({
                 <th className="py-3 px-4">Beneficiário</th>
                 <th className="py-3 px-4">Órgão / Destino</th>
                 <th className="py-3 px-4">Motivo / Síntese</th>
-                <th className="py-3 px-4 w-32">Status</th>
+                <th className="py-3 px-4 w-36">Status</th>
                 <th className="py-3 px-4">Técnico Emissor</th>
-                <th className="py-3 px-4 text-center w-24">Ações</th>
+                <th className="py-3 px-4 text-center w-28">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
@@ -273,21 +279,29 @@ export function EncaminhamentosView({
                         </p>
                       </td>
                       <td className="py-3.5 px-4 align-top whitespace-nowrap">
-                        {isRespondido ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase shadow-xs">
-                            <i className="fa-solid fa-circle-check text-[9px]"></i> Respondido
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200 uppercase shadow-xs">
-                            <i className="fa-solid fa-clock text-[9px]"></i> Pendente
-                          </span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setEncaminhamentoParaEditar(enc)}
+                          className="focus:outline-none"
+                          title="Clique para editar status e registrar devolutiva"
+                        >
+                          {isRespondido ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase shadow-xs hover:bg-emerald-100 transition cursor-pointer">
+                              <i className="fa-solid fa-circle-check text-[9px] text-emerald-600"></i> Respondido
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-50 text-amber-800 border border-amber-200 uppercase shadow-xs hover:bg-amber-100 transition cursor-pointer animate-pulse">
+                              <i className="fa-solid fa-clock text-[9px] text-amber-600"></i> Pendente
+                            </span>
+                          )}
+                        </button>
                       </td>
                       <td className="py-3.5 px-4 text-xs font-semibold text-gray-600 uppercase align-top">
                         {enc.tecnico || 'TÉCNICO CRAS'}
                       </td>
                       <td className="py-3.5 px-4 text-center align-top whitespace-nowrap">
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Imprimir Guia */}
                           <button
                             type="button"
                             onClick={() => {
@@ -296,11 +310,37 @@ export function EncaminhamentosView({
                                 window.print()
                               }, 50)
                             }}
-                            className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white transition flex items-center justify-center border border-slate-200"
+                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white transition flex items-center justify-center border border-slate-200"
                             title="Imprimir Guia Oficial de Encaminhamento"
                           >
                             <i className="fa-solid fa-print text-xs"></i>
                           </button>
+
+                          {/* Editar / Registrar Devolutiva / Mudar Status */}
+                          <button
+                            type="button"
+                            onClick={() => setEncaminhamentoParaEditar(enc)}
+                            className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white transition flex items-center justify-center border border-indigo-200"
+                            title="Editar Encaminhamento / Registrar Devolutiva"
+                          >
+                            <i className="fa-solid fa-pen-to-square text-xs"></i>
+                          </button>
+
+                          {/* Excluir Encaminhamento */}
+                          {onExcluirEncaminhamento && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (confirm(`Deseja realmente excluir o encaminhamento de "${enc.beneficiario}" para "${enc.destino}"?`)) {
+                                  await onExcluirEncaminhamento(enc.id)
+                                }
+                              }}
+                              className="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white transition flex items-center justify-center border border-rose-200"
+                              title="Excluir Encaminhamento"
+                            >
+                              <i className="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -313,6 +353,19 @@ export function EncaminhamentosView({
       </div>
       </div>
 
+      {/* Modal de Edição & Registro de Devolutiva */}
+      {encaminhamentoParaEditar && (
+        <ModalEditarEncaminhamento
+          encaminhamento={encaminhamentoParaEditar}
+          onClose={() => setEncaminhamentoParaEditar(null)}
+          onSalvar={async (id, updates) => {
+            if (onEditarEncaminhamento) {
+              await onEditarEncaminhamento(id, updates)
+            }
+          }}
+        />
+      )}
+
       {/* Área de Impressão Direta do Encaminhamento */}
       {encaminhamentoParaImprimir && (
         <div className="hidden print:block print:w-full print-document-area">
@@ -322,3 +375,4 @@ export function EncaminhamentosView({
     </div>
   )
 }
+

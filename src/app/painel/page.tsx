@@ -589,6 +589,31 @@ export default function PainelPage() {
     await carregarTodosOsDados()
   }
 
+  async function handleEditarEncaminhamento(id: string, updates: Partial<Encaminhamento>) {
+    const res = await fetch('/api/encaminhamentos', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updates })
+    })
+    const json = await parseResponseJson(res, 'Erro ao atualizar encaminhamento')
+    if (!res.ok || !json.ok) {
+      throw new Error(json.error || 'Erro ao atualizar encaminhamento.')
+    }
+    await carregarTodosOsDados()
+  }
+
+  async function handleExcluirEncaminhamento(id: string) {
+    const res = await fetch(`/api/encaminhamentos?id=${id}`, {
+      method: 'DELETE'
+    })
+    const json = await parseResponseJson(res, 'Erro ao excluir encaminhamento')
+    if (!res.ok || !json.ok) {
+      alert('Erro ao excluir encaminhamento: ' + (json.error || 'Tente novamente.'))
+      return
+    }
+    await carregarTodosOsDados()
+  }
+
   async function handleAprovarUsuario(id: number) {
     const res = await fetch('/api/usuarios', {
       method: 'PUT',
@@ -887,6 +912,8 @@ export default function PainelPage() {
                   usuarios={usuarios}
                   configuracao={configuracao}
                   onAbrirModalNovoEncaminhamento={() => setModalNovoEncaminhamento(true)}
+                  onEditarEncaminhamento={handleEditarEncaminhamento}
+                  onExcluirEncaminhamento={handleExcluirEncaminhamento}
                 />
               )}
 
