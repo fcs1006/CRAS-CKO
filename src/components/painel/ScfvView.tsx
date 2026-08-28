@@ -46,9 +46,9 @@ export function ScfvView({
   const [carregandoHistorico, setCarregandoHistorico] = useState(false)
 
   // Carregar histórico de frequências e relatórios do grupo atual
-  const carregarHistoricoGrupo = async () => {
+  const carregarHistoricoGrupo = async (silencioso = false) => {
     if (!grupoAtual?.id) return
-    setCarregandoHistorico(true)
+    if (!silencioso) setCarregandoHistorico(true)
     try {
       const [resFreq, resRel] = await Promise.all([
         fetch(`/api/scfv/frequencia?grupo_id=${grupoAtual.id}`),
@@ -65,17 +65,17 @@ export function ScfvView({
     } catch (e) {
       console.warn('Erro ao carregar histórico de encontros:', e)
     } finally {
-      setCarregandoHistorico(false)
+      if (!silencioso) setCarregandoHistorico(false)
     }
   }
 
   useEffect(() => {
     if (!grupoAtual?.id) return
-    carregarHistoricoGrupo()
+    carregarHistoricoGrupo(false)
 
     const intervalId = setInterval(() => {
-      carregarHistoricoGrupo()
-    }, 2500)
+      carregarHistoricoGrupo(true)
+    }, 4000)
 
     return () => clearInterval(intervalId)
   }, [grupoAtual?.id])
