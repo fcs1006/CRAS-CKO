@@ -454,6 +454,8 @@ export default function PainelPage() {
   }
 
   async function handleEditarBeneficio(id: string, updates: Partial<BeneficioConcedido>) {
+    setBeneficios(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b))
+
     const res = await fetch('/api/beneficios', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -461,25 +463,39 @@ export default function PainelPage() {
     })
     const json = await parseResponseJson(res, 'Erro ao atualizar benefício')
     if (!res.ok || !json.ok) {
-      throw new Error(json.error || 'Erro ao atualizar benefício.')
+      alert('Erro ao atualizar benefício: ' + (json.error || 'Tente novamente.'))
+      carregarTodosOsDados()
+      return
     }
-    await carregarTodosOsDados()
+    if (json.data) {
+      setBeneficios(prev => prev.map(b => b.id === id ? json.data : b))
+    }
+    carregarTodosOsDados()
   }
 
   async function handleExcluirBeneficio(id: string) {
+    setBeneficios(prev => prev.filter(b => b.id !== id))
+
     const res = await fetch(`/api/beneficios?id=${id}`, {
       method: 'DELETE'
     })
     const json = await parseResponseJson(res, 'Erro ao excluir benefício')
     if (!res.ok || !json.ok) {
-      throw new Error(json.error || 'Erro ao excluir benefício.')
+      alert('Erro ao excluir benefício: ' + (json.error || 'Tente novamente.'))
+      carregarTodosOsDados()
+      return
     }
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleSalvarGrupo(grupoData: Partial<GrupoSCFV>) {
     const isEdit = Boolean(grupoData.id)
     const method = isEdit ? 'PUT' : 'POST'
+
+    if (isEdit && grupoData.id) {
+      setGrupos(prev => prev.map(g => g.id === grupoData.id ? { ...g, ...grupoData } : g))
+    }
+
     const res = await fetch('/api/scfv', {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -489,20 +505,25 @@ export default function PainelPage() {
     if (!res.ok || !json.ok) {
       throw new Error(json.error || `Erro ao ${isEdit ? 'atualizar' : 'criar'} grupo SCFV.`)
     }
-    await carregarTodosOsDados()
+    if (json.data) {
+      setGrupos(prev => isEdit ? prev.map(g => g.id === grupoData.id ? json.data : g) : [json.data, ...prev])
+    }
+    carregarTodosOsDados()
   }
 
   async function handleExcluirGrupo(grupoId: string) {
+    setGrupos(prev => prev.filter(g => g.id !== grupoId))
+
     const res = await fetch(`/api/scfv?id=${grupoId}`, {
       method: 'DELETE'
     })
     const json = await parseResponseJson(res, 'Erro ao excluir grupo SCFV')
     if (!res.ok || !json.ok) {
       alert('Erro ao excluir grupo: ' + (json.error || 'Tente novamente.'))
+      carregarTodosOsDados()
       return
     }
-    setGrupos(prev => prev.filter(g => g.id !== grupoId))
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleSalvarFrequencia(dados: any) {
@@ -515,7 +536,7 @@ export default function PainelPage() {
     if (!res.ok || !json.ok) {
       throw new Error(json.error || 'Erro ao registrar frequência.')
     }
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleSalvarRelatorioGrupo(dados: {
@@ -566,7 +587,7 @@ export default function PainelPage() {
       console.warn('Erro ao gravar no historico_atendimentos:', e)
     }
 
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleSalvarParticipante(dados: { grupo_id: string; membro_id: string; nome: string; familia_id?: string }) {
@@ -582,20 +603,22 @@ export default function PainelPage() {
     if (json.data) {
       setParticipantes(prev => [json.data as ParticipanteSCFV, ...prev])
     }
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleExcluirParticipante(participanteId: string) {
+    setParticipantes(prev => prev.filter(p => p.id !== participanteId))
+
     const res = await fetch(`/api/scfv/participantes?id=${participanteId}`, {
       method: 'DELETE'
     })
     const json = await parseResponseJson(res, 'Erro ao desvincular participante')
     if (!res.ok || !json.ok) {
       alert('Erro ao desvincular participante: ' + (json.error || 'Tente novamente.'))
+      carregarTodosOsDados()
       return
     }
-    setParticipantes(prev => prev.filter(p => p.id !== participanteId))
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleSalvarEncaminhamento(encaminhamentoData: Partial<Encaminhamento>) {
@@ -608,10 +631,15 @@ export default function PainelPage() {
     if (!res.ok || !json.ok) {
       throw new Error(json.error || 'Erro ao registrar encaminhamento.')
     }
-    await carregarTodosOsDados()
+    if (json.data) {
+      setEncaminhamentos(prev => [json.data, ...prev])
+    }
+    carregarTodosOsDados()
   }
 
   async function handleEditarEncaminhamento(id: string, updates: Partial<Encaminhamento>) {
+    setEncaminhamentos(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e))
+
     const res = await fetch('/api/encaminhamentos', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -619,21 +647,29 @@ export default function PainelPage() {
     })
     const json = await parseResponseJson(res, 'Erro ao atualizar encaminhamento')
     if (!res.ok || !json.ok) {
-      throw new Error(json.error || 'Erro ao atualizar encaminhamento.')
+      alert('Erro ao atualizar encaminhamento: ' + (json.error || 'Tente novamente.'))
+      carregarTodosOsDados()
+      return
     }
-    await carregarTodosOsDados()
+    if (json.data) {
+      setEncaminhamentos(prev => prev.map(e => e.id === id ? json.data : e))
+    }
+    carregarTodosOsDados()
   }
 
   async function handleExcluirEncaminhamento(id: string) {
+    setEncaminhamentos(prev => prev.filter(e => e.id !== id))
+
     const res = await fetch(`/api/encaminhamentos?id=${id}`, {
       method: 'DELETE'
     })
     const json = await parseResponseJson(res, 'Erro ao excluir encaminhamento')
     if (!res.ok || !json.ok) {
       alert('Erro ao excluir encaminhamento: ' + (json.error || 'Tente novamente.'))
+      carregarTodosOsDados()
       return
     }
-    await carregarTodosOsDados()
+    carregarTodosOsDados()
   }
 
   async function handleAprovarUsuario(id: number) {
