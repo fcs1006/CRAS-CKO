@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     const { data: relatoriosDirect } = await query
 
-    // 2. Buscar no historico_atendimentos SOMENTE os relatórios técnicos de encontros salvos (ignorando logs puros de frequência)
+    // 2. Buscar no historico_atendimentos SOMENTE os relatórios técnicos de encontros salvos
     const { data: atendimentos } = await supabase
       .from('historico_atendimentos')
       .select('*')
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
     const atendimentosMap = new Map<string, any>()
     if (Array.isArray(atendimentos)) {
       atendimentos.forEach(atd => {
-        const dataStr = atd.data || atd.criado_em?.split('T')[0]
+        const dataStr = atd.data ? atd.data.split('T')[0] : atd.criado_em?.split('T')[0]
         if (dataStr && !atendimentosMap.has(dataStr)) {
           const parsed = parseRelatoAtendimento(atd.relato || '', atd.providencias, atd.tecnico, dataStr)
           if (parsed.objetivo_encontro || parsed.atividade_realizada || parsed.relato) {
@@ -178,11 +178,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Grupo e Data do Encontro são obrigatórios.' }, { status: 400 })
     }
 
+    const apenasData = data_encontro.split('T')[0].split(' ')[0].trim()
     const supabase = getSupabaseServer()
 
     const payload = {
       grupo_id,
-      data_encontro,
+      data_encontro: apenasData,
       objetivo_encontro: objetivo_encontro || null,
       atividade_realizada: atividade_realizada || null,
       detalhamento: detalhamento || null,
@@ -192,7 +193,6 @@ export async function POST(request: NextRequest) {
       tecnico: tecnico || 'TÉCNICO RESPONSÁVEL'
     }
 
-    // 1. Tentar upsert por grupo_id e data_encontro
     let { data: relSalvo, error: relErr } = await supabase
       .from('relatorios_scfv')
       .upsert(payload, { onConflict: 'grupo_id,data_encontro' })
@@ -200,15 +200,13 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (relErr) {
-      console.warn('Tentativa de upsert em relatorios_scfv falhou, aplicando fallback de substituição:', relErr.message)
-      await supabase.from('relatorios_scfv').delete().eq('grupo_id', grupo_id).eq('data_encontro', data_encontro)
+      await supabase.from('relatorios_scfv').delete().eq('grupo_id', grupo_id).eq('data_encontro', apenasData)
       const retry = await supabase.from('relatorios_scfv').insert(payload).select().single()
       relSalvo = retry.data
     }
 
-    // 2. Gravar no historico_atendimentos para CADA participante do grupo
-    const dataPartes = data_encontro.split('-')
-    const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : data_encontro
+    const dataPartes = apenasData.split('-')
+    const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : apenasData
 
     const partesRelato = [
       `RELATÓRIO DE ENCONTRO SCFV [${grupo_nome || 'COLETIVO SCFV'}] - DATA: ${dataBr}`,
@@ -220,7 +218,6 @@ export async function POST(request: NextRequest) {
     ].filter(Boolean).join('\n')
 
     try {
-      // Buscar integrantes do grupo
       const { data: partList } = await supabase
         .from('participantes_scfv')
         .select('*')
@@ -257,13 +254,12 @@ export async function POST(request: NextRequest) {
               local: 'CRAS',
               relato: partesRelato,
               providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
-              data: data_encontro
+              data: apenasData
             })
           }
         }
       }
 
-      // Se nenhum integrante tinha família ou o grupo não tinha participantes, inserir registro geral com a 1ª família
       if (registrosHistorico.length === 0 && todasFamilias && todasFamilias.length > 0) {
         registrosHistorico.push({
           familia_id: todasFamilias[0].id,
@@ -273,7 +269,7 @@ export async function POST(request: NextRequest) {
           local: 'CRAS',
           relato: partesRelato,
           providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
-          data: data_encontro
+          data: apenasData
         })
       }
 
@@ -296,29 +292,47 @@ export async function DELETE(request: NextRequest) {
     const grupoId = searchParams.get('grupo_id')
     const dataEncontro = searchParams.get('data_encontro')
 
-    if (!grupoId || !dataEncontro) {
-      return NextResponse.json({ ok: false, error: 'grupo_id e data_encontro são obrigatórios.' }, { status: 400 })
+    if (!dataEncontro) {
+      return NextResponse.json({ ok: false, error: 'data_encontro é obrigatório.' }, { status: 400 })
     }
 
+    const apenasData = dataEncontro.split('T')[0].split(' ')[0].trim()
     const supabase = getSupabaseServer()
-    
-    // Deletar relatório do encontro
-    const { error: errRel } = await supabase
-      .from('relatorios_scfv')
-      .delete()
-      .eq('grupo_id', grupoId)
-      .eq('data_encontro', dataEncontro)
 
-    if (errRel) {
-      console.warn('Erro ao deletar de relatorios_scfv:', errRel.message)
+    // 1. Deletar relatórios do grupo/data da tabela relatorios_scfv
+    if (grupoId) {
+      await supabase
+        .from('relatorios_scfv')
+        .delete()
+        .eq('grupo_id', grupoId)
+        .eq('data_encontro', apenasData)
+    } else {
+      await supabase
+        .from('relatorios_scfv')
+        .delete()
+        .eq('data_encontro', apenasData)
     }
 
-    // Opcional: Deletar registro de frequência da mesma data
+    // 2. Deletar registros de frequência da mesma data
+    if (grupoId) {
+      await supabase
+        .from('frequencia_scfv')
+        .delete()
+        .eq('grupo_id', grupoId)
+        .eq('data', apenasData)
+    } else {
+      await supabase
+        .from('frequencia_scfv')
+        .delete()
+        .eq('data', apenasData)
+    }
+
+    // 3. Deletar registros sincronizados no historico_atendimentos
     await supabase
-      .from('frequencia_scfv')
+      .from('historico_atendimentos')
       .delete()
-      .eq('grupo_id', grupoId)
-      .eq('data', dataEncontro)
+      .ilike('tipo', '%SCFV%')
+      .eq('data', apenasData)
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {

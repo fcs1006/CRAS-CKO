@@ -73,21 +73,37 @@ export function ScfvView({
     carregarHistoricoGrupo()
   }, [grupoAtual?.id])
 
+  function formatarDataSemFuso(dStr?: string): string {
+    if (!dStr) return '—'
+    const apenasData = dStr.split('T')[0].split(' ')[0].trim()
+    const partes = apenasData.split('-')
+    if (partes.length === 3) {
+      return `${partes[2].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[0]}`
+    }
+    return dStr
+  }
+
   // Excluir relatório e encontro gravado
   const handleExcluirEncontro = async (dataEncontroStr: string) => {
-    const dataBr = dataEncontroStr.split('-').reverse().join('/')
+    const apenasData = dataEncontroStr.split('T')[0].split(' ')[0].trim()
+    const dataBr = formatarDataSemFuso(apenasData)
     if (!confirm(`Deseja realmente excluir o relatório e registro do encontro do dia ${dataBr}?`)) return
 
+    // Remocao otimista local para atualizacao instantanea na tela
+    setFrequenciasHistorico(prev => prev.filter(f => !compararDatas(f.data, apenasData)))
+    setRelatoriosHistorico(prev => prev.filter(r => !compararDatas(r.data_encontro, apenasData)))
+
     try {
-      const res = await fetch(`/api/scfv/relatorio?grupo_id=${grupoAtual.id}&data_encontro=${dataEncontroStr}`, {
+      const grupoId = grupoAtual?.id || ''
+      const res = await fetch(`/api/scfv/relatorio?grupo_id=${grupoId}&data_encontro=${encodeURIComponent(apenasData)}`, {
         method: 'DELETE'
       })
       if (res.ok) {
         alert(`Registro do encontro do dia ${dataBr} excluído com sucesso!`)
-        await carregarHistoricoGrupo()
       } else {
         alert('Erro ao excluir registro do encontro.')
       }
+      await carregarHistoricoGrupo()
     } catch (err: any) {
       alert('Erro ao excluir registro: ' + (err.message || 'Tente novamente.'))
     }
@@ -114,8 +130,8 @@ export function ScfvView({
   // Consolidação dos dados para exibição na tabela de histórico
   const datasHistoricoUnicas = Array.from(
     new Set([
-      ...frequenciasHistorico.map(f => f.data),
-      ...relatoriosHistorico.map(r => r.data_encontro)
+      ...frequenciasHistorico.map(f => (f.data || '').split('T')[0]),
+      ...relatoriosHistorico.map(r => (r.data_encontro || '').split('T')[0])
     ])
   ).filter(Boolean).sort().reverse()
 
@@ -123,7 +139,7 @@ export function ScfvView({
     const freq = frequenciasHistorico.find(f => compararDatas(f.data, dStr))
     const rel = relatoriosHistorico.find(r => compararDatas(r.data_encontro, dStr))
 
-    const dataBr = dStr.split('-').reverse().join('/')
+    const dataBr = formatarDataSemFuso(dStr)
 
     const registros = freq?.registros || []
     const presentesArr = freq?.presentes || []
