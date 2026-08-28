@@ -549,6 +549,7 @@ export function AtendimentosView({
                 </tr>
               ) : (
                   atendimentosFiltrados.map(a => {
+                    const resA = verificarAcessoRelatoAtendimento(a, usuarioLogado)
                     const isCompartilhada = a.compartilhada === 'Sim' || (a.tecnico && a.tecnico.toLowerCase().includes('co-visitantes')) || Boolean(a.profissionais_participantes)
                     const rawTec = (a.tecnico || '').trim()
                     let tecPrincipal = rawTec
@@ -602,28 +603,22 @@ export function AtendimentosView({
                       </span>
                     </td>
                     <td className="py-3 px-3 max-w-xs">
-                      {(() => {
-                        const resA = verificarAcessoRelatoAtendimento(a, usuarioLogado)
-                        if (!resA.podeVer) {
-                          return (
-                            <span className="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded block">
-                              {resA.mensagemOculta}
+                      {!resA.podeVer ? (
+                        <span className="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-1 rounded block">
+                          {resA.mensagemOculta}
+                        </span>
+                      ) : (
+                        <>
+                          <p className="line-clamp-2 text-gray-600 text-[11px] leading-relaxed">
+                            {a.relato}
+                          </p>
+                          {a.providencias && (
+                            <span className="text-[10px] font-semibold text-amber-800 block truncate mt-0.5">
+                              Providências: {a.providencias}
                             </span>
-                          )
-                        }
-                        return (
-                          <>
-                            <p className="line-clamp-2 text-gray-600 text-[11px] leading-relaxed">
-                              {a.relato}
-                            </p>
-                            {a.providencias && (
-                              <span className="text-[10px] font-semibold text-amber-800 block truncate mt-0.5">
-                                Providências: {a.providencias}
-                              </span>
-                            )}
-                          </>
-                        )
-                      })()}
+                          )}
+                        </>
+                      )}
                     </td>
                     <td className="py-3 px-3 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1.5">
@@ -635,7 +630,7 @@ export function AtendimentosView({
                           <i className="fa-solid fa-eye text-xs"></i>
                         </button>
 
-                        {onEditarAtendimento && (
+                        {onEditarAtendimento && resA.podeVer && (
                           <button
                             onClick={() => {
                               setAtendimentoParaEditar(a)
