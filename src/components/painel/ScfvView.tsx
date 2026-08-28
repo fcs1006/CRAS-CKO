@@ -70,7 +70,14 @@ export function ScfvView({
   }
 
   useEffect(() => {
+    if (!grupoAtual?.id) return
     carregarHistoricoGrupo()
+
+    const intervalId = setInterval(() => {
+      carregarHistoricoGrupo()
+    }, 2500)
+
+    return () => clearInterval(intervalId)
   }, [grupoAtual?.id])
 
   function formatarDataSemFuso(dStr?: string): string {
