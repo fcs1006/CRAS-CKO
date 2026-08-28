@@ -154,7 +154,7 @@ export function ConteudoDocumentoProntuario({
           <div className="col-span-3"><strong className="font-extrabold">Lixo:</strong> {familia.moradia_lixo || 'Coleta Pública'}</div>
           <div className="col-span-3"><strong className="font-extrabold">Energia:</strong> {familia.moradia_energia || 'Com Medidor'}</div>
           <div className="col-span-3"><strong className="font-extrabold">Cômodos:</strong> {familia.moradia_comodos || 4}</div>
-          <div className="col-span-3"><strong className="font-extrabold">Acessibilidade:</strong> {familia.acessibilidade !== false ? 'Sim' : 'Não'}</div>
+          <div className="col-span-3"><strong className="font-extrabold">Acessibilidade:</strong> {familia.acessibilidade ? 'Sim' : 'Não'}</div>
         </div>
       </div>
 
