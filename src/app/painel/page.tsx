@@ -1088,6 +1088,7 @@ export default function PainelPage() {
           familias={familias}
           usuarios={usuarios}
           usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
+          usuarioLogado={usuarioLogado}
           dadosIniciais={dadosPreenchidosAtendimento}
           onClose={() => {
             setModalNovoAtendimento(false)

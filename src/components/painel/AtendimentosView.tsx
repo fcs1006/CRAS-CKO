@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Atendimento, AgendaItem, Familia, Configuracao, Usuario } from '@/types'
 import { maskCPF } from '@/utils/masks'
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
-import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento, podeExcluirAtendimento } from '@/utils/permissoes'
+import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento, podeExcluirAtendimento, isTecnicoSuperior, isPsicologo, isAssistenteSocial } from '@/utils/permissoes'
 
 interface AtendimentosViewProps {
   atendimentos: Atendimento[]
@@ -718,16 +718,17 @@ export function AtendimentosView({
               </div>
 
               {(() => {
-                const tecnicoStr = atendimentoParaEditar.tecnico || ''
-                const tecnicoObj = usuarios.find(u => u.nome === tecnicoStr || u.usuario === tecnicoStr)
-                const ehPsicologoTecnico = (tecnicoObj?.cargo || '').toLowerCase().includes('psicól') || (tecnicoObj?.conselho || '').toLowerCase().includes('crp') || tecnicoStr.toLowerCase().includes('psicól') || tecnicoStr.toLowerCase().includes('crp')
-                const ehAssistenteSocialTecnico = (tecnicoObj?.cargo || '').toLowerCase().includes('social') || (tecnicoObj?.conselho || '').toLowerCase().includes('cress') || tecnicoStr.toLowerCase().includes('social') || tecnicoStr.toLowerCase().includes('cress')
-                const ehAdmin = usuarioLogado?.perfil === 'admin'
+                const ehTecnicoSuperior = isTecnicoSuperior(usuarioLogado)
+                if (!ehTecnicoSuperior) return null
+
+                const ehPsico = isPsicologo(usuarioLogado)
+                const ehSocial = isAssistenteSocial(usuarioLogado)
+                const ehAdmin = usuarioLogado?.perfil === 'admin' || (usuarioLogado?.cargo || '').toLowerCase().includes('coordenad') || (usuarioLogado?.cargo || '').toLowerCase().includes('diretor')
 
                 return (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase">
-                      Nível de Sigilo Profissional / Privacidade da Escuta
+                    <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase flex items-center gap-1.5">
+                      <i className="fa-solid fa-lock text-amber-600"></i> Nível de Sigilo Profissional / Privacidade da Escuta
                     </label>
                     <select
                       value={sigiloEdicao}
@@ -736,11 +737,11 @@ export function AtendimentosView({
                     >
                       <option value="equipe_tecnica">Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
 
-                      {(ehPsicologoTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
+                      {(ehPsico || ehAdmin) && (
                         <option value="apenas_psicologia">Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
                       )}
 
-                      {(ehAssistenteSocialTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
+                      {(ehSocial || ehAdmin) && (
                         <option value="apenas_servico_social">Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
                       )}
 

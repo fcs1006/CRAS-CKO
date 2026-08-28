@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { Familia, Atendimento, Usuario } from '@/types'
-import { isPsicologo, isAssistenteSocial } from '@/utils/permissoes'
+import { isPsicologo, isAssistenteSocial, isTecnicoSuperior } from '@/utils/permissoes'
 
 interface ModalNovoAtendimentoProps {
   familias: Familia[]
   usuarios: Usuario[]
   usuarioLogadoNome: string
+  usuarioLogado?: Usuario | null
   dadosIniciais?: (Partial<Atendimento> & { agenda_id?: string }) | null
   onClose: () => void
   onSalvar: (atendimento: Partial<Atendimento> & { agenda_id?: string }) => Promise<void>
@@ -17,6 +18,7 @@ export function ModalNovoAtendimento({
   familias,
   usuarios,
   usuarioLogadoNome,
+  usuarioLogado,
   dadosIniciais,
   onClose,
   onSalvar
@@ -35,7 +37,15 @@ export function ModalNovoAtendimento({
   const [outrosProfissionaisTexto, setOutrosProfissionaisTexto] = useState('')
   const [relato, setRelato] = useState(dadosIniciais?.relato || '')
   const [providencias, setProvidencias] = useState(dadosIniciais?.providencias || '')
-  const [sigilo, setSigilo] = useState<string>(dadosIniciais?.sigilo || 'equipe_tecnica')
+  const defaultSigilo = (() => {
+    if (dadosIniciais?.sigilo) return dadosIniciais.sigilo
+    if (!isTecnicoSuperior(usuarioLogado)) return 'publico'
+    if (isPsicologo(usuarioLogado)) return 'apenas_psicologia'
+    if (isAssistenteSocial(usuarioLogado)) return 'apenas_servico_social'
+    return 'equipe_tecnica'
+  })()
+
+  const [sigilo, setSigilo] = useState<string>(defaultSigilo)
 
   useEffect(() => {
     if (!tecnico && usuarioLogadoNome) {
@@ -366,12 +376,14 @@ export function ModalNovoAtendimento({
             )}
           </div>
 
-          {/* Nível de Sigilo Profissional */}
+          {/* Nível de Sigilo Profissional (Apenas visível para Equipe Técnica Superior: Assistentes Sociais, Psicólogos, Coordenadores e Admins) */}
           {(() => {
-            const tecnicoObj = usuarios.find(u => u.nome === tecnico || u.usuario === tecnico || u.nome === usuarioLogadoNome)
-            const ehPsicologoTecnico = isPsicologo(tecnicoObj) || (tecnico || '').toLowerCase().includes('psicól') || (tecnico || '').toLowerCase().includes('crp')
-            const ehAssistenteSocialTecnico = isAssistenteSocial(tecnicoObj) || (tecnico || '').toLowerCase().includes('social') || (tecnico || '').toLowerCase().includes('cress')
-            const ehAdmin = tecnicoObj?.perfil === 'admin'
+            const ehTecnicoSuperior = isTecnicoSuperior(usuarioLogado)
+            if (!ehTecnicoSuperior) return null
+
+            const ehPsico = isPsicologo(usuarioLogado)
+            const ehSocial = isAssistenteSocial(usuarioLogado)
+            const ehAdmin = usuarioLogado?.perfil === 'admin' || (usuarioLogado?.cargo || '').toLowerCase().includes('coordenad') || (usuarioLogado?.cargo || '').toLowerCase().includes('diretor')
 
             return (
               <div>
@@ -385,11 +397,11 @@ export function ModalNovoAtendimento({
                 >
                   <option value="equipe_tecnica">Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
 
-                  {(ehPsicologoTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
+                  {(ehPsico || ehAdmin) && (
                     <option value="apenas_psicologia">Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
                   )}
 
-                  {(ehAssistenteSocialTecnico || ehAdmin || (!ehPsicologoTecnico && !ehAssistenteSocialTecnico)) && (
+                  {(ehSocial || ehAdmin) && (
                     <option value="apenas_servico_social">Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
                   )}
 
