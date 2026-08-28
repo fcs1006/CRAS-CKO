@@ -767,23 +767,43 @@ export function ModalVerFamilia({
               <p className="text-gray-400 py-3 text-center">Nenhum atendimento registrado para esta família até o momento.</p>
             ) : (
               <div className="divide-y divide-gray-100 text-xs">
-                {atendimentosFamilia.map(a => (
-                  <div key={a.id} className="py-2.5 space-y-1">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold uppercase text-gray-900">{a.tipo}</span>
-                        <span className="text-[10px] text-gray-500">({a.local})</span>
+                {atendimentosFamilia.map(a => {
+                  const resA = verificarAcessoRelatoAtendimento(a, usuarioLogado)
+                  return (
+                    <div key={a.id} className="py-2.5 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold uppercase text-gray-900">{a.tipo}</span>
+                          <span className="text-[10px] text-gray-500">({a.local || 'CRAS'})</span>
+                        </div>
+                        <span className="font-mono text-[10px] text-gray-500">
+                          {a.data ? a.data.split('-').reverse().join('/') : '—'} às {a.hora || '10:00'}
+                        </span>
                       </div>
-                      <span className="font-mono text-[10px] text-gray-500">
-                        {a.data ? a.data.split('-').reverse().join('/') : '—'} às {a.hora}
-                      </span>
+
+                      {!resA.podeVer ? (
+                        <div className="p-2.5 bg-amber-50 border border-amber-200 rounded text-amber-950 font-bold text-[11px]">
+                          {resA.mensagemOculta}
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-gray-700 uppercase bg-gray-50 p-2 rounded leading-relaxed whitespace-pre-line">
+                            {extrairRelatoLimpo(a.relato)}
+                          </p>
+                          {a.providencias && (
+                            <div className="text-[11px] text-amber-900 font-semibold bg-amber-50/50 p-2 rounded border border-amber-100 mt-1">
+                              <strong>Providências / Encaminhamentos:</strong> {a.providencias}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div className="text-[10px] text-teal-800 font-bold uppercase">
+                        Técnico(a): {extrairNomeTecnicoLimpo(a.tecnico)}
+                      </div>
                     </div>
-                    <p className="text-gray-700 uppercase bg-gray-50 p-2 rounded leading-relaxed whitespace-pre-line">{a.relato}</p>
-                    <div className="text-[10px] text-teal-800 font-bold uppercase">
-                      Técnico(a): {a.tecnico}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
