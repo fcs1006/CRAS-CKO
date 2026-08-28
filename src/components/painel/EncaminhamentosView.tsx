@@ -284,9 +284,13 @@ export function EncaminhamentosView({
                       <td className="py-3.5 px-4 align-top whitespace-nowrap">
                         <button
                           type="button"
-                          onClick={() => setEncaminhamentoParaEditar(enc)}
+                          onClick={() => {
+                            if (podeEditarEncaminhamento(usuarioLogado, enc)) {
+                              setEncaminhamentoParaEditar(enc)
+                            }
+                          }}
                           className="focus:outline-none"
-                          title="Clique para editar status e registrar devolutiva"
+                          title={podeEditarEncaminhamento(usuarioLogado, enc) ? "Clique para editar status e registrar devolutiva" : "Status do Encaminhamento"}
                         >
                           {isRespondido ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase shadow-xs hover:bg-emerald-100 transition cursor-pointer">
