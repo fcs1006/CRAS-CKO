@@ -231,16 +231,16 @@ export function EncaminhamentosView({
       {/* Tabela de Encaminhamentos */}
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-gray-600">
+          <table className="w-full text-left text-xs text-gray-600 table-fixed min-w-[700px]">
             <thead className="bg-gray-50 text-gray-700 font-extrabold uppercase text-[10px] border-b border-gray-200">
               <tr>
-                <th className="py-3 px-4 w-32">Data Envio</th>
-                <th className="py-3 px-4">Beneficiário</th>
-                <th className="py-3 px-4">Órgão / Destino</th>
+                <th className="py-3 px-4 w-28 shrink-0">Data Envio</th>
+                <th className="py-3 px-4 w-44 shrink-0">Beneficiário</th>
+                <th className="py-3 px-4 w-52 shrink-0">Órgão / Destino</th>
                 <th className="py-3 px-4">Motivo / Síntese</th>
-                <th className="py-3 px-4 w-36">Status</th>
-                <th className="py-3 px-4">Técnico Emissor</th>
-                <th className="py-3 px-4 text-center w-28">Ações</th>
+                <th className="py-3 px-4 w-32 shrink-0">Status</th>
+                <th className="py-3 px-4 w-36 shrink-0">Técnico Emissor</th>
+                <th className="py-3 px-4 text-center w-28 shrink-0">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
@@ -264,17 +264,17 @@ export function EncaminhamentosView({
                           <span>{dataBr}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-gray-900 uppercase align-top">
+                      <td className="py-3.5 px-4 font-bold text-gray-900 uppercase align-top break-words [overflow-wrap:anywhere]">
                         {enc.beneficiario}
                       </td>
-                      <td className="py-3.5 px-4 font-extrabold text-rose-700 uppercase align-top">
+                      <td className="py-3.5 px-4 font-extrabold text-rose-700 uppercase align-top break-words [overflow-wrap:anywhere]">
                         <div className="flex items-center gap-1.5">
-                          <i className="fa-solid fa-building-columns text-rose-500 text-xs"></i>
-                          <span>{enc.destino}</span>
+                          <i className="fa-solid fa-building-columns text-rose-500 text-xs shrink-0"></i>
+                          <span className="break-words [overflow-wrap:anywhere]">{enc.destino}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-medium text-gray-800 uppercase leading-relaxed align-top">
-                        <p className="line-clamp-2 text-xs" title={enc.motivo}>
+                      <td className="py-3.5 px-4 font-medium text-gray-800 uppercase leading-relaxed align-top break-all break-words [overflow-wrap:anywhere]">
+                        <p className="line-clamp-2 text-xs break-all break-words [overflow-wrap:anywhere]" title={enc.motivo}>
                           {enc.motivo || '—'}
                         </p>
                       </td>
