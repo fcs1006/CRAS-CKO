@@ -17,6 +17,7 @@ import {
   Configuracao
 } from '@/types'
 import { parseResponseJson } from '@/utils/safeFetch'
+import { extrairSigiloAtendimento } from '@/utils/permissoes'
 
 // Importação das Sub-Vistas Modulares
 import { DashboardView } from '@/components/painel/DashboardView'
@@ -178,7 +179,13 @@ export default function PainelPage() {
 
       if (atdRes.ok && atdRes.headers.get('content-type')?.includes('application/json')) {
         const atdJson = await atdRes.json()
-        if (atdJson.ok && atdJson.data) setAtendimentos(atdJson.data as Atendimento[])
+        if (atdJson.ok && atdJson.data) {
+          const atdsNormalizados = (atdJson.data as Atendimento[]).map(a => ({
+            ...a,
+            sigilo: extrairSigiloAtendimento(a)
+          }))
+          setAtendimentos(atdsNormalizados)
+        }
       }
 
       if (benRes.ok && benRes.headers.get('content-type')?.includes('application/json')) {
@@ -320,8 +327,15 @@ export default function PainelPage() {
   }
 
   async function handleEditarAtendimento(id: string, atendimentoData: Partial<Atendimento>) {
-    setAtendimentos(prev => prev.map(a => a.id === id ? { ...a, ...atendimentoData } : a))
+    // 1. Atualização otimista imediata no estado local do React
+    setAtendimentos(prev => prev.map(a => {
+      if (a.id !== id) return a
+      const novodado = { ...a, ...atendimentoData }
+      novodado.sigilo = extrairSigiloAtendimento(novodado)
+      return novodado
+    }))
 
+    // 2. Persistência no banco via API
     const res = await fetch('/api/atendimentos', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -333,6 +347,14 @@ export default function PainelPage() {
       alert('Erro ao editar atendimento: ' + (json.error || 'Tente novamente.'))
       carregarTodosOsDados()
       return
+    }
+
+    if (json.data) {
+      const novodado = {
+        ...json.data,
+        sigilo: atendimentoData.sigilo || json.data.sigilo || extrairSigiloAtendimento(json.data)
+      }
+      setAtendimentos(prev => prev.map(a => a.id === id ? novodado : a))
     }
 
     carregarTodosOsDados()
