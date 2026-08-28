@@ -6,7 +6,7 @@ import { maskCPF, maskNIS, maskPhone, calculateAge, maskCurrency, parseCurrencyT
 import { buscarCBO, CBO } from '@/data/cboList'
 import { verificarDuplicidadePessoa } from '@/utils/duplicidade'
 import { syncPacienteComBase } from '@/utils/syncPaciente'
-import { verificarAcessoRelatoAtendimento } from '@/utils/permissoes'
+import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo } from '@/utils/permissoes'
 
 interface ModalVerFamiliaProps {
   familia: Familia
@@ -208,7 +208,7 @@ export function ConteudoDocumentoProntuario({
                   <div className="leading-relaxed text-black text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden pt-0.5">
                     {resA.podeVer ? (
                       <>
-                        <strong className="font-extrabold">Síntese / Relato Técnico:</strong> {a.relato || 'Atendimento socioassistencial realizado no âmbito do PAIF.'}
+                        <strong className="font-extrabold">Síntese / Relato Técnico:</strong> {extrairRelatoLimpo(a.relato) || 'Atendimento socioassistencial realizado no âmbito do PAIF.'}
                         {a.providencias && (
                           <span className="block mt-0.5 font-medium">
                             <strong className="font-extrabold">Providências & Encaminhamentos:</strong> {a.providencias}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Atendimento, AgendaItem, Familia, Configuracao, Usuario } from '@/types'
 import { maskCPF } from '@/utils/masks'
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
-import { verificarAcessoRelatoAtendimento } from '@/utils/permissoes'
+import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento } from '@/utils/permissoes'
 
 interface AtendimentosViewProps {
   atendimentos: Atendimento[]
@@ -345,8 +345,9 @@ export function AtendimentosView({
 
     setSalvandoEdicao(true)
     try {
+      const relatoLimpo = extrairRelatoLimpo(relatoEdicao.trim().toUpperCase())
       await onEditarAtendimento(atendimentoParaEditar.id, {
-        relato: relatoEdicao.trim().toUpperCase(),
+        relato: `${relatoLimpo}\n\n[SIGILO:${sigiloEdicao}]`,
         providencias: providenciasEdicao.trim().toUpperCase(),
         local: localEdicao,
         sigilo: sigiloEdicao
@@ -610,7 +611,7 @@ export function AtendimentosView({
                       ) : (
                         <>
                           <p className="line-clamp-2 text-gray-600 text-[11px] leading-relaxed">
-                            {a.relato}
+                            {extrairRelatoLimpo(a.relato)}
                           </p>
                           {a.providencias && (
                             <span className="text-[10px] font-semibold text-amber-800 block truncate mt-0.5">
@@ -634,10 +635,10 @@ export function AtendimentosView({
                           <button
                             onClick={() => {
                               setAtendimentoParaEditar(a)
-                              setRelatoEdicao(a.relato || '')
+                              setRelatoEdicao(extrairRelatoLimpo(a.relato))
                               setProvidenciasEdicao(a.providencias || '')
                               setLocalEdicao(a.local || 'CRAS')
-                              setSigiloEdicao(a.sigilo || 'equipe_tecnica')
+                              setSigiloEdicao(extrairSigiloAtendimento(a))
                             }}
                             className="w-7 h-7 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg font-bold transition border border-blue-200 flex items-center justify-center shadow-xs"
                             title="Editar Registro de Atendimento"

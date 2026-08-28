@@ -110,7 +110,7 @@ export function ModalNovoAtendimento({
         tecnico: tecnico.trim().toUpperCase(),
         tecnico_conselho: conselhoInfo,
         sigilo,
-        relato: relato.trim().toUpperCase(),
+        relato: `${relato.trim().toUpperCase()}\n\n[SIGILO:${sigilo}]`,
         providencias: providencias.trim().toUpperCase(),
         tipo,
         agenda_id: dadosIniciais?.agenda_id
