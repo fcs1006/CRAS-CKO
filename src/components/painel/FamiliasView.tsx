@@ -1,11 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Familia } from '@/types'
+import { Familia, Usuario } from '@/types'
 import { maskCPF, maskNIS } from '@/utils/masks'
+
+import { podeExcluirFamilia } from '@/utils/permissoes'
 
 interface FamiliasViewProps {
   familias: Familia[]
+  usuarioLogado?: Usuario | null
   onAbrirModalNovaFamilia: () => void
   onAbrirModalVerFamilia: (familia: Familia) => void
   onAbrirModalEditarFamilia: (familia: Familia) => void
@@ -14,6 +17,7 @@ interface FamiliasViewProps {
 
 export function FamiliasView({
   familias,
+  usuarioLogado,
   onAbrirModalNovaFamilia,
   onAbrirModalVerFamilia,
   onAbrirModalEditarFamilia,
@@ -240,13 +244,15 @@ export function FamiliasView({
                           >
                             <i className="fa-solid fa-pen-to-square text-[11px]"></i>
                           </button>
-                          <button
-                            onClick={() => onExcluirFamilia(f.id)}
-                            className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 flex items-center justify-center transition"
-                            title="Excluir Prontuário"
-                          >
-                            <i className="fa-solid fa-trash-can text-[11px]"></i>
-                          </button>
+                          {podeExcluirFamilia(usuarioLogado) && (
+                            <button
+                              onClick={() => onExcluirFamilia(f.id)}
+                              className="w-7 h-7 rounded-full bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 flex items-center justify-center transition"
+                              title="Excluir Prontuário"
+                            >
+                              <i className="fa-solid fa-trash-can text-[11px]"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

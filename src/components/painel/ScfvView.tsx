@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { GrupoSCFV, ParticipanteSCFV } from '@/types'
+import { GrupoSCFV, ParticipanteSCFV, Usuario } from '@/types'
+import { podeExcluirGrupoScfv } from '@/utils/permissoes'
 
 interface ScfvViewProps {
   grupos: GrupoSCFV[]
   participantes: ParticipanteSCFV[]
+  usuarioLogado?: Usuario | null
   onAbrirModalNovoGrupo: () => void
   onAbrirModalAdicionarParticipante: (grupoId: string) => void
   onAbrirModalEditarGrupo?: (grupo: GrupoSCFV) => void
@@ -19,6 +21,7 @@ interface ScfvViewProps {
 export function ScfvView({
   grupos,
   participantes,
+  usuarioLogado,
   onAbrirModalNovoGrupo,
   onAbrirModalAdicionarParticipante,
   onAbrirModalEditarGrupo,
@@ -293,7 +296,7 @@ export function ScfvView({
                             <i className="fa-solid fa-pen-to-square text-[10px]"></i>
                           </button>
                         )}
-                        {onExcluirGrupo && (
+                        {onExcluirGrupo && podeExcluirGrupoScfv(usuarioLogado) && (
                           <button
                             type="button"
                             onClick={async (e) => {

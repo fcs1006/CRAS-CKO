@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { Encaminhamento, Configuracao, Familia, Usuario } from '@/types'
 import { maskCPF, maskPhone } from '@/utils/masks'
 import { ModalEditarEncaminhamento } from '@/components/modals/ModalEditarEncaminhamento'
+import { podeEditarEncaminhamento, podeExcluirEncaminhamento } from '@/utils/permissoes'
 
 interface EncaminhamentosViewProps {
   encaminhamentos: Encaminhamento[]
   familias?: Familia[]
   usuarios?: Usuario[]
   configuracao?: Configuracao
+  usuarioLogado?: Usuario | null
   onAbrirModalNovoEncaminhamento: () => void
   onEditarEncaminhamento?: (id: string, updates: Partial<Encaminhamento>) => Promise<void>
   onExcluirEncaminhamento?: (id: string) => Promise<void>
@@ -140,6 +142,7 @@ export function EncaminhamentosView({
   familias = [],
   usuarios = [],
   configuracao,
+  usuarioLogado,
   onAbrirModalNovoEncaminhamento,
   onEditarEncaminhamento,
   onExcluirEncaminhamento
@@ -317,17 +320,19 @@ export function EncaminhamentosView({
                           </button>
 
                           {/* Editar / Registrar Devolutiva / Mudar Status */}
-                          <button
-                            type="button"
-                            onClick={() => setEncaminhamentoParaEditar(enc)}
-                            className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white transition flex items-center justify-center border border-indigo-200"
-                            title="Editar Encaminhamento / Registrar Devolutiva"
-                          >
-                            <i className="fa-solid fa-pen-to-square text-xs"></i>
-                          </button>
+                          {onEditarEncaminhamento && podeEditarEncaminhamento(usuarioLogado, enc) && (
+                            <button
+                              type="button"
+                              onClick={() => setEncaminhamentoParaEditar(enc)}
+                              className="w-8 h-8 rounded-lg bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white transition flex items-center justify-center border border-indigo-200"
+                              title="Editar Encaminhamento / Registrar Devolutiva"
+                            >
+                              <i className="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                          )}
 
                           {/* Excluir Encaminhamento */}
-                          {onExcluirEncaminhamento && (
+                          {onExcluirEncaminhamento && podeExcluirEncaminhamento(usuarioLogado) && (
                             <button
                               type="button"
                               onClick={async () => {

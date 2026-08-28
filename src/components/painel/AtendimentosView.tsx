@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Atendimento, AgendaItem, Familia, Configuracao, Usuario } from '@/types'
 import { maskCPF } from '@/utils/masks'
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
-import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento } from '@/utils/permissoes'
+import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento, podeExcluirAtendimento } from '@/utils/permissoes'
 
 interface AtendimentosViewProps {
   atendimentos: Atendimento[]
@@ -88,7 +88,7 @@ export function ConteudoDocumentoAtendimento({
   usuarioLogado?: Usuario | null
 }) {
   const resSigilo = verificarAcessoRelatoAtendimento(item, usuarioLogado)
-  const relatoExibido = resSigilo.podeVer ? (item.relato || 'Atendimento socioassistencial realizado no âmbito das ações do PAIF / CRAS.') : resSigilo.mensagemOculta
+  const relatoExibido = resSigilo.podeVer ? (extrairRelatoLimpo(item.relato) || 'Atendimento socioassistencial realizado no âmbito das ações do PAIF / CRAS.') : resSigilo.mensagemOculta
   const providenciasExibidas = resSigilo.podeVer ? (item.providencias || 'Orientações socioassistenciais prestadas e inserção no acompanhamento familiar do PAIF / CRAS.') : '[CONTEÚDO RESTRITO À CATEGORIA HABILITADA CONFORME SIGILO PROFISSIONAL]'
   const isCompartilhada = item.compartilhada === 'Sim' || item.tecnico?.toLowerCase().includes('co-visitantes') || Boolean(item.profissionais_participantes)
 
@@ -660,7 +660,7 @@ export function AtendimentosView({
                           <i className="fa-solid fa-print text-xs"></i>
                         </button>
 
-                        {onExcluirAtendimento && (
+                        {onExcluirAtendimento && podeExcluirAtendimento(usuarioLogado, a) && (
                           <button
                             onClick={() => onExcluirAtendimento(a.id)}
                             className="w-7 h-7 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg font-bold transition border border-rose-200 flex items-center justify-center shadow-xs"

@@ -170,3 +170,44 @@ export function verificarAcessoRelatoAtendimento(
 
   return { podeVer: true }
 }
+
+// --- PERMISSÕES ESTRUTURADAS DE AÇÕES (EDITAR / EXCLUIR / IMPRIMIR) ---
+
+export function podeExcluirAtendimento(u?: Usuario | null, atendimento?: Partial<Atendimento>): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  if (perfil === 'admin') return true
+  if (isTecnicoSuperior(u)) {
+    const nomeLogado = (u.nome || u.usuario || '').trim().toUpperCase()
+    const tecAtendimento = (atendimento?.tecnico || '').trim().toUpperCase()
+    return tecAtendimento.includes(nomeLogado)
+  }
+  return false
+}
+
+export function podeExcluirFamilia(u?: Usuario | null): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  return perfil === 'admin' || isTecnicoSuperior(u)
+}
+
+export function podeExcluirEncaminhamento(u?: Usuario | null): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  return perfil === 'admin' || isTecnicoSuperior(u)
+}
+
+export function podeEditarEncaminhamento(u?: Usuario | null, encaminhamento?: any): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  if (perfil === 'admin' || isTecnicoSuperior(u)) return true
+  const nomeLogado = (u.nome || u.usuario || '').trim().toUpperCase()
+  const tec = (encaminhamento?.tecnico || '').trim().toUpperCase()
+  return Boolean(nomeLogado && tec.includes(nomeLogado))
+}
+
+export function podeExcluirGrupoScfv(u?: Usuario | null): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  return perfil === 'admin' || isTecnicoSuperior(u)
+}

@@ -835,6 +835,7 @@ export default function PainelPage() {
               {activeTab === 'families' && (
                 <FamiliasView
                   familias={familias}
+                  usuarioLogado={usuarioLogado}
                   onAbrirModalNovaFamilia={() => setModalNovaFamilia(true)}
                   onAbrirModalVerFamilia={fam => setModalVerFamilia(fam)}
                   onAbrirModalEditarFamilia={fam => setModalEditarFamilia(fam)}
@@ -888,6 +889,7 @@ export default function PainelPage() {
                 <ScfvView
                   grupos={grupos}
                   participantes={participantes}
+                  usuarioLogado={usuarioLogado}
                   onAbrirModalNovoGrupo={() => {
                     setGrupoParaEditar(null)
                     setModalNovoGrupo(true)
@@ -911,6 +913,7 @@ export default function PainelPage() {
                   familias={familias}
                   usuarios={usuarios}
                   configuracao={configuracao}
+                  usuarioLogado={usuarioLogado}
                   onAbrirModalNovoEncaminhamento={() => setModalNovoEncaminhamento(true)}
                   onEditarEncaminhamento={handleEditarEncaminhamento}
                   onExcluirEncaminhamento={handleExcluirEncaminhamento}
