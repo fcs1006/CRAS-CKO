@@ -146,6 +146,27 @@ export default function PainelPage() {
       .catch(err => console.error('Erro ao carregar configurações:', err))
 
     carregarTodosOsDados()
+
+    // 1. Canal Supabase Realtime para sincronização em tempo real entre múltiplos usuários
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_atendimentos' }, () => carregarTodosOsDados())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'familias' }, () => carregarTodosOsDados())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'beneficios' }, () => carregarTodosOsDados())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'encaminhamentos' }, () => carregarTodosOsDados())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'relatorios_scfv' }, () => carregarTodosOsDados())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'frequencia_scfv' }, () => carregarTodosOsDados())
+      .subscribe()
+
+    // 2. Polling rápido de segurança a cada 4 segundos (garante reatividade sem precisar recarregar F5)
+    const syncInterval = setInterval(() => {
+      carregarTodosOsDados()
+    }, 4000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(syncInterval)
+    }
   }, [])
 
   async function carregarTodosOsDados() {
