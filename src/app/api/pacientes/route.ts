@@ -30,8 +30,52 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    // Mapear campos reais (cpf_cns -> cpf, dt_nasc -> data_nascimento, endereco -> logradouro)
+    // Buscar enriquecimento em familias e membros_familia
+    const cpfs = (rawData || []).map(p => (p.cpf_cns || '').replace(/\D/g, '')).filter(Boolean)
+    const nomes = (rawData || []).map(p => (p.nome || '').trim().toUpperCase()).filter(Boolean)
+
+    let famMap = new Map<string, any>()
+    let memMap = new Map<string, any>()
+
+    if (cpfs.length > 0 || nomes.length > 0) {
+      const [resFam, resMem] = await Promise.all([
+        supabaseServer
+          .from('familias')
+          .select('responsavel, cpf_responsavel, nome_mae_responsavel, raca_cor_responsavel, escolaridade_responsavel, ocupacao_responsavel, nis_responsavel, zona_territorio, numero, logradouro, bairro, telefone')
+          .or(`cpf_responsavel.in.(${cpfs.join(',')}),responsavel.in.(${nomes.map(n => `"${n}"`).join(',')})`),
+        supabaseServer
+          .from('membros_familia')
+          .select('nome, cpf, raca_cor, escolaridade, ocupacao, nis, rg, possui_deficiencia, tipo_deficiencia')
+          .or(`cpf.in.(${cpfs.join(',')}),nome.in.(${nomes.map(n => `"${n}"`).join(',')})`)
+      ])
+
+      if (resFam.data) {
+        for (const f of resFam.data) {
+          const cpfClean = (f.cpf_responsavel || '').replace(/\D/g, '')
+          const nomeClean = (f.responsavel || '').trim().toUpperCase()
+          if (cpfClean) famMap.set(cpfClean, f)
+          if (nomeClean) famMap.set(nomeClean, f)
+        }
+      }
+
+      if (resMem.data) {
+        for (const m of resMem.data) {
+          const cpfClean = (m.cpf || '').replace(/\D/g, '')
+          const nomeClean = (m.nome || '').trim().toUpperCase()
+          if (cpfClean) memMap.set(cpfClean, m)
+          if (nomeClean) memMap.set(nomeClean, m)
+        }
+      }
+    }
+
+    // Mapear campos reais com enriquecimento completo
     const dataMapeada = (rawData || []).map(p => {
+      const pCpf = (p.cpf_cns || '').replace(/\D/g, '')
+      const pNome = (p.nome || '').trim().toUpperCase()
+
+      const famInfo = (pCpf && famMap.get(pCpf)) || famMap.get(pNome) || {}
+      const memInfo = (pCpf && memMap.get(pCpf)) || memMap.get(pNome) || {}
+
       let sexoFormatado = p.sexo
       if (typeof p.sexo === 'string') {
         const s = p.sexo.trim().toUpperCase()
@@ -40,21 +84,26 @@ export async function GET(request: NextRequest) {
         else if (s === 'O' || s.startsWith('OUTR')) sexoFormatado = 'Outro'
       }
 
+      const rawNis = famInfo.nis_responsavel || memInfo.nis || p.nis || ''
+      const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
+
       return {
         id: p.id,
         nome: p.nome,
         cpf: p.cpf_cns,
-        nis: p.nis || null,
-        nome_mae: p.nome_mae || null,
-        raca_cor: p.raca_cor || null,
-        escolaridade: p.escolaridade || null,
-        ocupacao: p.ocupacao || null,
+        nis: nisClean || null,
+        nome_mae: famInfo.nome_mae_responsavel || p.nome_mae || null,
+        raca_cor: famInfo.raca_cor_responsavel || memInfo.raca_cor || p.raca_cor || 'Parda',
+        escolaridade: famInfo.escolaridade_responsavel || memInfo.escolaridade || p.escolaridade || null,
+        ocupacao: famInfo.ocupacao_responsavel || memInfo.ocupacao || p.ocupacao || null,
+        rg: memInfo.rg || null,
         data_nascimento: p.dt_nasc,
-        logradouro: p.endereco,
-        numero: 'S/N',
-        bairro: p.bairro,
-        telefone: p.telefone,
-        cep: p.cep,
+        logradouro: famInfo.logradouro || p.endereco || null,
+        numero: famInfo.numero || 'S/N',
+        bairro: famInfo.bairro || p.bairro || 'CENTRO',
+        telefone: famInfo.telefone || p.telefone || null,
+        cep: p.cep || '77305-000',
+        zona_territorio: famInfo.zona_territorio || (p.bairro?.toUpperCase().includes('RURAL') ? 'Rural' : 'Urbana'),
         sexo: sexoFormatado
       }
     })
