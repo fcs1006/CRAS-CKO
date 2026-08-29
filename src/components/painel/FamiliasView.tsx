@@ -15,6 +15,20 @@ interface FamiliasViewProps {
   onExcluirFamilia: (id: string) => void
 }
 
+function normalizarTexto(txt?: string | null) {
+  if (!txt) return ''
+  return txt
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
+function apenasDigitos(txt?: string | null) {
+  if (!txt) return ''
+  return txt.replace(/\D/g, '')
+}
+
 export function FamiliasView({
   familias,
   usuarioLogado,
@@ -31,22 +45,53 @@ export function FamiliasView({
   const bairrosUnicos = Array.from(new Set(familias.map(f => f.bairro).filter(Boolean)))
   const zonasUnicas = Array.from(new Set(familias.map(f => f.zona_territorio).filter(Boolean)))
 
-  const familiasFiltradas = familias.filter(f => {
-    const termo = busca.toLowerCase().trim()
-    const bateTexto =
-      f.responsavel.toLowerCase().includes(termo) ||
-      (f.nome_mae_responsavel && f.nome_mae_responsavel.toLowerCase().includes(termo)) ||
-      (f.cpf_responsavel && f.cpf_responsavel.includes(termo)) ||
-      (f.nis_responsavel && f.nis_responsavel.includes(termo)) ||
-      (f.cod_familiar && f.cod_familiar.toLowerCase().includes(termo)) ||
-      (f.bairro && f.bairro.toLowerCase().includes(termo))
+  const familiasFiltradas = familias.map(f => {
+    const termo = normalizarTexto(busca)
+    const termoDigitos = apenasDigitos(busca)
 
     const bateBairro = filtroBairro === 'TODOS' || f.bairro === filtroBairro
     const bateZona = filtroZona === 'TODAS' || f.zona_territorio === filtroZona
     const batePaif = filtroPaif === 'TODOS' || (filtroPaif === 'SIM' ? f.paif_ativo : !f.paif_ativo)
 
-    return bateTexto && bateBairro && bateZona && batePaif
-  })
+    if (!bateBairro || !bateZona || !batePaif) return null
+
+    if (!termo && !termoDigitos) {
+      return { familia: f, membroCorrespondente: null }
+    }
+
+    const bateResponsavel =
+      normalizarTexto(f.responsavel).includes(termo) ||
+      (f.nome_mae_responsavel && normalizarTexto(f.nome_mae_responsavel).includes(termo)) ||
+      (f.cod_familiar && normalizarTexto(f.cod_familiar).includes(termo)) ||
+      (f.bairro && normalizarTexto(f.bairro).includes(termo)) ||
+      (f.logradouro && normalizarTexto(f.logradouro).includes(termo)) ||
+      (termoDigitos && (
+        (f.cpf_responsavel && apenasDigitos(f.cpf_responsavel).includes(termoDigitos)) ||
+        (f.nis_responsavel && apenasDigitos(f.nis_responsavel).includes(termoDigitos))
+      ))
+
+    // Checar todos os membros dependentes
+    let membroCorrespondente: any = null
+    if (f.membros && f.membros.length > 0) {
+      membroCorrespondente = f.membros.find(m => {
+        const bateNome = m.nome && normalizarTexto(m.nome).includes(termo)
+        const bateParentesco = m.parentesco && normalizarTexto(m.parentesco).includes(termo)
+        const bateCpf = termoDigitos && m.cpf && apenasDigitos(m.cpf).includes(termoDigitos)
+        const bateNis = termoDigitos && m.nis && apenasDigitos(m.nis).includes(termoDigitos)
+        const bateRg = m.rg && normalizarTexto(m.rg).includes(termo)
+        return bateNome || bateParentesco || bateCpf || bateNis || bateRg
+      }) || null
+    }
+
+    if (bateResponsavel || membroCorrespondente) {
+      return {
+        familia: f,
+        membroCorrespondente: !bateResponsavel && membroCorrespondente ? membroCorrespondente : null
+      }
+    }
+
+    return null
+  }).filter(Boolean) as { familia: Familia; membroCorrespondente: any | null }[]
 
   return (
     <div className="space-y-6 print:hidden">
@@ -98,7 +143,7 @@ export function FamiliasView({
             type="text"
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            placeholder="Buscar por responsável, mãe, CPF, NIS ou código..."
+            placeholder="Buscar por responsável, membro da família, mãe, CPF, NIS ou código..."
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 bg-white"
           />
         </div>
@@ -171,7 +216,7 @@ export function FamiliasView({
                   </td>
                 </tr>
               ) : (
-                familiasFiltradas.map(f => {
+                familiasFiltradas.map(({ familia: f, membroCorrespondente }) => {
                   const membrosCount = f.membros && f.membros.length > 0 ? f.membros.length : 1
                   const totalRenda = (f.membros || []).reduce((acc, m) => acc + (m.renda || 0), 0)
                   const perCapitaVal = totalRenda / membrosCount
@@ -187,6 +232,12 @@ export function FamiliasView({
                         <div className="font-bold text-gray-900 uppercase text-xs">{f.responsavel}</div>
                         {f.nome_mae_responsavel && (
                           <div className="text-[10px] text-gray-500 uppercase">Mãe: {f.nome_mae_responsavel}</div>
+                        )}
+                        {membroCorrespondente && (
+                          <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-teal-50 border border-teal-200/80 text-teal-900 text-[10px] font-semibold w-fit">
+                            <i className="fa-solid fa-user-tag text-teal-600"></i>
+                            <span>Membro: <strong className="uppercase">{membroCorrespondente.nome}</strong> ({membroCorrespondente.parentesco || 'Familiar'}{membroCorrespondente.cpf ? ` • CPF: ${maskCPF(membroCorrespondente.cpf)}` : ''})</span>
+                          </div>
                         )}
                         <div className="flex gap-1.5 mt-0.5">
                           {hasPcd && (
