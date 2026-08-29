@@ -135,6 +135,54 @@ export async function GET() {
   }
 }
 
+async function sincronizarCidadaoBaseGeral(
+  supabase: any,
+  dados: {
+    nome: string
+    cpf?: string | null
+    dt_nasc?: string | null
+    sexo?: string | null
+    telefone?: string | null
+    endereco?: string | null
+    bairro?: string | null
+  }
+) {
+  if (!dados.nome) return
+  const nomeClean = dados.nome.trim().toUpperCase()
+  const cpfClean = (dados.cpf || '').replace(/\D/g, '')
+  const sexoClean = dados.sexo === 'Feminino' || dados.sexo === 'F' ? 'F' : 'M'
+
+  // 1. Buscar pelo CPF na base geral de pacientes
+  if (cpfClean && cpfClean.length === 11) {
+    const { data: ex } = await supabase.from('pacientes').select('id').eq('cpf_cns', cpfClean).limit(1)
+    if (ex && ex.length > 0) {
+      await supabase.from('pacientes').update({
+        nome: nomeClean,
+        dt_nasc: dados.dt_nasc || null,
+        sexo: sexoClean,
+        telefone: dados.telefone || undefined,
+        endereco: dados.endereco || undefined,
+        bairro: dados.bairro || undefined
+      }).eq('id', ex[0].id)
+      return
+    }
+  }
+
+  // 2. Se não achou por CPF, buscar por Nome
+  const { data: exNome } = await supabase.from('pacientes').select('id, cpf_cns').ilike('nome', nomeClean).limit(1)
+  if (exNome && exNome.length > 0) {
+    await supabase.from('pacientes').update({
+      nome: nomeClean,
+      cpf_cns: cpfClean && cpfClean.length === 11 ? cpfClean : exNome[0].cpf_cns,
+      dt_nasc: dados.dt_nasc || null,
+      sexo: sexoClean,
+      telefone: dados.telefone || undefined,
+      endereco: dados.endereco || undefined,
+      bairro: dados.bairro || undefined
+    }).eq('id', exNome[0].id)
+  }
+}
+
 async function checarDuplicidadePessoaBanco(
   supabase: any,
   pessoa: { nome?: string; cpf?: string },
@@ -270,6 +318,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 5. Sincronizar Responsável e Membros com a Base Geral de Cidadãos (pacientes)
+    try {
+      await sincronizarCidadaoBaseGeral(supabase, {
+        nome: cleanFamilia.responsavel,
+        cpf: cleanFamilia.cpf_responsavel,
+        dt_nasc: cleanFamilia.data_nascimento_responsavel,
+        sexo: cleanFamilia.sexo_responsavel,
+        telefone: cleanFamilia.telefone,
+        endereco: cleanFamilia.logradouro,
+        bairro: cleanFamilia.bairro
+      })
+
+      if (membros && Array.isArray(membros)) {
+        for (const m of membros) {
+          if (m.nome) {
+            await sincronizarCidadaoBaseGeral(supabase, {
+              nome: m.nome,
+              cpf: m.cpf,
+              dt_nasc: m.data_nascimento,
+              sexo: m.sexo,
+              endereco: cleanFamilia.logradouro,
+              bairro: cleanFamilia.bairro
+            })
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.warn('Aviso ao sincronizar cidadão com a base geral:', syncErr)
+    }
+
     return NextResponse.json({ ok: true, data: famInserida })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
@@ -343,6 +421,36 @@ export async function PUT(request: NextRequest) {
           console.error('Erro ao atualizar membros da família:', membrosErr)
         }
       }
+    }
+
+    // 5. Sincronizar correções (Nome, CPF, Data de Nascimento, Sexo, etc.) com a Base Geral de Cidadãos (pacientes)
+    try {
+      await sincronizarCidadaoBaseGeral(supabase, {
+        nome: cleanFamilia.responsavel,
+        cpf: cleanFamilia.cpf_responsavel,
+        dt_nasc: cleanFamilia.data_nascimento_responsavel,
+        sexo: cleanFamilia.sexo_responsavel,
+        telefone: cleanFamilia.telefone,
+        endereco: cleanFamilia.logradouro,
+        bairro: cleanFamilia.bairro
+      })
+
+      if (membros && Array.isArray(membros)) {
+        for (const m of membros) {
+          if (m.nome) {
+            await sincronizarCidadaoBaseGeral(supabase, {
+              nome: m.nome,
+              cpf: m.cpf,
+              dt_nasc: m.data_nascimento,
+              sexo: m.sexo,
+              endereco: cleanFamilia.logradouro,
+              bairro: cleanFamilia.bairro
+            })
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.warn('Aviso ao sincronizar cidadão com a base geral:', syncErr)
     }
 
     return NextResponse.json({ ok: true, data: famAtualizada })
