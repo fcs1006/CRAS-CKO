@@ -252,8 +252,9 @@ export async function POST(request: NextRequest) {
               tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
               tipo: 'SCFV / Convivência',
               local: 'CRAS',
-              relato: partesRelato,
+              relato: `${partesRelato}\n\n[SIGILO:publico]`,
               providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
+              sigilo: 'publico',
               data: apenasData
             })
           }
@@ -267,8 +268,9 @@ export async function POST(request: NextRequest) {
           tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
           tipo: 'SCFV / Convivência',
           local: 'CRAS',
-          relato: partesRelato,
+          relato: `${partesRelato}\n\n[SIGILO:publico]`,
           providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
+          sigilo: 'publico',
           data: apenasData
         })
       }

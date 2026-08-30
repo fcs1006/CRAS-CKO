@@ -134,7 +134,27 @@ export function verificarAcessoRelatoAtendimento(
     return { podeVer: true }
   }
 
-  // 2. Se o usuário logado for o próprio técnico responsável ou co-visitante
+  // 2. Atividades coletivas de Oficinas, Convivência e Grupos SCFV são públicas e abertas a toda a equipe
+  const tipoUpper = (atendimento.tipo || '').toUpperCase()
+  const relatoUpper = (atendimento.relato || '').toUpperCase()
+  const isColetivoScfv = 
+    tipoUpper.includes('SCFV') || 
+    tipoUpper.includes('CONVIVÊNCIA') || 
+    tipoUpper.includes('CONVIVENCIA') || 
+    tipoUpper.includes('GRUPO') || 
+    tipoUpper.includes('OFICINA') || 
+    tipoUpper.includes('COLETIVO') ||
+    relatoUpper.includes('SCFV') ||
+    relatoUpper.includes('FREQUÊNCIA') ||
+    relatoUpper.includes('FREQUENCIA') ||
+    relatoUpper.includes('ENCONTRO DE CONVIVÊNCIA') ||
+    relatoUpper.includes('OFICINA')
+
+  if (isColetivoScfv) {
+    return { podeVer: true }
+  }
+
+  // 3. Se o usuário logado for o próprio técnico responsável ou co-visitante
   const nomeLogado = (usuarioLogado.nome || usuarioLogado.usuario || '').trim().toUpperCase()
   const tecAtendimento = (atendimento.tecnico || '').trim().toUpperCase()
   const coTecsAtendimento = (atendimento.profissionais_participantes || '').trim().toUpperCase()
@@ -146,7 +166,7 @@ export function verificarAcessoRelatoAtendimento(
     return { podeVer: true }
   }
 
-  // 3. Obtenção do nível de sigilo
+  // 4. Obtenção do nível de sigilo
   const sigiloRaw = extrairSigiloAtendimento(atendimento)
 
   // Se o sigilo for GERAL / PÚBLICO

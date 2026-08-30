@@ -598,7 +598,7 @@ export default function PainelPage() {
       local: 'CRAS',
       relato: partesRelato,
       providencias: dados.providencias || 'Acompanhamento continuado em grupo de convivência.',
-      sigilo: 'equipe_tecnica',
+      sigilo: 'publico',
       data: dataRelato
     }))
 

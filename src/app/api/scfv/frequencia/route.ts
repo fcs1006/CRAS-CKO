@@ -141,8 +141,9 @@ export async function POST(request: NextRequest) {
             tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
             tipo: tipoAtendimento,
             local: 'CRAS',
-            relato,
+            relato: `${relato}\n\n[SIGILO:publico]`,
             providencias,
+            sigilo: 'publico',
             data
           })
         }
