@@ -101,15 +101,29 @@ function sanitizeMembroPayload(m: any, familiaId: string) {
 export async function GET() {
   try {
     const supabase = getSupabaseServer()
-    const { data, error } = await supabase
-      .from('familias')
-      .select('*, membros:membros_familia(*)')
-      .order('criado_em', { ascending: false })
+    let allFamilias: any[] = []
+    let offset = 0
+    const batchSize = 1000
 
-    if (error) {
-      console.error('Erro ao buscar famílias:', error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    while (true) {
+      const { data, error } = await supabase
+        .from('familias')
+        .select('*, membros:membros_familia(*)')
+        .order('criado_em', { ascending: false })
+        .range(offset, offset + batchSize - 1)
+
+      if (error) {
+        console.error('Erro ao buscar famílias:', error)
+        return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      }
+
+      if (!data || data.length === 0) break
+      allFamilias = allFamilias.concat(data)
+      if (data.length < batchSize) break
+      offset += batchSize
     }
+
+    const data = allFamilias
 
     // Mapear rg_responsavel e limpar placeholder SEM_NIS_ do retorno para o frontend
     const formattedData = (data || []).map((f: any) => {
