@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Familia, Encaminhamento } from '@/types'
+import { maskCPF } from '@/utils/masks'
 
 interface ModalNovoEncaminhamentoProps {
   familias: Familia[]
@@ -11,7 +12,7 @@ interface ModalNovoEncaminhamentoProps {
 }
 
 export function ModalNovoEncaminhamento({
-  familias,
+  familias = [],
   usuarioLogadoNome,
   onClose,
   onSalvar
@@ -21,7 +22,47 @@ export function ModalNovoEncaminhamento({
   const [tipoRma, setTipoRma] = useState<string>('')
   const [destino, setDestino] = useState('')
   const [motivo, setMotivo] = useState('')
-  const [dataEnvio, setDataEnvio] = useState('')
+  const [dataEnvio, setDataEnvio] = useState(new Date().toISOString().split('T')[0])
+
+  // Busca e Autocomplete de Família / Prontuário
+  const [buscaFamilia, setBuscaFamilia] = useState('')
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
+  const containerBuscaRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerBuscaRef.current && !containerBuscaRef.current.contains(event.target as Node)) {
+        setMostrarSugestoes(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const familiaSelecionada = familias.find(f => f.id === familiaId)
+
+  const sugestoesFamilias = familias.filter(f => {
+    if (!buscaFamilia.trim()) return true
+    const termo = buscaFamilia.toLowerCase().trim()
+    const cpfLimpo = termo.replace(/\D/g, '')
+
+    const bateResp = (f.responsavel || '').toLowerCase().includes(termo)
+    const bateProntuario = (f.cod_familiar || '').toLowerCase().includes(termo)
+    const bateCpf = cpfLimpo.length > 0 && (f.cpf_responsavel || '').includes(cpfLimpo)
+    const bateBairro = (f.bairro || '').toLowerCase().includes(termo)
+    const bateMembro = (f.membros || []).some(m =>
+      (m.nome || '').toLowerCase().includes(termo) ||
+      (cpfLimpo.length > 0 && (m.cpf || '').includes(cpfLimpo))
+    )
+
+    return bateResp || bateProntuario || bateCpf || bateBairro || bateMembro
+  }).slice(0, 15)
+
+  function selecionarFamilia(f: Familia) {
+    setFamiliaId(f.id)
+    setBuscaFamilia('')
+    setMostrarSugestoes(false)
+  }
 
   function handleTipoRmaChange(tipo: string) {
     setTipoRma(tipo)
@@ -40,11 +81,11 @@ export function ModalNovoEncaminhamento({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!familiaId) return alert('Selecione a família encaminhada.')
-    if (!tipoRma) return alert('Selecione a categoria do encaminhamento no RMA.')
-    if (!destino) return alert('Selecione o serviço de destino.')
-    if (!dataEnvio) return alert('Preencha a data de emissão.')
-    if (!motivo.trim()) return alert('Preencha o motivo do encaminhamento.')
+    if (!familiaId) return alert('Por favor, busque e selecione a Família / Beneficiário.')
+    if (!tipoRma) return alert('Por favor, selecione a categoria do encaminhamento no RMA.')
+    if (!destino) return alert('Por favor, selecione ou informe o serviço de destino.')
+    if (!dataEnvio) return alert('Por favor, preencha a data de emissão.')
+    if (!motivo.trim()) return alert('Por favor, preencha o motivo e justificativa técnica do encaminhamento.')
 
     setSalvando(true)
 
@@ -91,28 +132,91 @@ export function ModalNovoEncaminhamento({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {/* Família */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Família / Beneficiário <span className="text-red-600 font-bold">*</span>
+          {/* Busca / Autocomplete da Família */}
+          <div ref={containerBuscaRef} className="relative">
+            <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center justify-between">
+              <span>Família / Beneficiário(a) <span className="text-red-600 font-bold">*</span></span>
+              {familiaSelecionada && (
+                <span className="text-[10px] text-gray-500 font-normal">
+                  Prontuário Nº {familiaSelecionada.cod_familiar}
+                </span>
+              )}
             </label>
-            <select
-              value={familiaId}
-              onChange={e => setFamiliaId(e.target.value)}
-              required
-              className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
-            >
-              <option value="">SELECIONE A FAMÍLIA *</option>
-              {familias.map(f => (
-                <option key={f.id} value={f.id}>
-                  {f.responsavel} — PRONTUÁRIO Nº: {f.cod_familiar} (CPF: {f.cpf_responsavel || '—'})
-                </option>
-              ))}
-            </select>
+
+            {familiaSelecionada ? (
+              <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl flex flex-wrap justify-between items-center gap-3">
+                <div className="space-y-1">
+                  <strong className="text-sm font-extrabold text-teal-950 uppercase block">
+                    {familiaSelecionada.responsavel}
+                  </strong>
+                  <p className="text-[11px] text-teal-900 font-medium">
+                    CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'} • Prontuário: {familiaSelecionada.cod_familiar} • Bairro: {familiaSelecionada.bairro || '—'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFamiliaId('')
+                    setBuscaFamilia('')
+                    setMostrarSugestoes(true)
+                  }}
+                  className="px-3 py-1.5 bg-white hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+                >
+                  <i className="fa-solid fa-arrows-rotate"></i> Trocar Família
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <i className="fa-solid fa-magnifying-glass absolute left-3 top-3 text-teal-700 text-xs"></i>
+                  <input
+                    type="text"
+                    value={buscaFamilia}
+                    onChange={e => {
+                      setBuscaFamilia(e.target.value)
+                      setMostrarSugestoes(true)
+                    }}
+                    onFocus={() => setMostrarSugestoes(true)}
+                    placeholder="DIGITE O NOME DO BENEFICIÁRIO, CPF OU PRONTUÁRIO..."
+                    className="w-full pl-9 pr-3 py-2.5 border-2 border-teal-700/30 focus:border-teal-700 rounded-xl text-xs uppercase font-semibold bg-white shadow-xs focus:outline-none"
+                  />
+                </div>
+
+                {mostrarSugestoes && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-gray-100">
+                    {sugestoesFamilias.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 font-medium">
+                        Nenhuma família encontrada para "{buscaFamilia}".
+                      </div>
+                    ) : (
+                      sugestoesFamilias.map(f => (
+                        <div
+                          key={f.id}
+                          onClick={() => selecionarFamilia(f)}
+                          className="p-3 hover:bg-teal-50/70 transition cursor-pointer flex justify-between items-center gap-2"
+                        >
+                          <div>
+                            <strong className="text-gray-900 uppercase font-bold text-xs block">
+                              {f.responsavel}
+                            </strong>
+                            <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                              Prontuário: <span className="font-mono text-teal-900 font-bold">{f.cod_familiar}</span> • CPF: {f.cpf_responsavel ? maskCPF(f.cpf_responsavel) : '—'} • {f.bairro || 'Zona Urbana'}
+                            </p>
+                          </div>
+                          <span className="text-[11px] font-bold text-teal-800 bg-teal-100/60 px-2.5 py-1 rounded-md shrink-0">
+                            Selecionar
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Categorização no RMA (Bloco 2) */}
-          <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
+          <div className="p-3.5 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
             <label className="block text-xs font-bold text-rose-950 uppercase">
               Categorização no RMA Oficial (Bloco 2 - C.2 a C.5) <span className="text-red-600 font-bold">*</span>
             </label>
@@ -120,7 +224,7 @@ export function ModalNovoEncaminhamento({
               value={tipoRma}
               onChange={e => handleTipoRmaChange(e.target.value)}
               required
-              className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-semibold uppercase text-rose-950"
+              className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-bold uppercase text-rose-950"
             >
               <option value="">SELECIONE O TIPO NO RMA *</option>
               <option value="inclusao_cadunico">Item C.2 — Encaminhamento para INCLUSÃO no Cadastro Único</option>
@@ -133,63 +237,63 @@ export function ModalNovoEncaminhamento({
 
           {/* Destino */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
+            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
               Órgão / Serviço de Destino <span className="text-red-600 font-bold">*</span>
             </label>
             <input
               type="text"
               required
               value={destino}
-              onChange={e => setDestino(e.target.value)}
-              placeholder="EX: SECRETARIA MUNICIPAL DE SAÚDE, ESCOLA MUNICIPAL..."
-              className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-semibold"
+              onChange={e => setDestino(e.target.value.toUpperCase())}
+              placeholder="EX: SECRETARIA MUNICIPAL DE SAÚDE, CONSELHO TUTELAR..."
+              className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-medium bg-white"
             />
           </div>
 
           {/* Data */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Data de Emissão <span className="text-red-600 font-bold">*</span>
+            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
+              Data de Envio / Emissão <span className="text-red-600 font-bold">*</span>
             </label>
             <input
               type="date"
               required
               value={dataEnvio}
               onChange={e => setDataEnvio(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
+              className="w-full px-3 py-2 border rounded-lg text-xs font-semibold bg-white"
             />
           </div>
 
           {/* Motivo */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              Justificativa / Motivo do Encaminhamento <span className="text-red-600 font-bold">*</span>
+            <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
+              Motivo e Justificativa Técnica do Encaminhamento <span className="text-red-600 font-bold">*</span>
             </label>
             <textarea
               required
               rows={3}
               value={motivo}
               onChange={e => setMotivo(e.target.value.toUpperCase())}
-              placeholder="DESCREVA A NECESSIDADE TÉCNICA E A FINALIDADE DO ENCAMINHAMENTO..."
-              className="w-full px-3 py-2 border rounded-lg text-xs uppercase"
+              placeholder="DESCREVA DE FORMA OBJETIVA A DEMANDA, A SITUAÇÃO DE VULNERABILIDADE E A FINALIDADE DO ENCAMINHAMENTO..."
+              className="w-full px-3 py-2 border rounded-lg text-xs uppercase leading-relaxed font-medium bg-white"
             />
           </div>
 
           {/* Footer */}
-          <div className="pt-3 border-t flex justify-end gap-2">
+          <div className="pt-3 border-t flex justify-end gap-2 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold"
+              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={salvando}
-              className="px-6 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5"
+              className="px-6 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition uppercase flex items-center gap-2"
             >
-              <i className="fa-solid fa-paper-plane"></i>
+              <i className={`fa-solid ${salvando ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
               {salvando ? 'Emitindo...' : 'Emitir Encaminhamento'}
             </button>
           </div>
