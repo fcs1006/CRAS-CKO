@@ -6,6 +6,7 @@ import { maskCPF, maskNIS, maskPhone, maskCEP, calculateAge, maskCurrency, parse
 import { buscarCBO, CBO } from '@/data/cboList'
 import { verificarDuplicidadePessoa } from '@/utils/duplicidade'
 import { syncPacienteComBase } from '@/utils/syncPaciente'
+import ModalAlerta, { AlertaConfig } from './ModalAlerta'
 
 interface ModalNovaFamiliaProps {
   familiasExistentes?: Familia[]
@@ -16,6 +17,7 @@ interface ModalNovaFamiliaProps {
 
 export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, onSalvar }: ModalNovaFamiliaProps) {
   const [salvando, setSalvando] = useState(false)
+  const [alertaModal, setAlertaModal] = useState<AlertaConfig | null>(null)
 
   // 1. Dados do Responsável Familiar (RF) - Inicia limpo
   const [codFamiliar, setCodFamiliar] = useState('')
@@ -298,7 +300,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     if (p.cpf && familiasExistentes) {
       const dup = verificarDuplicidadePessoa({ nome: p.nome, cpf: p.cpf, nis: p.nis }, familiasExistentes)
       if (dup.duplicado) {
-        alert(dup.mensagem)
+        setAlertaModal({
+          tipo: 'duplicidade',
+          titulo: 'TRAVA DE DUPLICIDADE SUAS',
+          mensagem: dup.mensagem,
+          textoBotao: 'Entendido, corrigir'
+        })
         return
       }
     }
@@ -357,7 +364,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     if (p.cpf && familiasExistentes) {
       const dup = verificarDuplicidadePessoa({ nome: p.nome, cpf: p.cpf }, familiasExistentes)
       if (dup.duplicado) {
-        alert(dup.mensagem)
+        setAlertaModal({
+          tipo: 'duplicidade',
+          titulo: 'TRAVA DE DUPLICIDADE SUAS',
+          mensagem: dup.mensagem,
+          textoBotao: 'Entendido, corrigir'
+        })
         return
       }
     }
@@ -435,50 +447,50 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
   function adicionarOuSalvarMembro() {
     if (!novoMembroNome.trim()) {
-      alert('Por favor, preencha o Nome do Integrante Familiar.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha o Nome do Integrante Familiar.' })
       return
     }
     if (!novoMembroParentesco) {
-      alert('Por favor, selecione o Parentesco com o Responsável.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Parentesco com o Responsável.' })
       return
     }
     if (!novoMembroNasc) {
-      alert('Por favor, preencha a Data de Nascimento.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha a Data de Nascimento do Integrante.' })
       return
     }
     if (!novoMembroSexo) {
-      alert('Por favor, selecione o Sexo / Gênero.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Sexo / Gênero do Integrante.' })
       return
     }
     if (!novoMembroRacaCor) {
-      alert('Por favor, selecione a Cor / Raça.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a Cor / Raça do Integrante.' })
       return
     }
     if (!novoMembroCpf.trim()) {
-      alert('Por favor, preencha o CPF do Integrante.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha o CPF do Integrante Familiar.' })
       return
     }
     if (!novoMembroRenda.trim()) {
-      alert('Por favor, preencha a Renda Individual.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha a Renda Individual do Integrante.' })
       return
     }
     if (!novoMembroEscolaridade) {
-      alert('Por favor, selecione a Escolaridade.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a Escolaridade do Integrante.' })
       return
     }
     if (!novoMembroOcupacao.trim()) {
-      alert('Por favor, preencha a Ocupação / CBO.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha a Ocupação / CBO do Integrante.' })
       return
     }
     if (!novoMembroProgSocial) {
-      alert('Por favor, selecione o Programa Social.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Programa Social do Integrante.' })
       return
     }
 
     const ocupacaoUpper = novoMembroOcupacao.trim().toUpperCase()
     const isEstudante = ocupacaoUpper.includes('ESTUDANTE') || ocupacaoUpper.includes('ALUNO') || ocupacaoUpper.includes('ESTUDAR')
     if (isEstudante && (!novoMembroFreqEscolar || novoMembroFreqEscolar === 'Não se aplica')) {
-      alert('Quando a Ocupação for Estudante, a Frequência Escolar é obrigatória (Sim ou Não).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CONDICIONALIDADE ESCOLAR', mensagem: 'Quando a Ocupação for Estudante, a Frequência Escolar é obrigatória (Sim ou Não).' })
       return
     }
 
@@ -514,7 +526,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
         familiasExistentes
       )
       if (dupMembro.duplicado) {
-        alert(dupMembro.mensagem)
+        setAlertaModal({
+          tipo: 'duplicidade',
+          titulo: 'TRAVA DE DUPLICIDADE SUAS',
+          mensagem: dupMembro.mensagem,
+          textoBotao: 'Entendido, corrigir'
+        })
         return
       }
     }
@@ -542,67 +559,71 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     e.preventDefault()
 
     if (!responsavel.trim()) {
-      alert('Por favor, informe o Nome Completo do Responsável.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe o Nome Completo do Responsável Familiar.' })
       return
     }
     if (!nomeMae.trim()) {
-      alert('Por favor, informe o Nome Completo da Mãe do Responsável.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe o Nome Completo da Mãe do Responsável.' })
       return
     }
     if (!sexoResp) {
-      alert('Por favor, selecione o Sexo / Gênero do Responsável (Bloco 1).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Sexo / Gênero do Responsável (Bloco 1).' })
       return
     }
     if (!racaCorResp) {
-      alert('Por favor, selecione a Cor / Raça (IBGE) do Responsável (Bloco 1).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a Cor / Raça (IBGE) do Responsável (Bloco 1).' })
       return
     }
     if (!responsavelProgSocial) {
-      alert('Por favor, selecione o Benefício / Programa do Governo (Bloco 1).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Benefício / Programa do Governo (Bloco 1).' })
       return
     }
     if (!zonaTerritorio) {
-      alert('Por favor, selecione a Zona / Território SUAS (Bloco 2).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a Zona / Território SUAS (Bloco 2).' })
       return
     }
 
     if (!pontoReferencia.trim()) {
-      alert('Por favor, informe o Ponto de Referência do Endereço.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe o Ponto de Referência do Endereço (Bloco 2).' })
       return
     }
 
     // Validação do Bloco 3: Condições Habitacionais & Infraestrutura Sanitária
     if (!moradiaTipo) {
-      alert('Por favor, selecione a Forma de Ocupação da Moradia (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a Forma de Ocupação da Moradia (Bloco 3).' })
       return
     }
     if (!tipoConstrucao) {
-      alert('Por favor, selecione o Material Predominante da Construção (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Material Predominante da Construção (Bloco 3).' })
       return
     }
     if (!moradiaAgua) {
-      alert('Por favor, selecione o Abastecimento de Água (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Abastecimento de Água (Bloco 3).' })
       return
     }
     if (!moradiaSanear) {
-      alert('Por favor, selecione o Esgotamento Sanitário (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Esgotamento Sanitário (Bloco 3).' })
       return
     }
     if (!moradiaLixo) {
-      alert('Por favor, selecione o Destino do Lixo (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o Destino do Lixo (Bloco 3).' })
       return
     }
     if (!moradiaEnergia) {
-      alert('Por favor, selecione a Energia Elétrica (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a Energia Elétrica (Bloco 3).' })
       return
     }
     if (!moradiaComodos) {
-      alert('Por favor, informe a Quantidade de Cômodos da Moradia (Bloco 3).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe a Quantidade de Cômodos da Moradia (Bloco 3).' })
       return
     }
 
     if (novoMembroNome.trim()) {
-      alert(`Atenção: Há um integrante em preenchimento ("${novoMembroNome.trim().toUpperCase()}"). Por favor, clique no botão "${membroEditandoIndex !== null ? 'Salvar Alterações' : 'Adicionar Integrante'}" para incluí-lo na lista da família ou limpe o campo Nome Completo.`)
+      setAlertaModal({
+        tipo: 'aviso',
+        titulo: 'INTEGRANTE NÃO INCLUÍDO',
+        mensagem: `Atenção: Há um integrante em preenchimento ("${novoMembroNome.trim().toUpperCase()}"). Por favor, clique no botão "${membroEditandoIndex !== null ? 'Salvar Alterações' : 'Adicionar Integrante'}" para incluí-lo na lista da família ou limpe o campo Nome Completo.`
+      })
       return
     }
 
@@ -613,7 +634,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
         familiasExistentes
       )
       if (dupResp.duplicado) {
-        alert(dupResp.mensagem)
+        setAlertaModal({
+          tipo: 'duplicidade',
+          titulo: 'TRAVA DE DUPLICIDADE SUAS',
+          mensagem: dupResp.mensagem,
+          textoBotao: 'Entendido, verificar família'
+        })
         return
       }
 
@@ -623,14 +649,23 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
           familiasExistentes
         )
         if (dupMembro.duplicado) {
-          alert(dupMembro.mensagem)
+          setAlertaModal({
+            tipo: 'duplicidade',
+            titulo: 'TRAVA DE DUPLICIDADE SUAS',
+            mensagem: dupMembro.mensagem,
+            textoBotao: 'Entendido, verificar família'
+          })
           return
         }
       }
     }
 
     if (paifAtivo && vulnerabilidades.length === 0) {
-      alert('Atenção: Ao ativar o Acompanhamento PAIF, é obrigatório selecionar pelo menos uma opção no Perfil de Vulnerabilidade Social.')
+      setAlertaModal({
+        tipo: 'aviso',
+        titulo: 'VULNERABILIDADE PAIF',
+        mensagem: 'Atenção: Ao ativar o Acompanhamento PAIF, é obrigatório selecionar pelo menos uma opção no Perfil de Vulnerabilidade Social.'
+      })
       return
     }
 
@@ -752,7 +787,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
       onClose()
     } catch (err: any) {
-      alert('Erro ao cadastrar família: ' + (err.message || 'Tente novamente.'))
+      setAlertaModal({
+        tipo: 'erro',
+        titulo: 'ERRO AO CADASTRAR',
+        mensagem: err.message || 'Ocorreu um erro ao processar o cadastro da família. Tente novamente.',
+        textoBotao: 'Fechar'
+      })
     } finally {
       setSalvando(false)
     }
@@ -2045,6 +2085,9 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
           </div>
         </form>
       </div>
+
+      {/* Modal de Alerta / Validação / Duplicidade Estilizado */}
+      <ModalAlerta alerta={alertaModal} onClose={() => setAlertaModal(null)} />
     </div>
   )
 }
