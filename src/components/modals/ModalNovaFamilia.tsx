@@ -281,7 +281,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     if (cpf && cpf.replace(/\D/g, '').length === 11 && familiasExistentes) {
       const dup = verificarDuplicidadePessoa({ nome: responsavel, cpf, nis }, familiasExistentes)
       if (dup.duplicado) {
-        alert(dup.mensagem)
+        setAlertaModal({
+          tipo: 'duplicidade',
+          titulo: 'TRAVA DE DUPLICIDADE SUAS',
+          mensagem: dup.mensagem,
+          textoBotao: 'Entendido, verificar'
+        })
       }
     }
   }
@@ -291,7 +296,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     if (nisClean && nisClean.length >= 7 && nisClean !== '00000000000' && familiasExistentes) {
       const dup = verificarDuplicidadePessoa({ nome: responsavel, cpf, nis }, familiasExistentes)
       if (dup.duplicado) {
-        alert(dup.mensagem)
+        setAlertaModal({
+          tipo: 'duplicidade',
+          titulo: 'TRAVA DE DUPLICIDADE SUAS',
+          mensagem: dup.mensagem,
+          textoBotao: 'Entendido, verificar'
+        })
       }
     }
   }
