@@ -62,6 +62,24 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseServer()
+
+    // Trava Normativa: Impedir registro de Acompanhamento PAIF / Visita PAIF para famílias sem PAIF ativo
+    const isAcaoPaif = (atendimento.tipo || '').toUpperCase().includes('PAIF')
+    if (isAcaoPaif) {
+      const { data: fam, error: famErr } = await supabase
+        .from('familias')
+        .select('id, paif_ativo, responsavel')
+        .eq('id', atendimento.familia_id)
+        .single()
+
+      if (fam && !fam.paif_ativo) {
+        return NextResponse.json({
+          ok: false,
+          error: 'TRAVA NORMATIVA PAIF: Não é permitido registrar atendimento ou visita do PAIF para famílias sem Acompanhamento PAIF ativo no Prontuário Familiar (Bloco 5). Para atendimentos pontuais, utilize "Atendimento Particularizado" ou "Recepção / Acolhida Inicial".'
+        }, { status: 400 })
+      }
+    }
+
     let payload = { ...atendimento }
     let { data: atdInserido, error: atdErr } = await supabase
       .from('historico_atendimentos')
@@ -109,6 +127,24 @@ export async function PUT(request: NextRequest) {
     }
 
     const supabase = getSupabaseServer()
+
+    // Trava Normativa: Impedir alteração para Acompanhamento PAIF / Visita PAIF para famílias sem PAIF ativo
+    const isAcaoPaif = (atendimento.tipo || '').toUpperCase().includes('PAIF')
+    if (isAcaoPaif && atendimento.familia_id) {
+      const { data: fam } = await supabase
+        .from('familias')
+        .select('id, paif_ativo')
+        .eq('id', atendimento.familia_id)
+        .single()
+
+      if (fam && !fam.paif_ativo) {
+        return NextResponse.json({
+          ok: false,
+          error: 'TRAVA NORMATIVA PAIF: Não é permitido registrar ou alterar atendimento para o PAIF para famílias sem Acompanhamento PAIF ativo no Prontuário Familiar (Bloco 5).'
+        }, { status: 400 })
+      }
+    }
+
     let payload = { ...atendimento }
     let { data: atdAtualizado, error: atdErr } = await supabase
       .from('historico_atendimentos')

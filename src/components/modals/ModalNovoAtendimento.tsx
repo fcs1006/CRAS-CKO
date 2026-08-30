@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Familia, Atendimento, Usuario } from '@/types'
 import { isPsicologo, isAssistenteSocial, isTecnicoSuperior } from '@/utils/permissoes'
 import { maskCPF } from '@/utils/masks'
+import ModalAlerta, { AlertaConfig } from './ModalAlerta'
 
 interface ModalNovoAtendimentoProps {
   familias: Familia[]
@@ -38,6 +39,7 @@ export function ModalNovoAtendimento({
   const [outrosProfissionaisTexto, setOutrosProfissionaisTexto] = useState('')
   const [relato, setRelato] = useState(dadosIniciais?.relato || '')
   const [providencias, setProvidencias] = useState(dadosIniciais?.providencias || '')
+  const [alertaModal, setAlertaModal] = useState<AlertaConfig | null>(null)
 
   // 1. Sigilo Profissional: NUNCA vem pré-preenchido, deve ser selecionado pelo usuário
   const [sigilo, setSigilo] = useState<string>(dadosIniciais?.sigilo || '')
@@ -73,11 +75,11 @@ export function ModalNovoAtendimento({
 
     const bateResp = (f.responsavel || '').toLowerCase().includes(termo)
     const bateProntuario = (f.cod_familiar || '').toLowerCase().includes(termo)
-    const bateCpf = cpfLimpo.length > 0 && (f.cpf_responsavel || '').includes(cpfLimpo)
+    const bateCpf = cpfLimpo.length > 0 && (f.cpf_responsavel || '').replace(/\D/g, '').includes(cpfLimpo)
     const bateBairro = (f.bairro || '').toLowerCase().includes(termo)
     const bateMembro = (f.membros || []).some(m =>
       (m.nome || '').toLowerCase().includes(termo) ||
-      (cpfLimpo.length > 0 && (m.cpf || '').includes(cpfLimpo))
+      (cpfLimpo.length > 0 && (m.cpf || '').replace(/\D/g, '').includes(cpfLimpo))
     )
 
     return bateResp || bateProntuario || bateCpf || bateBairro || bateMembro
@@ -88,11 +90,32 @@ export function ModalNovoAtendimento({
     setUsuarioVisitado(f.responsavel || '')
     setBuscaFamilia('')
     setMostrarSugestoes(false)
+
+    // Se o tipo atual era do PAIF e a família selecionada não tem PAIF ativo, avisa e limpa
+    if (tipo && tipo.toUpperCase().includes('PAIF') && !f.paif_ativo) {
+      setAlertaModal({
+        tipo: 'aviso',
+        titulo: 'FAMÍLIA SEM PAIF ATIVO',
+        mensagem: `A família de ${f.responsavel} (Prontuário nº ${f.cod_familiar}) não possui Acompanhamento PAIF ativo no cadastro. Selecione "Atendimento Particularizado" ou "Recepção / Acolhida Inicial", ou ative o PAIF no Prontuário Familiar.`
+      })
+      setTipo('')
+    }
   }
 
   function handleTipoChange(novoTipo: string) {
+    // Verificação imediata da Trava Normativa PAIF
+    if (novoTipo.toUpperCase().includes('PAIF') && familiaSelecionada && !familiaSelecionada.paif_ativo) {
+      setAlertaModal({
+        tipo: 'aviso',
+        titulo: 'TRAVA NORMATIVA DO PAIF',
+        mensagem: `BLOQUEIO DE REGISTRO: A família de ${familiaSelecionada.responsavel} (Prontuário nº ${familiaSelecionada.cod_familiar}) NÃO POSSUI Acompanhamento PAIF ativo no cadastro.\n\n• Para atendimentos pontuais de demanda espontânea, utilize "Atendimento Particularizado" ou "Recepção / Acolhida Inicial".\n• Para visitas domiciliares sem PAF ativo, selecione "Visita Domiciliar".\n• Caso a família esteja ingressando no PAIF, primeiro ative o plano de acompanhamento no Prontuário Familiar (Bloco 5).`,
+        textoBotao: 'Entendido, corrigir'
+      })
+      return
+    }
+
     setTipo(novoTipo)
-    if (novoTipo === 'Visita Domiciliar') {
+    if (novoTipo === 'Visita Domiciliar' || novoTipo === 'Visita Domiciliar - PAIF') {
       setLocal('Domicílio')
     } else if (novoTipo === 'Recepção / Acolhida Inicial' || novoTipo === 'Atendimento Particularizado' || novoTipo === 'Acompanhamento PAIF') {
       if (!local || local === 'Domicílio') setLocal('CRAS')
@@ -109,48 +132,61 @@ export function ModalNovoAtendimento({
     e.preventDefault()
 
     if (!familiaId) {
-      alert('Por favor, busque e selecione a Família / Prontuário atendido.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, busque e selecione a Família / Prontuário atendido.' })
       return
     }
     if (!usuarioVisitado.trim()) {
-      alert('Por favor, informe quem foi a pessoa atendida / solicitante.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe quem foi a pessoa atendida / solicitante.' })
       return
     }
     if (!tipo) {
-      alert('Por favor, selecione a tipologia do atendimento (SUAS/RMA).')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a tipologia do atendimento (SUAS/RMA).' })
       return
     }
+
+    // TRAVA NORMATIVA PAIF RIGOROSA NO SUBMIT
+    const isAcaoPaif = tipo.toUpperCase().includes('PAIF')
+    if (isAcaoPaif && familiaSelecionada && !familiaSelecionada.paif_ativo) {
+      setAlertaModal({
+        tipo: 'aviso',
+        titulo: 'TRAVA NORMATIVA DO PAIF',
+        mensagem: `BLOQUEIO DE REGISTRO: Não é permitido registrar atendimento ou visita como "${tipo}" para famílias que não possuem Acompanhamento PAIF ativo no Prontuário Familiar.\n\n• Para atendimentos pontuais, utilize "Atendimento Particularizado" ou "Recepção / Acolhida Inicial".\n• Para visitas domiciliares de averiguação ou busca ativa, utilize "Visita Domiciliar".\n• Caso a família esteja ingressando no PAIF, primeiro ative o plano de acompanhamento no Prontuário da Família (Bloco 5).`,
+        textoBotao: 'Entendido, ajustar'
+      })
+      return
+    }
+
     if (!local) {
-      alert('Por favor, selecione o local do atendimento.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o local do atendimento.' })
       return
     }
     if (!data) {
-      alert('Por favor, informe a data do atendimento.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe a data do atendimento.' })
       return
     }
     if (!hora) {
-      alert('Por favor, informe o horário do atendimento.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe o horário do atendimento.' })
       return
     }
     if (!tecnico) {
-      alert('Por favor, selecione o técnico responsável.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione o técnico responsável.' })
       return
     }
 
     // Validação estrita do Nível de Sigilo para Equipe Técnica
     const ehTecnicoSuperior = isTecnicoSuperior(usuarioLogado)
     if (ehTecnicoSuperior && !sigilo) {
-      alert('Por favor, selecione o Nível de Sigilo Profissional / Privacidade da Escuta.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'SIGILO PROFISSIONAL OBRIGATÓRIO', mensagem: 'Por favor, selecione o Nível de Sigilo Profissional / Privacidade da Escuta.' })
       return
     }
 
     if (!relato.trim()) {
-      alert('Por favor, preencha a síntese / relato técnico da escuta qualificada.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha a síntese / relato técnico da escuta qualificada.' })
       return
     }
 
     if (!providencias.trim()) {
-      alert('Por favor, informe as Providências Adotadas e Encaminhamentos.')
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe as Providências Adotadas e Encaminhamentos.' })
       return
     }
 
@@ -164,7 +200,7 @@ export function ModalNovoAtendimento({
         lista.push(profissionaisParticipantes.trim().toUpperCase())
       }
       if (lista.length === 0) {
-        alert('Por favor, selecione ou informe ao menos um profissional participante do atendimento compartilhado.')
+        setAlertaModal({ tipo: 'aviso', titulo: 'AÇÃO COMPARTILHADA', mensagem: 'Por favor, selecione ou informe ao menos um profissional participante do atendimento compartilhado.' })
         return
       }
       profissionaisFinais = lista.join(', ')
@@ -198,7 +234,11 @@ export function ModalNovoAtendimento({
       await onSalvar(atendimentoPayload)
       onClose()
     } catch (err: any) {
-      alert('Erro ao registrar atendimento: ' + (err.message || 'Tente novamente.'))
+      setAlertaModal({
+        tipo: 'erro',
+        titulo: 'ERRO AO SALVAR',
+        mensagem: err.message || 'Ocorreu um erro ao registrar o atendimento. Tente novamente.'
+      })
     } finally {
       setSalvando(false)
     }
@@ -219,7 +259,7 @@ export function ModalNovoAtendimento({
               <i className="fa-solid fa-notes-medical text-teal-300"></i> Registro de Atendimento / Evolução Técnica (SUAS)
             </h3>
             <p className="text-[11px] text-teal-200 mt-0.5">
-              Instrumento Oficial de Registro de Atendimentos do Prontuário SUAS
+              Escuta qualificada, acompanhamento continuado do PAIF e encaminhamentos
             </p>
           </div>
           <button onClick={onClose} className="text-teal-200 hover:text-white text-xl">
@@ -229,10 +269,10 @@ export function ModalNovoAtendimento({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1 text-xs">
-          {/* Seleção da Família por Busca / Autocomplete */}
+          {/* Busca e Autocomplete de Família / Prontuário */}
           <div ref={containerBuscaRef} className="relative">
             <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center justify-between">
-              <span>Família / Prontuário SUAS <span className="text-red-600 font-bold">*</span></span>
+              <span>Família / Prontuário SUAS <span className="text-red-500">*</span></span>
               {familiaSelecionada && (
                 <span className="text-[10px] text-gray-500 font-normal">
                   Prontuário Nº {familiaSelecionada.cod_familiar}
@@ -241,24 +281,24 @@ export function ModalNovoAtendimento({
             </label>
 
             {familiaSelecionada ? (
-              <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl flex flex-wrap justify-between items-center gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <strong className="text-sm font-extrabold text-teal-950 uppercase">
+              <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl flex justify-between items-center gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <strong className="text-teal-950 uppercase font-bold text-xs">
                       {familiaSelecionada.responsavel}
                     </strong>
                     {familiaSelecionada.paif_ativo ? (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 uppercase">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 uppercase">
                         <i className="fa-solid fa-circle-check mr-1 text-emerald-700"></i> PAIF Ativo
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-700 border border-gray-300 uppercase">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-200 text-gray-700 border border-gray-300 uppercase">
                         Sem Acompanhamento PAIF
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-teal-900 font-medium">
-                    CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'} • Prontuário nº {familiaSelecionada.cod_familiar} • Bairro: {familiaSelecionada.bairro || '—'} ({familiaSelecionada.zona_territorio || 'Urbana'})
+                  <p className="text-[11px] text-teal-800 font-medium mt-0.5">
+                    CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'} • Prontuário nº {familiaSelecionada.cod_familiar} • Bairro: {familiaSelecionada.bairro || '—'}
                   </p>
                 </div>
                 <button
@@ -269,9 +309,9 @@ export function ModalNovoAtendimento({
                     setBuscaFamilia('')
                     setMostrarSugestoes(true)
                   }}
-                  className="px-3 py-1.5 bg-white hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+                  className="px-2.5 py-1 bg-white hover:bg-teal-100 text-teal-800 border border-teal-300 rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0"
                 >
-                  <i className="fa-solid fa-arrows-rotate"></i> Trocar Família
+                  <i className="fa-solid fa-arrows-rotate"></i> Trocar
                 </button>
               </div>
             ) : (
@@ -287,15 +327,15 @@ export function ModalNovoAtendimento({
                     }}
                     onFocus={() => setMostrarSugestoes(true)}
                     placeholder="DIGITE O NOME DO RESPONSÁVEL, INTEGRANTE, CPF OU Nº DO PRONTUÁRIO..."
-                    className="w-full pl-9 pr-3 py-2.5 border-2 border-teal-700/30 focus:border-teal-700 rounded-xl text-xs uppercase font-semibold bg-white shadow-xs focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 border-2 border-teal-700/30 focus:border-teal-700 rounded-xl text-xs uppercase font-semibold bg-white shadow-xs focus:outline-none"
                   />
                 </div>
 
                 {/* Dropdown com resultados filtrados */}
                 {mostrarSugestoes && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto z-50 divide-y divide-gray-100">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-50 divide-y divide-gray-100">
                     {sugestoesFamilias.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500 font-medium">
+                      <div className="p-3 text-center text-gray-500 font-medium">
                         Nenhuma família encontrada para "{buscaFamilia}".
                       </div>
                     ) : (
@@ -303,7 +343,7 @@ export function ModalNovoAtendimento({
                         <div
                           key={f.id}
                           onClick={() => selecionarFamilia(f)}
-                          className="p-3 hover:bg-teal-50/70 transition cursor-pointer flex justify-between items-center gap-2"
+                          className="p-2.5 hover:bg-teal-50 transition cursor-pointer flex justify-between items-center gap-2"
                         >
                           <div>
                             <div className="flex items-center gap-2">
@@ -316,12 +356,12 @@ export function ModalNovoAtendimento({
                                 </span>
                               ) : null}
                             </div>
-                            <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                            <p className="text-[11px] text-gray-500 font-medium mt-0.5">
                               Prontuário: <span className="font-mono text-teal-900 font-bold">{f.cod_familiar}</span> • CPF: {f.cpf_responsavel ? maskCPF(f.cpf_responsavel) : '—'} • {f.bairro || 'Zona Urbana'}
                             </p>
                           </div>
-                          <span className="text-[11px] font-bold text-teal-800 bg-teal-100/60 px-2.5 py-1 rounded-md shrink-0">
-                            Selecionar
+                          <span className="text-[10px] text-teal-700 font-bold uppercase flex items-center gap-1 bg-teal-100/70 px-2 py-1 rounded-md shrink-0">
+                            Selecionar <i className="fa-solid fa-chevron-right text-[9px]"></i>
                           </span>
                         </div>
                       ))
@@ -332,11 +372,11 @@ export function ModalNovoAtendimento({
             )}
           </div>
 
-          {/* Pessoa Atendida e Tipo de Atendimento */}
+          {/* Pessoa Atendida e Tipologia de Atendimento */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
-                Pessoa Atendida / Solicitante <span className="text-red-600 font-bold">*</span>
+                Pessoa Atendida / Solicitante <span className="text-red-500">*</span>
               </label>
               {familiaSelecionada ? (
                 <select
@@ -382,23 +422,32 @@ export function ModalNovoAtendimento({
                 <option value="">SELECIONE A TIPOLOGIA DO RMA *</option>
                 <option value="Recepção / Acolhida Inicial">RECEPÇÃO / ACOLHIDA INICIAL (PORTA DE ENTRADA)</option>
                 <option value="Atendimento Particularizado">ATENDIMENTO PARTICULARIZADO (PONTUAL / DEMANDA)</option>
-                <option value="Acompanhamento PAIF">
-                  ACOMPANHAMENTO PAIF {familiaSelecionada && !familiaSelecionada.paif_ativo ? '(AVISO: FAMÍLIA SEM PAIF ATIVO)' : ''}
+                <option
+                  value="Acompanhamento PAIF"
+                  disabled={familiaSelecionada ? !familiaSelecionada.paif_ativo : false}
+                >
+                  ACOMPANHAMENTO PAIF {familiaSelecionada && !familiaSelecionada.paif_ativo ? '— [BLOQUEADO: SEM PAIF ATIVO]' : ''}
                 </option>
-                <option value="Visita Domiciliar">VISITA DOMICILIAR (PAIF / TERRITÓRIO)</option>
+                <option value="Visita Domiciliar">VISITA DOMICILIAR (TERRITÓRIO / BUSCA ATIVA)</option>
+                <option
+                  value="Visita Domiciliar - PAIF"
+                  disabled={familiaSelecionada ? !familiaSelecionada.paif_ativo : false}
+                >
+                  VISITA DOMICILIAR DO PAIF {familiaSelecionada && !familiaSelecionada.paif_ativo ? '— [BLOQUEADO: SEM PAIF ATIVO]' : ''}
+                </option>
                 <option value="Atendimento em Grupo / Coletivo">ATENDIMENTO EM GRUPO / COLETIVO</option>
               </select>
             </div>
           </div>
 
-          {/* Verificação e Alerta de Família sem PAIF Ativo ao escolher Acompanhamento PAIF */}
-          {tipo === 'Acompanhamento PAIF' && familiaSelecionada && !familiaSelecionada.paif_ativo && (
+          {/* Verificação e Alerta Visual de Família sem PAIF Ativo */}
+          {familiaSelecionada && !familiaSelecionada.paif_ativo && (
             <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-950 text-xs flex items-start gap-2.5">
               <i className="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 text-sm shrink-0"></i>
               <div>
-                <strong className="block uppercase font-bold text-amber-950">Atenção: Esta família não possui Acompanhamento PAIF ativo no cadastro.</strong>
+                <strong className="block uppercase font-bold text-amber-950">Status PAIF: Família sem Acompanhamento PAIF Ativo</strong>
                 <p className="mt-0.5 leading-relaxed text-[11px]">
-                  Para atendimentos individualizados que não façam parte de um Plano de Acompanhamento Familiar (PAF) continuado, selecione <strong>"Atendimento Particularizado"</strong> ou <strong>"Recepção / Acolhida Inicial"</strong>. Caso a família esteja ingressando no PAIF, ative o acompanhamento no Prontuário.
+                  Para esta família, registre atendimentos pontuais como <strong>"Atendimento Particularizado"</strong>, <strong>"Recepção / Acolhida Inicial"</strong> ou <strong>"Visita Domiciliar"</strong>. As opções de Acompanhamento continuado do PAIF exigem que o Plano de Acompanhamento Familiar (PAF) esteja ativo no Prontuário da Família (Bloco 5).
                 </p>
               </div>
             </div>
@@ -456,7 +505,7 @@ export function ModalNovoAtendimento({
                 required
                 value={data}
                 onChange={e => setData(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-xs font-semibold bg-white"
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
               />
             </div>
 
@@ -469,112 +518,127 @@ export function ModalNovoAtendimento({
                 required
                 value={hora}
                 onChange={e => setHora(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-xs font-semibold bg-white"
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
-                Atendimento Compartilhado?
+                Atendimento Compartilhado? <span className="text-red-600 font-bold">*</span>
               </label>
               <select
                 value={compartilhada}
                 onChange={e => setCompartilhada(e.target.value as 'Sim' | 'Não')}
-                className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-gray-900"
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-bold uppercase text-gray-900"
               >
-                <option value="Não">Não (Individual)</option>
-                <option value="Sim">Sim (Com Co-visitantes/Equipe)</option>
+                <option value="Não">NÃO (INDIVIDUAL / TÉCNICO ÚNICO)</option>
+                <option value="Sim">SIM (INTERDISCIPLINAR / CO-ATENDIMENTO)</option>
               </select>
             </div>
           </div>
 
-          {/* Seleção de Profissionais Co-visitantes */}
+          {/* Seleção de Profissionais Co-participantes em Atendimento Compartilhado */}
           {compartilhada === 'Sim' && (
-            <div className="p-3.5 bg-teal-50/80 border border-teal-300 rounded-xl space-y-3">
+            <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl space-y-2">
               <label className="block text-xs font-bold text-teal-950 uppercase flex items-center gap-1.5">
-                <i className="fa-solid fa-users text-teal-700"></i> Selecione os Profissionais Co-Participantes / Co-Visitantes *
+                <i className="fa-solid fa-users text-teal-700"></i> Selecione os Profissionais Co-Participantes <span className="text-red-600 font-bold">*</span>
               </label>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {usuarios
                   .filter(u => u.ativo !== false && u.nome !== tecnico)
                   .map(u => {
-                    const labelProfissional = `${u.nome} (${u.cargo || u.perfil})`
-                    const selecionado = selecionadosCompartilhados.includes(labelProfissional)
+                    const labelProfissional = `${u.nome} (${u.cargo || 'Técnico'}${u.conselho && u.conselho !== 'Não aplicável' ? ` — ${u.conselho}` : ''})`
+                    const isChecked = selecionadosCompartilhados.includes(labelProfissional)
                     return (
                       <label
                         key={u.id}
-                        onClick={() => toggleProfissionalCompartilhado(labelProfissional)}
                         className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
-                          selecionado
-                            ? 'bg-teal-700 text-white font-bold border-teal-800 shadow-2xs'
-                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                          isChecked ? 'bg-teal-100 border-teal-400 font-bold text-teal-950 shadow-2xs' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                         }`}
                       >
                         <input
                           type="checkbox"
-                          checked={selecionado}
-                          readOnly
-                          className="rounded text-teal-800 focus:ring-teal-700"
+                          checked={isChecked}
+                          onChange={() => toggleProfissionalCompartilhado(labelProfissional)}
+                          className="rounded text-teal-700 focus:ring-teal-500 w-4 h-4"
                         />
-                        <span className="truncate">{u.nome} <span className="text-[10px] opacity-80">({u.cargo || u.perfil})</span></span>
+                        <span className="truncate">{u.nome} <span className="text-[10px] text-gray-500 font-normal">({u.cargo || 'Técnico'})</span></span>
                       </label>
                     )
-                  })}
+                })}
               </div>
 
-              <div className="pt-1">
-                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Outros Profissionais Externos / Participantes Adicionais (opcional):
+              <div className="pt-1.5">
+                <label className="block text-[11px] font-bold text-teal-900 uppercase mb-0.5">
+                  Outro profissional externo participante (opcional):
                 </label>
                 <input
                   type="text"
                   value={outrosProfissionaisTexto}
                   onChange={e => setOutrosProfissionaisTexto(e.target.value.toUpperCase())}
-                  placeholder="EX: ENFERMEIRA MARIA (POSTO DE SAÚDE), CONSELHEIRO PEDRO..."
-                  className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white"
+                  placeholder="EX: DR. JOÃO SILVA (MÉDICO UBS) OU MARIA (CONSELHO TUTELAR)"
+                  className="w-full px-3 py-1.5 border border-teal-300 rounded-lg text-xs bg-white uppercase font-medium"
                 />
               </div>
             </div>
           )}
 
-          {/* Nível de Sigilo Profissional: NÃO VEM PRÉ-PREENCHIDO, EXIGE ESCOLHA EXPLÍCITA */}
-          {ehTecnicoSuperior && (
-            <div className="p-3.5 bg-amber-50/60 border border-amber-200 rounded-xl space-y-1.5">
-              <label className="block text-xs font-bold text-amber-950 uppercase flex items-center gap-1.5">
-                <i className="fa-solid fa-lock text-amber-700"></i> Nível de Sigilo Profissional / Privacidade da Escuta <span className="text-red-600 font-bold">*</span>
+          {/* 3. Bloco de Sigilo Profissional (Obrigatório para Psicólogo / Assistente Social) */}
+          <div className="p-3.5 bg-slate-50 border border-slate-300 rounded-xl space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                <i className="fa-solid fa-user-shield text-teal-700"></i> Nível de Sigilo e Privacidade da Escuta <span className="text-red-600 font-bold">*</span>
               </label>
-              <select
-                value={sigilo}
-                onChange={e => setSigilo(e.target.value)}
-                required
-                className="w-full px-3 py-2 border-2 border-amber-300 focus:border-amber-500 rounded-lg text-xs bg-white uppercase font-bold text-gray-900"
-              >
-                <option value="">SELECIONE O NÍVEL DE SIGILO PROFISSIONAL *</option>
-                <option value="equipe_tecnica">Restrito à Equipe Técnica Superior (Assistentes Sociais e Psicólogos)</option>
-
-                {(ehPsico || ehAdmin) && (
-                  <option value="apenas_psicologia">Restrito à Categoria Profissional de Psicologia (Resolução CFP / CRP)</option>
-                )}
-
-                {(ehSocial || ehAdmin) && (
-                  <option value="apenas_servico_social">Restrito à Categoria Profissional de Serviço Social (Código de Ética CRESS)</option>
-                )}
-
-                <option value="publico">Geral / Público (Visível para toda a equipe do CRAS)</option>
-              </select>
-              {compartilhada === 'Sim' && (
-                <p className="text-[10px] text-teal-900 font-medium">
-                  Atendimento compartilhado: os profissionais e co-visitantes selecionados terão acesso garantido à leitura deste registro.
-                </p>
-              )}
+              <span className="text-[10px] font-semibold text-slate-500 uppercase">
+                {ehPsico ? 'Código de Ética CFP' : ehSocial ? 'Código de Ética CFESS' : 'Equipe SUAS'}
+              </span>
             </div>
-          )}
 
-          {/* Relato Técnico / Síntese */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
+                sigilo === 'equipe_tecnica' ? 'bg-teal-50 border-teal-500 font-bold text-teal-950 shadow-2xs' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}>
+                <input
+                  type="radio"
+                  name="sigilo_nivel"
+                  value="equipe_tecnica"
+                  checked={sigilo === 'equipe_tecnica'}
+                  onChange={e => setSigilo(e.target.value)}
+                  className="mt-0.5 text-teal-700 focus:ring-teal-500"
+                />
+                <div>
+                  <span className="block font-bold">Equipe Técnica CRAS (Padrão SUAS)</span>
+                  <span className="text-[10px] text-gray-500 font-normal leading-tight block mt-0.5">
+                    Acessível aos técnicos de nível superior e coordenação da unidade para acompanhamento interdisciplinar.
+                  </span>
+                </div>
+              </label>
+
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
+                sigilo === 'restrito' ? 'bg-amber-50 border-amber-500 font-bold text-amber-950 shadow-2xs' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}>
+                <input
+                  type="radio"
+                  name="sigilo_nivel"
+                  value="restrito"
+                  checked={sigilo === 'restrito'}
+                  onChange={e => setSigilo(e.target.value)}
+                  className="mt-0.5 text-amber-700 focus:ring-amber-500"
+                />
+                <div>
+                  <span className="block font-bold">Sigilo Restrito / Confidencial</span>
+                  <span className="text-[10px] text-gray-500 font-normal leading-tight block mt-0.5">
+                    Restrito estritamente aos profissionais habilitados (Assistente Social / Psicólogo) sob segredo profissional.
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Relato / Síntese da Escuta */}
           <div>
             <label className="block text-xs font-bold text-gray-800 mb-1 uppercase">
-              Síntese do Atendimento / Relato Técnico (SUAS) <span className="text-red-600 font-bold">*</span>
+              Síntese da Escuta Qualificada / Relato Técnico <span className="text-red-500">*</span>
             </label>
             <textarea
               required
@@ -621,6 +685,9 @@ export function ModalNovoAtendimento({
           </div>
         </form>
       </div>
+
+      {/* Modal de Alerta / Bloqueio Normativo */}
+      <ModalAlerta alerta={alertaModal} onClose={() => setAlertaModal(null)} />
     </div>
   )
 }
