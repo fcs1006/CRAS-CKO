@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { GrupoSCFV, ParticipanteSCFV } from '@/types'
+import { GrupoSCFV, ParticipanteSCFV, Usuario } from '@/types'
 
 interface ModalFrequenciaGrupoScfvProps {
   grupo: GrupoSCFV
   participantes: ParticipanteSCFV[]
   usuarioLogadoNome?: string
+  usuarios?: Usuario[]
   onClose: () => void
   onSalvarFrequencia: (dados: {
     grupo_id: string
@@ -64,6 +65,7 @@ export function ModalFrequenciaGrupoScfv({
   grupo,
   participantes,
   usuarioLogadoNome = '',
+  usuarios = [],
   onClose,
   onSalvarFrequencia
 }: ModalFrequenciaGrupoScfvProps) {
@@ -74,6 +76,12 @@ export function ModalFrequenciaGrupoScfv({
 
   const [dataChamada, setDataChamada] = useState<string>('')
   const [tecnico, setTecnico] = useState(usuarioLogadoNome || grupo.tecnico_responsavel || '')
+
+  useEffect(() => {
+    if (!tecnico && usuarioLogadoNome) {
+      setTecnico(usuarioLogadoNome)
+    }
+  }, [usuarioLogadoNome, tecnico])
 
   const diasConfiguradosGrupo = grupo.dias_semana || grupo.horario || ''
   const validacaoDia = validarDiaSemanaEncontro(dataChamada, diasConfiguradosGrupo)
@@ -101,9 +109,9 @@ export function ModalFrequenciaGrupoScfv({
 
   useEffect(() => {
     carregarFrequenciasAnteriores()
-  }, [grupo?.id])
+  }, [grupo.id])
 
-  // 2. Quando a data do encontro ou o histórico mudar, sincronizar os status dos participantes
+  // 2. Quando a dataChamada muda, verificar se já existe frequência salva para este dia
   useEffect(() => {
     if (!dataChamada) {
       setJaRegistrado(false)
@@ -111,22 +119,23 @@ export function ModalFrequenciaGrupoScfv({
       return
     }
 
-    const registroExistente = historicoFrequencias.find(f => f.data === dataChamada)
+    const freqExistente = historicoFrequencias.find((f: any) => {
+      const fData = (f.data || '').split('T')[0].split(' ')[0].trim()
+      return fData === dataChamada.trim()
+    })
+
     const mapaNovasFrequencias: Record<string, { status: StatusFrequencia; observacao: string }> = {}
 
-    if (registroExistente) {
+    if (freqExistente) {
       setJaRegistrado(true)
-      const registrosArr = registroExistente.registros || []
-      const presentesArr = registroExistente.presentes || []
+      if (freqExistente.tecnico) {
+        setTecnico(freqExistente.tecnico)
+      }
+      const registrosArr: any[] = Array.isArray(freqExistente.registros) ? freqExistente.registros : []
+      const presentesArr: any[] = Array.isArray(freqExistente.presentes) ? freqExistente.presentes : []
 
       participantes.forEach(p => {
-        // Buscar por membro_id, id ou nome
-        const regEncontrado = registrosArr.find(
-          (r: any) =>
-            (r.membro_id && (r.membro_id === p.membro_id || r.membro_id === p.id)) ||
-            (r.nome && r.nome.toUpperCase() === p.nome.toUpperCase())
-        )
-
+        const regEncontrado = registrosArr.find(r => r.membro_id === p.membro_id || r.nome === p.nome)
         if (regEncontrado) {
           mapaNovasFrequencias[p.id] = {
             status: regEncontrado.status || 'presente',
@@ -179,6 +188,7 @@ export function ModalFrequenciaGrupoScfv({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!dataChamada) return alert('Por favor, selecione a data do encontro.')
+    if (!tecnico.trim()) return alert('Por favor, informe ou selecione o Orientador(a) / Técnico(a) responsável.')
 
     if (!validacaoDia.valido) {
       const dataBr = dataChamada.split('-').reverse().join('/')
@@ -207,7 +217,7 @@ export function ModalFrequenciaGrupoScfv({
         grupo_id: grupo.id,
         grupo_nome: grupo.nome,
         data: dataChamada,
-        tecnico: tecnico.trim().toUpperCase() || 'TÉCNICO RESPONSÁVEL',
+        tecnico: tecnico.trim().toUpperCase(),
         registros
       })
 
@@ -220,23 +230,27 @@ export function ModalFrequenciaGrupoScfv({
     }
   }
 
-  // Contadores instantâneos
   const totalPresentes = Object.values(frequencias).filter(f => f.status === 'presente').length
   const totalFaltasJustificadas = Object.values(frequencias).filter(f => f.status === 'falta_justificada').length
   const totalFaltasNaoJustificadas = Object.values(frequencias).filter(f => f.status === 'falta_nao_justificada').length
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print:hidden">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-6 overflow-hidden flex flex-col max-h-[92vh] border border-indigo-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="bg-indigo-900 text-white p-5 flex justify-between items-center shrink-0">
+        <div className="bg-indigo-900 text-white p-4 sm:p-5 flex justify-between items-center shrink-0">
           <div>
-            <h3 className="text-sm font-bold flex items-center gap-2 uppercase tracking-wide">
-              <i className="fa-solid fa-clipboard-user text-indigo-300"></i> Registrar Frequência / Chamada do Dia
-            </h3>
-            <p className="text-[11px] text-indigo-200 mt-0.5 uppercase">
-              Grupo: <strong className="text-white">{grupo.nome}</strong> • {participantes.length} Integrantes Matriculados
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-800 text-indigo-200 uppercase border border-indigo-700">
+                {grupo.faixa_etaria || 'SCFV'}
+              </span>
+              <h3 className="text-sm sm:text-base font-bold uppercase tracking-wide">
+                Lançamento de Frequência / Chamada
+              </h3>
+            </div>
+            <p className="text-xs text-indigo-200 mt-0.5">
+              Grupo: <strong className="text-white">{grupo.nome}</strong> • {participantes.length} Participantes Vinculados
             </p>
           </div>
           <button type="button" onClick={onClose} className="text-indigo-200 hover:text-white text-xl">
@@ -245,9 +259,9 @@ export function ModalFrequenciaGrupoScfv({
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          {/* Cabeçalho do Formulário (Data, Resumo) */}
+          {/* Cabeçalho do Formulário (Data, Técnico, Resumo) */}
           <div className="p-4 bg-gray-50 border-b border-gray-200 shrink-0 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
                   Data do Encontro *
@@ -257,7 +271,7 @@ export function ModalFrequenciaGrupoScfv({
                   required
                   value={dataChamada}
                   onChange={e => setDataChamada(e.target.value)}
-                  className={`w-full max-w-xs px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
+                  className={`w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white text-gray-900 ${
                     !dataChamada
                       ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20'
                       : !validacaoDia.valido
@@ -272,12 +286,44 @@ export function ModalFrequenciaGrupoScfv({
                 )}
               </div>
 
-              {jaRegistrado && (
-                <div className="px-3 py-1.5 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-1.5 shrink-0">
-                  <i className="fa-solid fa-circle-check text-emerald-600"></i> Chamada já registrada para este dia (Modo Edição)
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-1">
+                  Orientador(a) / Técnico(a) Responsável *
+                </label>
+                {usuarios && usuarios.length > 0 ? (
+                  <select
+                    value={tecnico}
+                    onChange={e => setTecnico(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white text-gray-900 uppercase truncate"
+                  >
+                    <option value="">SELECIONE O PROFISSIONAL *</option>
+                    {usuarios
+                      .filter(u => u.ativo !== false)
+                      .map(u => (
+                        <option key={u.id} value={u.nome}>
+                          {u.nome} ({u.cargo || u.perfil})
+                        </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={tecnico}
+                    onChange={e => setTecnico(e.target.value.toUpperCase())}
+                    placeholder="NOME DO ORIENTADOR / TÉCNICO"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-bold bg-white text-gray-900 uppercase"
+                  />
+                )}
+              </div>
             </div>
+
+            {jaRegistrado && (
+              <div className="px-3 py-1.5 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-1.5">
+                <i className="fa-solid fa-circle-check text-emerald-600"></i> Chamada já registrada para este dia (Modo Edição)
+              </div>
+            )}
 
             {!dataChamada ? (
               <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-950 font-semibold text-xs flex items-center gap-2.5">

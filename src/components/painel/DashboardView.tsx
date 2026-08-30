@@ -6,14 +6,15 @@ interface DashboardViewProps {
   atendimentos: Atendimento[]
   beneficios: BeneficioConcedido[]
   agenda?: AgendaItem[]
+  usuarios?: Usuario[]
   usuarioLogado?: Usuario | null
   onNavegarTab: (tab: string) => void
   onAbrirModalNovoAtendimento: () => void
   onAbrirModalNovaFamilia: () => void
 }
 
-function extrairTecnicoInfo(rawTecnico: string) {
-  if (!rawTecnico) return { principal: 'NÃO INFORMADO', compartilhado: false }
+function extrairTecnicoInfo(rawTecnico: string, listaUsuarios: Usuario[] = []) {
+  if (!rawTecnico) return { principal: 'NÃO INFORMADO', cargo: '', compartilhado: false }
   
   let tec = rawTecnico.trim()
   const regexCo = /\s*\((?:co[- ](?:visitantes?|participantes?)|participantes?):.*?\)\s*$/i
@@ -23,9 +24,19 @@ function extrairTecnicoInfo(rawTecnico: string) {
   tec = tec.replace(regexCo, '').trim()
   // Limpar parênteses adicionais de cargo/conselho do nome principal para exibição limpa
   tec = tec.replace(/\s*\(.*?\)\s*$/, '').trim()
-  
+
+  const cleanNome = tec.toUpperCase()
+  const usuarioEncontrado = listaUsuarios.find(u => {
+    const uNome = (u.nome || '').toUpperCase().trim()
+    return uNome === cleanNome || cleanNome.startsWith(uNome) || uNome.startsWith(cleanNome)
+  })
+
+  let nomeFinal = usuarioEncontrado ? usuarioEncontrado.nome : (tec || 'TÉCNICO(A) CRAS')
+  let cargoFinal = usuarioEncontrado ? (usuarioEncontrado.cargo || usuarioEncontrado.perfil) : ''
+
   return {
-    principal: tec.toUpperCase() || 'TÉCNICO(A) CRAS',
+    principal: nomeFinal.toUpperCase(),
+    cargo: cargoFinal.toUpperCase(),
     compartilhado
   }
 }
@@ -35,6 +46,7 @@ export function DashboardView({
   atendimentos = [],
   beneficios = [],
   agenda = [],
+  usuarios = [],
   usuarioLogado,
   onNavegarTab,
   onAbrirModalNovoAtendimento,
@@ -240,9 +252,11 @@ export function DashboardView({
               </div>
             ) : (
               atendimentosRecentes.map(atend => {
-                const tecInfo = extrairTecnicoInfo(atend.tecnico || '')
+                const tecInfo = extrairTecnicoInfo(atend.tecnico || '', usuarios)
                 const isVisita = (atend.tipo || '').toUpperCase().includes('VISITA')
                 const isAcompanhamento = (atend.tipo || '').toUpperCase().includes('PAIF') || (atend.tipo || '').toUpperCase().includes('ACOMPANHAMENTO')
+
+                const horaLimpa = atend.hora ? (atend.hora.includes(':') ? atend.hora.split(':').slice(0, 2).join(':') : atend.hora.slice(0, 5)) : ''
 
                 return (
                   <div
@@ -273,8 +287,8 @@ export function DashboardView({
                         <span>
                           {atend.data ? atend.data.split('-').reverse().join('/') : '—'}
                         </span>
-                        {atend.hora && (
-                          <span className="text-gray-400">às {atend.hora}</span>
+                        {horaLimpa && (
+                          <span className="text-gray-500 font-bold">às {horaLimpa}</span>
                         )}
                       </div>
                     </div>

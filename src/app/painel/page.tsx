@@ -905,6 +905,7 @@ export default function PainelPage() {
                   atendimentos={atendimentos}
                   beneficios={beneficios}
                   agenda={agenda}
+                  usuarios={usuarios}
                   usuarioLogado={usuarioLogado}
                   onNavegarTab={setActiveTab}
                   onAbrirModalNovoAtendimento={() => setModalNovoAtendimento(true)}
@@ -1150,6 +1151,7 @@ export default function PainelPage() {
           grupo={grupoParaFrequencia}
           participantes={participantes.filter(p => p.grupo_id === grupoParaFrequencia.id)}
           usuarioLogadoNome={usuarioLogado?.nome || usuarioLogado?.usuario || ''}
+          usuarios={usuarios}
           onClose={() => setGrupoParaFrequencia(null)}
           onSalvarFrequencia={handleSalvarFrequencia}
         />
