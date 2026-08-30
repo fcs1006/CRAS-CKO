@@ -19,9 +19,40 @@ export async function GET() {
   }
 }
 
+function sanitizeBeneficioPayload(payload: any) {
+  const allowed = [
+    'familia_id',
+    'data',
+    'tipo',
+    'status',
+    'observacao',
+    'categoria_rma',
+    'quantidade',
+    'tecnico_responsavel',
+    'tecnico_conselho',
+    'parecer_social'
+  ]
+
+  const clean: Record<string, any> = {}
+  for (const key of allowed) {
+    if (payload[key] !== undefined) {
+      clean[key] = payload[key]
+    }
+  }
+
+  // Garantir que solicitante fique registrado na observação caso a coluna específica não exista no BD
+  if (payload.solicitante && !String(clean.observacao || '').includes('SOLICITANTE:')) {
+    const obsAtual = clean.observacao ? ` | OBS: ${clean.observacao}` : ''
+    clean.observacao = `SOLICITANTE / INTEGRANTE ATENDIDO: ${String(payload.solicitante).toUpperCase()}${obsAtual}`
+  }
+
+  return clean
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const beneficio = await request.json()
+    const rawBeneficio = await request.json()
+    const beneficio = sanitizeBeneficioPayload(rawBeneficio)
     const supabase = getSupabaseServer()
 
     const { data: benInserido, error: benErr } = await supabase
@@ -52,11 +83,12 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { id, ...updates } = await request.json()
+    const { id, ...rawUpdates } = await request.json()
     if (!id) {
       return NextResponse.json({ ok: false, error: 'ID é obrigatório.' }, { status: 400 })
     }
 
+    const updates = sanitizeBeneficioPayload(rawUpdates)
     const supabase = getSupabaseServer()
     const { data, error } = await supabase
       .from('beneficios_concedidos')
