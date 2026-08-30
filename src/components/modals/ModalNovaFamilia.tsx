@@ -53,9 +53,9 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   // 3. Condições Habitacionais
   const [moradiaTipo, setMoradiaTipo] = useState('Própria')
   const [tipoConstrucao, setTipoConstrucao] = useState('Alvenaria com Revestimento')
-  const [moradiaAgua, setMoradiaAgua] = useState('Rede Geral')
-  const [moradiaSanear, setMoradiaSanear] = useState('Rede Geral')
-  const [moradiaLixo, setMoradiaLixo] = useState('Coletado')
+  const [moradiaAgua, setMoradiaAgua] = useState('Rede Pública / Canalizada')
+  const [moradiaSanear, setMoradiaSanear] = useState('Rede Pública / Fossa Séptica')
+  const [moradiaLixo, setMoradiaLixo] = useState('Coleta Pública Regular')
   const [moradiaEnergia, setMoradiaEnergia] = useState('Rede Elétrica com Medidor Próprio')
   const [moradiaComodos, setMoradiaComodos] = useState<number | string>(4)
   const [acessibilidade, setAcessibilidade] = useState(false)
@@ -304,13 +304,27 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     }
     pacienteJaSelecionadoRef.current = true
     if (p.nome) setResponsavel(p.nome.toUpperCase())
-    if (p.cpf) setCpf(maskCPF(p.cpf))
+    const cpfVal = p.cpf || p.cpf_cns || ''
+    if (cpfVal) setCpf(maskCPF(cpfVal))
     if (p.nis) setNis(maskNIS(p.nis))
     if (p.nome_mae) setNomeMae(p.nome_mae.toUpperCase())
     if (p.raca_cor) setRacaCorResp(p.raca_cor as any)
     if (p.escolaridade) setResponsavelEscolaridade(p.escolaridade as any)
     if (p.ocupacao) setResponsavelOcupacao(p.ocupacao.toUpperCase())
     if (p.rg) setRg(p.rg.toUpperCase())
+    if (p.telefone) setTelefone(maskPhone(p.telefone))
+    if (p.data_nascimento || p.dt_nasc) setResponsavelNasc(p.data_nascimento || p.dt_nasc)
+    if (p.sexo) setSexoResp(p.sexo === 'M' || p.sexo === 'Masculino' ? 'Masculino' : (p.sexo === 'F' || p.sexo === 'Feminino' ? 'Feminino' : 'Outro'))
+
+    // Moradia e infraestrutura
+    if (p.moradia_tipo) setMoradiaTipo(p.moradia_tipo)
+    if (p.tipo_construcao) setTipoConstrucao(p.tipo_construcao)
+    if (p.moradia_agua) setMoradiaAgua(p.moradia_agua)
+    if (p.moradia_sanear) setMoradiaSanear(p.moradia_sanear)
+    if (p.moradia_lixo) setMoradiaLixo(p.moradia_lixo)
+    if (p.moradia_energia) setMoradiaEnergia(p.moradia_energia)
+    if (p.moradia_comodos) setMoradiaComodos(p.moradia_comodos)
+
     const endRaw = (p.logradouro || p.endereco || '')
     const bairroRaw = (p.bairro || '')
     const endCompleto = (endRaw + ' ' + bairroRaw).toUpperCase()
@@ -333,11 +347,8 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     else if (endRaw.toUpperCase().includes('S/N')) setNumero('S/N')
     if (bairroRaw) setBairro(bairroRaw.toUpperCase())
     if (p.cep) setCep(maskCEP(p.cep))
-    if (p.telefone) setTelefone(maskPhone(p.telefone))
     if (p.zona_territorio) setZonaTerritorio(p.zona_territorio)
     else setZonaTerritorio(isRural ? 'Rural' : 'Urbana')
-    if (p.data_nascimento || p.dt_nasc) setResponsavelNasc(p.data_nascimento || p.dt_nasc)
-    if (p.sexo) setSexoResp(p.sexo === 'M' || p.sexo === 'Masculino' ? 'Masculino' : (p.sexo === 'F' || p.sexo === 'Feminino' ? 'Feminino' : 'Outro'))
     setSugestoesPacientes([])
     setMostrarSugestoes(false)
   }
@@ -972,20 +983,6 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                   onBlur={handleCpfBlur}
                   placeholder="000.000.000-00"
                   className="w-full px-3 py-2 border rounded-lg text-xs font-mono font-semibold"
-                />
-              </div>
-
-              {/* Prontuário / Código Familiar */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Nº Prontuário / Cód. Familiar <span className="text-gray-400 font-normal text-[10px]">(Auto se vazio)</span>
-                </label>
-                <input
-                  type="text"
-                  value={codFamiliar}
-                  onChange={e => setCodFamiliar(e.target.value.toUpperCase())}
-                  placeholder="EX: 102659 (OU DEIXE EM BRANCO)"
-                  className="w-full px-3 py-2 border rounded-lg text-xs font-mono font-semibold uppercase bg-white"
                 />
               </div>
 
