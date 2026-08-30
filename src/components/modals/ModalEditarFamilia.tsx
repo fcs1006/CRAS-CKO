@@ -612,6 +612,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
     setSalvando(true)
     try {
       const famAtualizada: Partial<Familia> = {
+        cod_familiar: familia.cod_familiar,
         responsavel: responsavel.trim().toUpperCase(),
         nome_mae_responsavel: nomeMae.trim().toUpperCase() || undefined,
         sexo_responsavel: sexoResp,

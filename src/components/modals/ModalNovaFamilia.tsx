@@ -18,6 +18,7 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   const [salvando, setSalvando] = useState(false)
 
   // 1. Dados do Responsável Familiar (RF) - Inicia limpo
+  const [codFamiliar, setCodFamiliar] = useState('')
   const [responsavel, setResponsavel] = useState('')
   const initialResponsavelRef = useRef('')
   const [nomeMae, setNomeMae] = useState('')
@@ -599,9 +600,20 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
       ? outroProgSocialText.trim().toUpperCase()
       : responsavelProgSocial
 
+    // Gerar ou validar cod_familiar final
+    let codFamiliarFinal = codFamiliar.trim().toUpperCase()
+    if (!codFamiliarFinal) {
+      const maiorCod = (familiasExistentes || [])
+        .map(f => parseInt(f.cod_familiar, 10))
+        .filter(n => !isNaN(n) && n < 900000)
+        .reduce((max, curr) => Math.max(max, curr), 1000)
+      codFamiliarFinal = String(maiorCod + 1).padStart(5, '0')
+    }
+
     setSalvando(true)
     try {
       const novaFamilia: Partial<Familia> = {
+        cod_familiar: codFamiliarFinal,
         responsavel: responsavel.trim().toUpperCase(),
         nome_mae_responsavel: nomeMae.trim().toUpperCase(),
         sexo_responsavel: sexoResp,
@@ -946,10 +958,24 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                 />
               </div>
 
+              {/* Prontuário / Código Familiar */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Nº Prontuário / Cód. Familiar <span className="text-gray-400 font-normal text-[10px]">(Auto se vazio)</span>
+                </label>
+                <input
+                  type="text"
+                  value={codFamiliar}
+                  onChange={e => setCodFamiliar(e.target.value.toUpperCase())}
+                  placeholder="EX: 102659 (OU DEIXE EM BRANCO)"
+                  className="w-full px-3 py-2 border rounded-lg text-xs font-mono font-semibold uppercase bg-white"
+                />
+              </div>
+
               {/* NIS */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  NIS do Responsável (opcional)
+                  NIS do Responsável <span className="text-gray-400 font-normal text-[10px]">(opcional)</span>
                 </label>
                 <input
                   type="text"

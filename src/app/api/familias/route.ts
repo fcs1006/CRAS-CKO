@@ -294,6 +294,30 @@ export async function POST(request: NextRequest) {
     cleanFamilia.criado_em = new Date().toISOString()
     cleanFamilia.atualizado_em = new Date().toISOString()
 
+    // Garantir que cod_familiar nunca seja nulo
+    if (!cleanFamilia.cod_familiar) {
+      try {
+        const { data: maxRows } = await supabase
+          .from('familias')
+          .select('cod_familiar')
+          .order('criado_em', { ascending: false })
+          .limit(100)
+
+        let nextNum = 1000
+        if (maxRows && maxRows.length > 0) {
+          const nums = maxRows
+            .map((r: any) => parseInt(r.cod_familiar, 10))
+            .filter((n: number) => !isNaN(n) && n < 900000)
+          if (nums.length > 0) {
+            nextNum = Math.max(...nums) + 1
+          }
+        }
+        cleanFamilia.cod_familiar = String(nextNum).padStart(5, '0')
+      } catch {
+        cleanFamilia.cod_familiar = String(Math.floor(10000 + Math.random() * 90000))
+      }
+    }
+
     const { data: famInserida, error: famErr } = await supabase
       .from('familias')
       .insert(cleanFamilia)
