@@ -776,7 +776,10 @@ export default function PainelPage() {
     await carregarTodosOsDados()
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {}
     localStorage.removeItem('cras_user')
     document.cookie = 'cras_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
     router.push('/')

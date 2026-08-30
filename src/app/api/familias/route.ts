@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
+import { registrarLogAuditoria } from '@/lib/auditLogger'
 
 export const dynamic = 'force-dynamic'
 
@@ -372,6 +373,15 @@ export async function POST(request: NextRequest) {
       console.warn('Aviso ao sincronizar cidadão com a base geral:', syncErr)
     }
 
+    await registrarLogAuditoria({
+      acao: 'FAMILIA_CRIADA',
+      usuario_id: request.headers.get('x-auth-user-id') || undefined,
+      usuario_nome: request.headers.get('x-auth-user-nome') || undefined,
+      detalhes: `Família cadastrada: ${cleanFamilia.responsavel} (Prontuário: ${cleanFamilia.cod_familiar}).`,
+      entidade: 'familias',
+      entidade_id: famInserida.id
+    })
+
     return NextResponse.json({ ok: true, data: famInserida })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
@@ -477,6 +487,15 @@ export async function PUT(request: NextRequest) {
       console.warn('Aviso ao sincronizar cidadão com a base geral:', syncErr)
     }
 
+    await registrarLogAuditoria({
+      acao: 'FAMILIA_EDITADA',
+      usuario_id: request.headers.get('x-auth-user-id') || undefined,
+      usuario_nome: request.headers.get('x-auth-user-nome') || undefined,
+      detalhes: `Família editada: ${cleanFamilia.responsavel} (ID: ${id}, Prontuário: ${cleanFamilia.cod_familiar}).`,
+      entidade: 'familias',
+      entidade_id: id
+    })
+
     return NextResponse.json({ ok: true, data: famAtualizada })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
@@ -507,6 +526,15 @@ export async function DELETE(request: NextRequest) {
       console.error('Erro ao excluir família:', error)
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
+
+    await registrarLogAuditoria({
+      acao: 'FAMILIA_EXCLUIDA',
+      usuario_id: request.headers.get('x-auth-user-id') || undefined,
+      usuario_nome: request.headers.get('x-auth-user-nome') || undefined,
+      detalhes: `Família e dependentes excluídos ID ${id}.`,
+      entidade: 'familias',
+      entidade_id: id
+    })
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
