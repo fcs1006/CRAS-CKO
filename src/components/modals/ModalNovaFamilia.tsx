@@ -139,8 +139,8 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   const [novoMembroNome, setNovoMembroNome] = useState('')
   const [novoMembroParentesco, setNovoMembroParentesco] = useState('')
   const [novoMembroNasc, setNovoMembroNasc] = useState('')
-  const [novoMembroSexo, setNovoMembroSexo] = useState<'Feminino' | 'Masculino' | 'Outro'>('Feminino')
-  const [novoMembroRacaCor, setNovoMembroRacaCor] = useState<'Parda' | 'Branca' | 'Preta' | 'Amarela' | 'Indígena' | 'Não declarada'>('Parda')
+  const [novoMembroSexo, setNovoMembroSexo] = useState<'Feminino' | 'Masculino' | 'Outro' | ''>('')
+  const [novoMembroRacaCor, setNovoMembroRacaCor] = useState<'Parda' | 'Branca' | 'Preta' | 'Amarela' | 'Indígena' | 'Não declarada' | ''>('')
   const [novoMembroCpf, setNovoMembroCpf] = useState('')
   const [novoMembroRg, setNovoMembroRg] = useState('')
   const [novoMembroNis, setNovoMembroNis] = useState('')
@@ -148,10 +148,10 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   const [novoMembroEscolaridade, setNovoMembroEscolaridade] = useState('')
   const [novoMembroOcupacao, setNovoMembroOcupacao] = useState('')
   const [novoMembroRenda, setNovoMembroRenda] = useState('')
-  const [novoMembroProgSocial, setNovoMembroProgSocial] = useState('Nenhum')
+  const [novoMembroProgSocial, setNovoMembroProgSocial] = useState('')
 
   // Indicadores Específicos do Membro (RMA & Prontuário)
-  const [novoMembroFreqEscolar, setNovoMembroFreqEscolar] = useState<'Sim' | 'Não' | 'Não se aplica'>('Não se aplica')
+  const [novoMembroFreqEscolar, setNovoMembroFreqEscolar] = useState<'Sim' | 'Não' | 'Não se aplica' | ''>('')
   const [novoMembroEscolaNome, setNovoMembroEscolaNome] = useState('')
   const [novoMembroPossuiDeficiencia, setNovoMembroPossuiDeficiencia] = useState(false)
   const [novoMembroTipoDeficiencia, setNovoMembroTipoDeficiencia] = useState('')
@@ -414,8 +414,8 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     setNovoMembroNome('')
     setNovoMembroParentesco('')
     setNovoMembroNasc('')
-    setNovoMembroSexo('Feminino')
-    setNovoMembroRacaCor('Parda')
+    setNovoMembroSexo('')
+    setNovoMembroRacaCor('')
     setNovoMembroCpf('')
     setNovoMembroRg('')
     setNovoMembroNis('')
@@ -423,8 +423,8 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
     setNovoMembroEscolaridade('')
     setNovoMembroOcupacao('')
     setNovoMembroRenda('')
-    setNovoMembroProgSocial('Nenhum')
-    setNovoMembroFreqEscolar('Não se aplica')
+    setNovoMembroProgSocial('')
+    setNovoMembroFreqEscolar('')
     setNovoMembroEscolaNome('')
     setNovoMembroPossuiDeficiencia(false)
     setNovoMembroTipoDeficiencia('')
@@ -1651,12 +1651,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                       <select
                         value={novoMembroFreqEscolar}
                         onChange={e => setNovoMembroFreqEscolar(e.target.value as any)}
-                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white"
+                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-white uppercase font-semibold"
                       >
-                        <option value="">Selecione a frequência</option>
-                        <option value="Não se aplica">Não se aplica</option>
-                        <option value="Sim">Frequenta Regularmente (Sim)</option>
-                        <option value="Não">Não Frequenta / Evadido (Não)</option>
+                        <option value="">SELECIONE A FREQUÊNCIA *</option>
+                        <option value="Não se aplica">NÃO SE APLICA</option>
+                        <option value="Sim">FREQUENTA REGULARMENTE (SIM)</option>
+                        <option value="Não">NÃO FREQUENTA / EVADIDO (NÃO)</option>
                       </select>
                     </div>
 
