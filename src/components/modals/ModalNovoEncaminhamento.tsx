@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Familia, Encaminhamento } from '@/types'
 import { maskCPF } from '@/utils/masks'
+import ModalAlerta, { AlertaConfig } from './ModalAlerta'
 
 interface ModalNovoEncaminhamentoProps {
   familias: Familia[]
@@ -19,10 +20,12 @@ export function ModalNovoEncaminhamento({
 }: ModalNovoEncaminhamentoProps) {
   const [salvando, setSalvando] = useState(false)
   const [familiaId, setFamiliaId] = useState('')
+  const [pessoaAtendida, setPessoaAtendida] = useState('')
   const [tipoRma, setTipoRma] = useState<string>('')
   const [destino, setDestino] = useState('')
   const [motivo, setMotivo] = useState('')
   const [dataEnvio, setDataEnvio] = useState(new Date().toISOString().split('T')[0])
+  const [alertaModal, setAlertaModal] = useState<AlertaConfig | null>(null)
 
   // Busca e Autocomplete de Família / Prontuário
   const [buscaFamilia, setBuscaFamilia] = useState('')
@@ -48,18 +51,19 @@ export function ModalNovoEncaminhamento({
 
     const bateResp = (f.responsavel || '').toLowerCase().includes(termo)
     const bateProntuario = (f.cod_familiar || '').toLowerCase().includes(termo)
-    const bateCpf = cpfLimpo.length > 0 && (f.cpf_responsavel || '').includes(cpfLimpo)
+    const bateCpf = cpfLimpo.length > 0 && (f.cpf_responsavel || '').replace(/\D/g, '').includes(cpfLimpo)
     const bateBairro = (f.bairro || '').toLowerCase().includes(termo)
     const bateMembro = (f.membros || []).some(m =>
       (m.nome || '').toLowerCase().includes(termo) ||
-      (cpfLimpo.length > 0 && (m.cpf || '').includes(cpfLimpo))
+      (cpfLimpo.length > 0 && (m.cpf || '').replace(/\D/g, '').includes(cpfLimpo))
     )
 
     return bateResp || bateProntuario || bateCpf || bateBairro || bateMembro
-  }).slice(0, 15)
+  }).slice(0, 20)
 
   function selecionarFamilia(f: Familia) {
     setFamiliaId(f.id)
+    setPessoaAtendida(f.responsavel)
     setBuscaFamilia('')
     setMostrarSugestoes(false)
   }
@@ -81,20 +85,37 @@ export function ModalNovoEncaminhamento({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!familiaId) return alert('Por favor, busque e selecione a Família / Beneficiário.')
-    if (!tipoRma) return alert('Por favor, selecione a categoria do encaminhamento no RMA.')
-    if (!destino) return alert('Por favor, selecione ou informe o serviço de destino.')
-    if (!dataEnvio) return alert('Por favor, preencha a data de emissão.')
-    if (!motivo.trim()) return alert('Por favor, preencha o motivo e justificativa técnica do encaminhamento.')
+    if (!familiaId) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, busque e selecione a Família / Responsável.' })
+      return
+    }
+    if (!pessoaAtendida.trim()) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione quem é a Pessoa Atendida / Integrante Encaminhado(a).' })
+      return
+    }
+    if (!tipoRma) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, selecione a categoria do encaminhamento no RMA.' })
+      return
+    }
+    if (!destino.trim()) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe o serviço ou órgão de destino.' })
+      return
+    }
+    if (!dataEnvio) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha a data de emissão.' })
+      return
+    }
+    if (!motivo.trim()) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'JUSTIFICATIVA OBRIGATÓRIA', mensagem: 'Por favor, descreva o motivo e a justificativa técnica do encaminhamento.' })
+      return
+    }
 
     setSalvando(true)
-
-    const fam = familias.find(f => f.id === familiaId)
 
     try {
       const novo: Partial<Encaminhamento> = {
         familia_id: familiaId,
-        beneficiario: fam?.responsavel || 'Beneficiário',
+        beneficiario: pessoaAtendida.trim().toUpperCase(),
         tipo_rma: (tipoRma as any) || 'outro',
         destino: destino.trim().toUpperCase(),
         motivo: motivo.trim().toUpperCase(),
@@ -106,7 +127,11 @@ export function ModalNovoEncaminhamento({
       await onSalvar(novo)
       onClose()
     } catch (err: any) {
-      alert('Erro ao registrar encaminhamento: ' + (err.message || 'Tente novamente.'))
+      setAlertaModal({
+        tipo: 'erro',
+        titulo: 'ERRO AO ENCAMINHAR',
+        mensagem: err.message || 'Ocorreu um erro ao registrar o encaminhamento. Tente novamente.'
+      })
     } finally {
       setSalvando(false)
     }
@@ -135,7 +160,7 @@ export function ModalNovoEncaminhamento({
           {/* Busca / Autocomplete da Família */}
           <div ref={containerBuscaRef} className="relative">
             <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center justify-between">
-              <span>Família / Beneficiário(a) <span className="text-red-600 font-bold">*</span></span>
+              <span>Família / Responsável Familiar <span className="text-red-600 font-bold">*</span></span>
               {familiaSelecionada && (
                 <span className="text-[10px] text-gray-500 font-normal">
                   Prontuário Nº {familiaSelecionada.cod_familiar}
@@ -146,9 +171,16 @@ export function ModalNovoEncaminhamento({
             {familiaSelecionada ? (
               <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl flex flex-wrap justify-between items-center gap-3">
                 <div className="space-y-1">
-                  <strong className="text-sm font-extrabold text-teal-950 uppercase block">
-                    {familiaSelecionada.responsavel}
-                  </strong>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <strong className="text-sm font-extrabold text-teal-950 uppercase">
+                      {familiaSelecionada.responsavel}
+                    </strong>
+                    {familiaSelecionada.paif_ativo ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 uppercase">
+                        <i className="fa-solid fa-circle-check mr-1 text-emerald-700"></i> PAIF Ativo
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="text-[11px] text-teal-900 font-medium">
                     CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'} • Prontuário: {familiaSelecionada.cod_familiar} • Bairro: {familiaSelecionada.bairro || '—'}
                   </p>
@@ -157,6 +189,7 @@ export function ModalNovoEncaminhamento({
                   type="button"
                   onClick={() => {
                     setFamiliaId('')
+                    setPessoaAtendida('')
                     setBuscaFamilia('')
                     setMostrarSugestoes(true)
                   }}
@@ -177,7 +210,7 @@ export function ModalNovoEncaminhamento({
                       setMostrarSugestoes(true)
                     }}
                     onFocus={() => setMostrarSugestoes(true)}
-                    placeholder="DIGITE O NOME DO BENEFICIÁRIO, CPF OU PRONTUÁRIO..."
+                    placeholder="DIGITE O NOME DO RESPONSÁVEL, INTEGRANTE, CPF OU PRONTUÁRIO..."
                     className="w-full pl-9 pr-3 py-2.5 border-2 border-teal-700/30 focus:border-teal-700 rounded-xl text-xs uppercase font-semibold bg-white shadow-xs focus:outline-none"
                   />
                 </div>
@@ -215,6 +248,35 @@ export function ModalNovoEncaminhamento({
             )}
           </div>
 
+          {/* Pessoa Atendida / Integrante Encaminhado(a) */}
+          {familiaSelecionada && (
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+              <label className="block text-xs font-bold text-emerald-950 uppercase flex items-center gap-1.5">
+                <i className="fa-solid fa-user-tag text-emerald-700"></i> Pessoa Atendida / Integrante Encaminhado(a) <span className="text-red-600 font-bold">*</span>
+              </label>
+              <select
+                value={pessoaAtendida}
+                onChange={e => setPessoaAtendida(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-emerald-300 rounded-lg text-xs bg-white font-bold uppercase text-emerald-950"
+              >
+                <option value={familiaSelecionada.responsavel}>
+                  {familiaSelecionada.responsavel} (Responsável Familiar - CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'})
+                </option>
+                {familiaSelecionada.membros && familiaSelecionada.membros
+                  .filter(m => m.nome.trim().toUpperCase() !== familiaSelecionada.responsavel.trim().toUpperCase())
+                  .map(m => (
+                    <option key={m.id || m.nome} value={m.nome}>
+                      {m.nome} ({m.parentesco || 'Integrante'}{m.cpf ? ` — CPF: ${maskCPF(m.cpf)}` : ''})
+                    </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-emerald-800 font-medium">
+                Indique qual integrante específico da família está sendo encaminhado para o serviço externo.
+              </p>
+            </div>
+          )}
+
           {/* Categorização no RMA (Bloco 2) */}
           <div className="p-3.5 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
             <label className="block text-xs font-bold text-rose-950 uppercase">
@@ -250,32 +312,32 @@ export function ModalNovoEncaminhamento({
             />
           </div>
 
-          {/* Data */}
+          {/* Data de Emissão */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
-              Data de Envio / Emissão <span className="text-red-600 font-bold">*</span>
+              Data de Emissão / Envio <span className="text-red-600 font-bold">*</span>
             </label>
             <input
               type="date"
               required
               value={dataEnvio}
               onChange={e => setDataEnvio(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-xs font-semibold bg-white"
+              className="w-full px-3 py-2 border rounded-lg text-xs bg-white font-mono"
             />
           </div>
 
-          {/* Motivo */}
+          {/* Motivo e Justificativa Técnica */}
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
               Motivo e Justificativa Técnica do Encaminhamento <span className="text-red-600 font-bold">*</span>
             </label>
             <textarea
+              rows={4}
               required
-              rows={3}
               value={motivo}
               onChange={e => setMotivo(e.target.value.toUpperCase())}
-              placeholder="DESCREVA DE FORMA OBJETIVA A DEMANDA, A SITUAÇÃO DE VULNERABILIDADE E A FINALIDADE DO ENCAMINHAMENTO..."
-              className="w-full px-3 py-2 border rounded-lg text-xs uppercase leading-relaxed font-medium bg-white"
+              placeholder="DESCREVA A DEMANDA IDENTIFICADA, A FINALIDADE DO ENCAMINHAMENTO E O SERVIÇO OU BENEFÍCIO SOLICITADO..."
+              className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white focus:outline-none focus:ring-1 focus:ring-teal-700"
             />
           </div>
 
@@ -284,21 +346,24 @@ export function ModalNovoEncaminhamento({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs"
+              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={salvando}
-              className="px-6 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition uppercase flex items-center gap-2"
+              className="px-6 py-2 bg-teal-800 hover:bg-teal-900 text-white rounded-xl font-bold shadow transition uppercase flex items-center gap-1.5"
             >
-              <i className={`fa-solid ${salvando ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
-              {salvando ? 'Emitindo...' : 'Emitir Encaminhamento'}
+              <i className="fa-solid fa-paper-plane"></i>
+              {salvando ? 'Salvando...' : 'Emitir Encaminhamento'}
             </button>
           </div>
         </form>
       </div>
+
+      {/* Modal de Alerta / Validação */}
+      <ModalAlerta alerta={alertaModal} onClose={() => setAlertaModal(null)} />
     </div>
   )
 }

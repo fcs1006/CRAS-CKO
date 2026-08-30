@@ -1,26 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Encaminhamento } from '@/types'
+import { useState } from 'react'
+import { Encaminhamento, Familia } from '@/types'
+import { maskCPF } from '@/utils/masks'
+import ModalAlerta, { AlertaConfig } from './ModalAlerta'
 
 interface ModalEditarEncaminhamentoProps {
   encaminhamento: Encaminhamento
+  familias?: Familia[]
   onClose: () => void
   onSalvar: (id: string, updates: Partial<Encaminhamento>) => Promise<void>
 }
 
 export function ModalEditarEncaminhamento({
   encaminhamento,
+  familias = [],
   onClose,
   onSalvar
 }: ModalEditarEncaminhamentoProps) {
   const [salvando, setSalvando] = useState(false)
+  const [beneficiario, setBeneficiario] = useState(encaminhamento.beneficiario || '')
   const [tipoRma, setTipoRma] = useState<string>(encaminhamento.tipo_rma || 'outro')
   const [destino, setDestino] = useState(encaminhamento.destino || '')
   const [motivo, setMotivo] = useState(encaminhamento.motivo || '')
   const [dataEnvio, setDataEnvio] = useState(encaminhamento.data_envio || '')
   const [status, setStatus] = useState<string>(encaminhamento.status || 'Pendente')
   const [resposta, setResposta] = useState(encaminhamento.resposta || '')
+  const [alertaModal, setAlertaModal] = useState<AlertaConfig | null>(null)
+
+  const fam = familias.find(f => f.id === encaminhamento.familia_id || f.cod_familiar === encaminhamento.familia_id)
 
   function handleTipoRmaChange(tipo: string) {
     setTipoRma(tipo)
@@ -37,13 +45,27 @@ export function ModalEditarEncaminhamento({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!destino.trim()) return alert('Informe o serviço de destino.')
-    if (!dataEnvio) return alert('Informe a data de emissão.')
-    if (!motivo.trim()) return alert('Informe o motivo do encaminhamento.')
+    if (!beneficiario.trim()) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe a pessoa/integrante encaminhado(a).' })
+      return
+    }
+    if (!destino.trim()) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, informe o serviço ou órgão de destino.' })
+      return
+    }
+    if (!dataEnvio) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'CAMPO OBRIGATÓRIO', mensagem: 'Por favor, preencha a data de emissão.' })
+      return
+    }
+    if (!motivo.trim()) {
+      setAlertaModal({ tipo: 'aviso', titulo: 'JUSTIFICATIVA OBRIGATÓRIA', mensagem: 'Por favor, preencha o motivo do encaminhamento.' })
+      return
+    }
 
     setSalvando(true)
     try {
       await onSalvar(encaminhamento.id, {
+        beneficiario: beneficiario.trim().toUpperCase(),
         tipo_rma: tipoRma as any,
         destino: destino.trim().toUpperCase(),
         motivo: motivo.trim().toUpperCase(),
@@ -53,7 +75,11 @@ export function ModalEditarEncaminhamento({
       })
       onClose()
     } catch (err: any) {
-      alert('Erro ao atualizar encaminhamento: ' + (err.message || 'Tente novamente.'))
+      setAlertaModal({
+        tipo: 'erro',
+        titulo: 'ERRO AO ATUALIZAR',
+        mensagem: err.message || 'Ocorreu um erro ao atualizar o encaminhamento. Tente novamente.'
+      })
     } finally {
       setSalvando(false)
     }
@@ -70,7 +96,7 @@ export function ModalEditarEncaminhamento({
               <i className="fa-solid fa-pen-to-square text-rose-400"></i> Editar Encaminhamento Intersetorial
             </h3>
             <p className="text-[11px] text-rose-200 mt-0.5">
-              Beneficiário: <strong className="text-white uppercase">{encaminhamento.beneficiario}</strong>
+              Família: <strong className="text-white uppercase">{fam?.responsavel || encaminhamento.responsavel_nome || '—'}</strong>
             </p>
           </div>
           <button 
@@ -84,6 +110,45 @@ export function ModalEditarEncaminhamento({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           
+          {/* Seleção do Integrante Encaminhado */}
+          {fam ? (
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
+              <label className="block text-xs font-bold text-emerald-950 uppercase flex items-center gap-1.5">
+                <i className="fa-solid fa-user-tag text-emerald-700"></i> Pessoa Atendida / Integrante Encaminhado(a) <span className="text-red-600 font-bold">*</span>
+              </label>
+              <select
+                value={beneficiario}
+                onChange={e => setBeneficiario(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-emerald-300 rounded-lg text-xs bg-white font-bold uppercase text-emerald-950"
+              >
+                <option value={fam.responsavel}>
+                  {fam.responsavel} (Responsável Familiar - CPF: {fam.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'})
+                </option>
+                {fam.membros && fam.membros
+                  .filter(m => m.nome.trim().toUpperCase() !== fam.responsavel.trim().toUpperCase())
+                  .map(m => (
+                    <option key={m.id || m.nome} value={m.nome}>
+                      {m.nome} ({m.parentesco || 'Integrante'}{m.cpf ? ` — CPF: ${maskCPF(m.cpf)}` : ''})
+                    </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1 uppercase">
+                Pessoa Atendida / Integrante Encaminhado(a) <span className="text-red-600 font-bold">*</span>
+              </label>
+              <input
+                type="text"
+                value={beneficiario}
+                onChange={e => setBeneficiario(e.target.value.toUpperCase())}
+                required
+                className="w-full px-3 py-2 border rounded-lg text-xs font-bold uppercase bg-white"
+              />
+            </div>
+          )}
+
           {/* Categorização no RMA (Bloco 2) */}
           <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
             <label className="block text-xs font-bold text-rose-950 uppercase">
@@ -110,7 +175,7 @@ export function ModalEditarEncaminhamento({
             <input
               type="text"
               value={destino}
-              onChange={e => setDestino(e.target.value)}
+              onChange={e => setDestino(e.target.value.toUpperCase())}
               placeholder="EX: SECRETARIA MUNICIPAL DE SAÚDE / POSTO DE SAÚDE"
               required
               className="w-full px-3 py-2 border rounded-lg text-xs font-bold uppercase focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700"
@@ -139,80 +204,67 @@ export function ModalEditarEncaminhamento({
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg text-xs font-extrabold uppercase ${
-                  status === 'Respondido' || status === 'Concluído'
-                    ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
-                    : 'bg-amber-50 text-amber-900 border-amber-300'
-                }`}
+                className="w-full px-3 py-2 border rounded-lg text-xs font-bold uppercase bg-white text-gray-800"
               >
-                <option value="Pendente">PENDENTE DE RESPOSTA</option>
-                <option value="Respondido">RESPONDIDO / CONCLUÍDO</option>
+                <option value="Pendente">PENDENTE / AGUARDANDO DEVOLUTIVA</option>
+                <option value="Respondido">RESPONDIDO / EM ANDAMENTO</option>
+                <option value="Concluído">CONCLUÍDO / ATENDIDO NA REDE</option>
+                <option value="Não Atendido">NÃO ATENDIDO / RECUSADO</option>
               </select>
             </div>
           </div>
 
-          {/* Motivo do Encaminhamento */}
+          {/* Motivo e Justificativa */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase">
-              Motivo e Justificativa Técnica <span className="text-red-600 font-bold">*</span>
+              Motivo e Justificativa Técnica do Encaminhamento <span className="text-red-600 font-bold">*</span>
             </label>
             <textarea
-              rows={3}
+              rows={4}
               value={motivo}
-              onChange={e => setMotivo(e.target.value)}
-              placeholder="DESCREVA O MOTIVO E A JUSTIFICATIVA TÉCNICA..."
+              onChange={e => setMotivo(e.target.value.toUpperCase())}
               required
-              className="w-full p-3 border rounded-xl text-xs uppercase font-medium focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700"
+              className="w-full px-3 py-2 border rounded-lg text-xs uppercase leading-relaxed focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700"
             />
           </div>
 
-          {/* Devolutiva / Resposta do Órgão Destinatário */}
-          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
-            <label className="block text-xs font-bold text-gray-800 uppercase flex items-center justify-between">
-              <span>Devolutiva / Contrarreferência do Órgão Destinatário</span>
-              {status === 'Respondido' && (
-                <span className="text-[10px] text-emerald-700 font-black flex items-center gap-1">
-                  <i className="fa-solid fa-circle-check"></i> RESPOSTA REGISTRADA
-                </span>
-              )}
+          {/* Registro de Resposta / Devolutiva da Rede */}
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5">
+            <label className="block text-xs font-bold text-gray-800 uppercase flex items-center gap-1.5">
+              <i className="fa-solid fa-reply text-rose-700"></i> Registro de Resposta / Devolutiva da Rede (opcional)
             </label>
             <textarea
-              rows={3}
+              rows={2}
               value={resposta}
-              onChange={e => setResposta(e.target.value)}
-              placeholder="REGISTRE O RETORNO DA INSTITUIÇÃO DESTINATÁRIA (EX: USUÁRIO ATENDIDO E INCLUÍDO NO PROGRAMA X NA DATA Y)..."
-              className="w-full p-3 border rounded-xl text-xs uppercase font-medium focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700 bg-white"
+              onChange={e => setResposta(e.target.value.toUpperCase())}
+              placeholder="REGISTRE O RETORNO RECEBIDO DO ÓRGÃO DE DESTINO (EX: PACIENTE AGENDADO, BENEFÍCIO CONCEDIDO, DOCUMENTO EMITIDO)..."
+              className="w-full px-3 py-2 border rounded-lg text-xs uppercase leading-relaxed bg-white"
             />
           </div>
 
-          {/* Footer Buttons */}
-          <div className="flex justify-end items-center gap-3 pt-3 border-t border-gray-100">
+          {/* Footer */}
+          <div className="pt-4 border-t flex justify-end gap-2 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition"
+              className="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 uppercase font-semibold text-xs transition"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={salvando}
-              className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow flex items-center gap-2"
+              className="px-6 py-2 bg-rose-900 hover:bg-rose-950 text-white rounded-xl font-bold shadow-md transition uppercase flex items-center gap-2 text-xs"
             >
-              {salvando ? (
-                <>
-                  <i className="fa-solid fa-circle-notch animate-spin"></i> Salvando...
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-floppy-disk"></i> Salvar Alterações
-                </>
-              )}
+              <i className={`fa-solid ${salvando ? 'fa-spinner fa-spin' : 'fa-floppy-disk'}`}></i>
+              {salvando ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </div>
-
         </form>
       </div>
+
+      {/* Modal de Alerta */}
+      <ModalAlerta alerta={alertaModal} onClose={() => setAlertaModal(null)} />
     </div>
   )
 }

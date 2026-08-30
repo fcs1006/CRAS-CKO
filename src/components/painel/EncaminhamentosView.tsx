@@ -31,7 +31,8 @@ export function ConteudoGuiaEncaminhamento({
   usuarioLogado?: Usuario | null
 }) {
   const fam = familias.find(f => f.id === enc.familia_id || f.cod_familiar === enc.familia_id)
-  const nomeBeneficiario = (enc.beneficiario || fam?.responsavel || 'BENEFICIÁRIO(A)').toUpperCase()
+  const nomeResponsavel = (fam?.responsavel || enc.responsavel_nome || 'RESPONSÁVEL FAMILIAR').toUpperCase()
+  const nomePessoaEncaminhada = (enc.beneficiario || fam?.responsavel || 'BENEFICIÁRIO(A)').toUpperCase()
   const dataFormatada = (enc.data_envio || '').split('-').reverse().join('/')
   const podeVerMotivo = podeVerDetalheEncaminhamento(usuarioLogado, enc)
   
@@ -65,15 +66,19 @@ export function ConteudoGuiaEncaminhamento({
       {/* 1. Identificação do Usuário / Família */}
       <div className="space-y-1">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
-          1. Identificação do(a) Usuário(a) / Responsável Familiar
+          1. Identificação do(a) Responsável e da Pessoa Encaminhada
         </h4>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-1 text-[10px]">
-          <div className="col-span-2"><strong className="font-extrabold">Nome:</strong> {nomeBeneficiario}</div>
-          <div><strong className="font-extrabold">CPF:</strong> {fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'}</div>
+          <div><strong className="font-extrabold">Responsável Familiar:</strong> {nomeResponsavel}</div>
+          <div><strong className="font-extrabold">CPF do Responsável:</strong> {fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'}</div>
           <div><strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}</div>
+          <div className="col-span-3 bg-gray-50 p-1.5 border border-black rounded my-0.5 uppercase">
+            <strong className="font-extrabold text-black">PESSOA / INTEGRANTE ENCAMINHADO(A):</strong> <span className="font-black text-black">{nomePessoaEncaminhada}</span>
+          </div>
           <div><strong className="font-extrabold">Telefone / Contato:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}</div>
           <div><strong className="font-extrabold">Território:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}</div>
-          <div className="col-span-3"><strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}, nº {fam?.numero || 'S/N'} — Bairro: {fam?.bairro || ''}</div>
+          <div><strong className="font-extrabold">Bairro:</strong> {fam?.bairro || '—'}</div>
+          <div className="col-span-3"><strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}, nº {fam?.numero || 'S/N'}</div>
         </div>
       </div>
 
@@ -263,8 +268,11 @@ export function EncaminhamentosView({
                 </tr>
               ) : (
                 encaminhamentosFiltrados.map(enc => {
+                  const fam = familias.find(f => f.id === enc.familia_id || f.cod_familiar === enc.familia_id)
                   const dataBr = enc.data_envio ? enc.data_envio.split('-').reverse().join('/') : '—'
                   const isRespondido = enc.status === 'Respondido' || enc.status === 'Concluído'
+                  const nomeResp = fam?.responsavel || enc.responsavel_nome || ''
+                  const nomeEncaminhado = enc.beneficiario || nomeResp
 
                   return (
                     <tr key={enc.id} className="hover:bg-gray-50/80 transition">
@@ -274,8 +282,28 @@ export function EncaminhamentosView({
                           <span>{dataBr}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-gray-900 uppercase align-top break-words [overflow-wrap:anywhere]">
-                        {enc.beneficiario}
+                      <td className="py-3.5 px-4 align-top break-words [overflow-wrap:anywhere]">
+                        <div className="space-y-0.5">
+                          {nomeResp && nomeResp.toUpperCase() !== nomeEncaminhado.toUpperCase() ? (
+                            <>
+                              <span className="text-[10px] text-gray-500 font-semibold block uppercase">
+                                Resp: {nomeResp}
+                              </span>
+                              <strong className="text-xs font-black text-emerald-950 uppercase flex items-center gap-1">
+                                <i className="fa-solid fa-user-tag text-emerald-700 text-[10px]"></i> {nomeEncaminhado}
+                              </strong>
+                            </>
+                          ) : (
+                            <strong className="text-xs font-bold text-gray-900 uppercase block">
+                              {nomeEncaminhado}
+                            </strong>
+                          )}
+                          {fam?.bairro && (
+                            <span className="text-[10px] text-gray-400 font-normal block">
+                              Bairro: {fam.bairro}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-extrabold text-rose-700 uppercase align-top break-words [overflow-wrap:anywhere]">
                         <div className="flex items-center gap-1.5">
@@ -379,6 +407,7 @@ export function EncaminhamentosView({
       {encaminhamentoParaEditar && (
         <ModalEditarEncaminhamento
           encaminhamento={encaminhamentoParaEditar}
+          familias={familias}
           onClose={() => setEncaminhamentoParaEditar(null)}
           onSalvar={async (id, updates) => {
             if (onEditarEncaminhamento) {
