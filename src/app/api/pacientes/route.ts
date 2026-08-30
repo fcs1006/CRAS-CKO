@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
+import masterDataJson from '@/lib/master_cidadaos_data.json'
+
+const masterData = masterDataJson as {
+  byCpf: Record<string, any>
+  byName: Record<string, any>
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,19 +78,21 @@ export async function GET(request: NextRequest) {
     const dataMapeada = (rawData || []).map(p => {
       const pCpf = (p.cpf_cns || '').replace(/\D/g, '')
       const pNome = (p.nome || '').trim().toUpperCase()
+      const pNomeNorm = pNome.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
       const famInfo = (pCpf && famMap.get(pCpf)) || famMap.get(pNome) || {}
       const memInfo = (pCpf && memMap.get(pCpf)) || memMap.get(pNome) || {}
+      const masterInfo = (pCpf && masterData.byCpf[pCpf]) || masterData.byName[pNomeNorm] || masterData.byName[pNome] || {}
 
-      let sexoFormatado = p.sexo
-      if (typeof p.sexo === 'string') {
-        const s = p.sexo.trim().toUpperCase()
+      let sexoFormatado = p.sexo || masterInfo.sexo
+      if (typeof sexoFormatado === 'string') {
+        const s = sexoFormatado.trim().toUpperCase()
         if (s === 'M' || s.startsWith('MASC')) sexoFormatado = 'Masculino'
         else if (s === 'F' || s.startsWith('FEM')) sexoFormatado = 'Feminino'
         else if (s === 'O' || s.startsWith('OUTR')) sexoFormatado = 'Outro'
       }
 
-      const rawNis = famInfo.nis_responsavel || memInfo.nis || p.nis || ''
+      const rawNis = famInfo.nis_responsavel || memInfo.nis || masterInfo.nis || p.nis || ''
       const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
 
       return {
@@ -92,18 +100,18 @@ export async function GET(request: NextRequest) {
         nome: p.nome,
         cpf: p.cpf_cns,
         nis: nisClean || null,
-        nome_mae: famInfo.nome_mae_responsavel || p.nome_mae || null,
-        raca_cor: famInfo.raca_cor_responsavel || memInfo.raca_cor || p.raca_cor || 'Parda',
-        escolaridade: famInfo.escolaridade_responsavel || memInfo.escolaridade || p.escolaridade || null,
-        ocupacao: famInfo.ocupacao_responsavel || memInfo.ocupacao || p.ocupacao || null,
+        nome_mae: masterInfo.nome_mae || famInfo.nome_mae_responsavel || p.nome_mae || null,
+        raca_cor: masterInfo.raca_cor || famInfo.raca_cor_responsavel || memInfo.raca_cor || p.raca_cor || 'Parda',
+        escolaridade: masterInfo.escolaridade || famInfo.escolaridade_responsavel || memInfo.escolaridade || p.escolaridade || null,
+        ocupacao: masterInfo.ocupacao || famInfo.ocupacao_responsavel || memInfo.ocupacao || p.ocupacao || null,
         rg: memInfo.rg || null,
-        data_nascimento: p.dt_nasc,
-        logradouro: famInfo.logradouro || p.endereco || null,
-        numero: famInfo.numero || 'S/N',
-        bairro: famInfo.bairro || p.bairro || 'CENTRO',
-        telefone: famInfo.telefone || p.telefone || null,
-        cep: p.cep || '77305-000',
-        zona_territorio: famInfo.zona_territorio || (p.bairro?.toUpperCase().includes('RURAL') ? 'Rural' : 'Urbana'),
+        data_nascimento: p.dt_nasc || masterInfo.data_nascimento,
+        logradouro: famInfo.logradouro || masterInfo.logradouro || p.endereco || null,
+        numero: famInfo.numero || masterInfo.numero || 'S/N',
+        bairro: famInfo.bairro || masterInfo.bairro || p.bairro || 'CENTRO',
+        telefone: famInfo.telefone || masterInfo.telefone || p.telefone || null,
+        cep: masterInfo.cep || p.cep || '77305-000',
+        zona_territorio: famInfo.zona_territorio || masterInfo.zona_territorio || (p.bairro?.toUpperCase().includes('RURAL') ? 'Rural' : 'Urbana'),
         sexo: sexoFormatado
       }
     })
