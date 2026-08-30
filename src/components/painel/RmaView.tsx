@@ -8,8 +8,16 @@ import {
   GrupoSCFV,
   ParticipanteSCFV,
   Encaminhamento,
-  Configuracao
+  Configuracao,
+  Usuario
 } from '@/types'
+import {
+  verificarAcessoRelatoAtendimento,
+  extrairRelatoLimpo,
+  podeVerDetalheEncaminhamento,
+  isTecnicoSuperior,
+  getPerfilUsuario
+} from '@/utils/permissoes'
 
 interface RmaViewProps {
   familias: Familia[]
@@ -19,6 +27,7 @@ interface RmaViewProps {
   participantes?: ParticipanteSCFV[]
   encaminhamentos?: Encaminhamento[]
   configuracao?: Configuracao
+  usuarioLogado?: Usuario | null
 }
 
 interface DetalheAuditoria {
@@ -40,7 +49,8 @@ export function RmaView({
   grupos = [],
   participantes = [],
   encaminhamentos = [],
-  configuracao
+  configuracao,
+  usuarioLogado
 }: RmaViewProps) {
   const currentMonthStr = new Date().toISOString().slice(0, 7)
   const [mesAno, setMesAno] = useState(currentMonthStr)
@@ -275,20 +285,25 @@ export function RmaView({
     const itens = lista.map((item, idx) => {
       if (tipo === 'familia') {
         const f = item as Familia
+        const podeVerVuln = isTecnicoSuperior(usuarioLogado) || getPerfilUsuario(usuarioLogado) === 'admin'
         return {
           id: f.id || String(idx),
           principal: `${f.responsavel} (Prontuário: ${f.cod_familiar})`,
           secundario: `CPF: ${f.cpf_responsavel || '—'} • Bairro: ${f.bairro || '—'} • PAIF: ${f.paif_ativo ? 'SIM' : 'NÃO'}`,
-          detalhes: f.vulnerabilidades && f.vulnerabilidades.length > 0 ? `Vulnerabilidades: ${f.vulnerabilidades.join(', ')}` : undefined,
+          detalhes: f.vulnerabilidades && f.vulnerabilidades.length > 0
+            ? (podeVerVuln ? `Vulnerabilidades: ${f.vulnerabilidades.join(', ')}` : 'Vulnerabilidades: [RESTRITO AO ACOMPANHAMENTO TÉCNICO PAIF]')
+            : undefined,
           data: f.paif_data_inicio || f.criado_em
         }
       } else if (tipo === 'atendimento') {
         const a = item as Atendimento
+        const resSig = verificarAcessoRelatoAtendimento(a, usuarioLogado)
+        const relatoExibido = resSig.podeVer ? (extrairRelatoLimpo(a.relato) || 'Atendimento realizado') : resSig.mensagemOculta
         return {
           id: a.id || String(idx),
           principal: `${a.usuario_visitado || a.responsavel_nome || 'Usuário'} — ${a.tipo}`,
-          secundario: `Técnico(a): ${a.tecnico} • Local: ${a.local} • Horário: ${a.hora}`,
-          detalhes: a.relato ? `Síntese: ${a.relato}` : undefined,
+          secundario: `Técnico(a): ${a.tecnico} • Local: ${a.local} • Horário: ${a.hora || '10:00'}`,
+          detalhes: `Síntese / Relato: ${relatoExibido}`,
           data: a.data
         }
       } else if (tipo === 'beneficio') {
@@ -302,11 +317,12 @@ export function RmaView({
         }
       } else if (tipo === 'encaminhamento') {
         const e = item as Encaminhamento
+        const podeVerMot = podeVerDetalheEncaminhamento(usuarioLogado, e)
         return {
           id: e.id || String(idx),
           principal: `${e.beneficiario} -> Destino: ${e.destino}`,
           secundario: `Técnico: ${e.tecnico} • Status: ${e.status} • Categoria: ${e.tipo_rma || 'Geral'}`,
-          detalhes: e.motivo ? `Motivo: ${e.motivo}` : undefined,
+          detalhes: e.motivo ? `Motivo: ${podeVerMot ? e.motivo : '[CONTEÚDO CONFIDENCIAL — RESTRITO À EQUIPE TÉCNICA SUPERIOR]'}` : undefined,
           data: e.data_envio
         }
       } else {

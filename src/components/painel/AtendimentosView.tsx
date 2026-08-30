@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Atendimento, AgendaItem, Familia, Configuracao, Usuario } from '@/types'
 import { maskCPF } from '@/utils/masks'
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
-import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento, podeExcluirAtendimento, isTecnicoSuperior, isPsicologo, isAssistenteSocial } from '@/utils/permissoes'
+import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento, podeEditarAtendimento, podeExcluirAtendimento, isTecnicoSuperior, isPsicologo, isAssistenteSocial } from '@/utils/permissoes'
 
 interface AtendimentosViewProps {
   atendimentos: Atendimento[]
@@ -631,7 +631,7 @@ export function AtendimentosView({
                           <i className="fa-solid fa-eye text-xs"></i>
                         </button>
 
-                        {onEditarAtendimento && resA.podeVer && (
+                        {onEditarAtendimento && podeEditarAtendimento(usuarioLogado, a) && (
                           <button
                             onClick={() => {
                               setAtendimentoParaEditar(a)

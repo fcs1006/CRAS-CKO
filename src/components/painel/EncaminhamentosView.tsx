@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Encaminhamento, Configuracao, Familia, Usuario } from '@/types'
 import { maskCPF, maskPhone } from '@/utils/masks'
 import { ModalEditarEncaminhamento } from '@/components/modals/ModalEditarEncaminhamento'
-import { podeEditarEncaminhamento, podeExcluirEncaminhamento } from '@/utils/permissoes'
+import { podeEmitirEncaminhamento, podeVerDetalheEncaminhamento, podeEditarEncaminhamento, podeExcluirEncaminhamento } from '@/utils/permissoes'
 
 interface EncaminhamentosViewProps {
   encaminhamentos: Encaminhamento[]
@@ -22,15 +22,18 @@ import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialL
 export function ConteudoGuiaEncaminhamento({
   enc,
   configuracao,
-  familias = []
+  familias = [],
+  usuarioLogado
 }: {
   enc: Encaminhamento
   configuracao?: Configuracao
   familias?: Familia[]
+  usuarioLogado?: Usuario | null
 }) {
   const fam = familias.find(f => f.id === enc.familia_id || f.cod_familiar === enc.familia_id)
   const nomeBeneficiario = (enc.beneficiario || fam?.responsavel || 'BENEFICIÁRIO(A)').toUpperCase()
   const dataFormatada = (enc.data_envio || '').split('-').reverse().join('/')
+  const podeVerMotivo = podeVerDetalheEncaminhamento(usuarioLogado, enc)
   
   let dataExtensaFormatada = ''
   if (enc.data_envio) {
@@ -93,7 +96,9 @@ export function ConteudoGuiaEncaminhamento({
           3. Motivo e Justificativa Técnica do Encaminhamento
         </h4>
         <div className="border border-black p-2.5 rounded bg-white text-[10px] leading-relaxed text-justify whitespace-pre-wrap break-words [overflow-wrap:anywhere] [word-break:break-word] max-w-full overflow-hidden min-h-[75px]">
-          {enc.motivo || 'Encaminhamento para providências pertinentes no âmbito das competências desta instituição parceira da rede.'}
+          {podeVerMotivo
+            ? (enc.motivo || 'Encaminhamento para providências pertinentes no âmbito das competências desta instituição parceira da rede.')
+            : '[CONTEÚDO CONFIDENCIAL — SIGILO PROFISSIONAL / RESTRITO À EQUIPE TÉCNICA EMISSORA]'}
         </div>
       </div>
 
@@ -194,13 +199,15 @@ export function EncaminhamentosView({
                 </div>
               </div>
 
-              <button
-                onClick={onAbrirModalNovoEncaminhamento}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
-              >
-                <i className="fa-solid fa-share text-sm"></i>
-                <span>Emitir Novo Encaminhamento</span>
-              </button>
+              {podeEmitirEncaminhamento(usuarioLogado) && (
+                <button
+                  onClick={onAbrirModalNovoEncaminhamento}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-5 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2.5 hover:scale-[1.02] active:scale-95 border border-emerald-300"
+                >
+                  <i className="fa-solid fa-share text-sm"></i>
+                  <span>Emitir Novo Encaminhamento</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -277,9 +284,15 @@ export function EncaminhamentosView({
                         </div>
                       </td>
                       <td className="py-3.5 px-4 font-medium text-gray-800 uppercase leading-relaxed align-top break-all break-words [overflow-wrap:anywhere]">
-                        <p className="line-clamp-2 text-xs break-all break-words [overflow-wrap:anywhere]" title={enc.motivo}>
-                          {enc.motivo || '—'}
-                        </p>
+                        {podeVerDetalheEncaminhamento(usuarioLogado, enc) ? (
+                          <p className="line-clamp-2 text-xs break-all break-words [overflow-wrap:anywhere]" title={enc.motivo}>
+                            {enc.motivo || '—'}
+                          </p>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded block truncate">
+                            [CONFIDENCIAL — EQUIPE TÉCNICA]
+                          </span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 align-top whitespace-nowrap">
                         <button
@@ -378,7 +391,7 @@ export function EncaminhamentosView({
       {/* Área de Impressão Direta do Encaminhamento */}
       {encaminhamentoParaImprimir && (
         <div className="hidden print:block print:w-full print-document-area">
-          <ConteudoGuiaEncaminhamento enc={encaminhamentoParaImprimir} configuracao={configuracao} familias={familias} />
+          <ConteudoGuiaEncaminhamento enc={encaminhamentoParaImprimir} configuracao={configuracao} familias={familias} usuarioLogado={usuarioLogado} />
         </div>
       )}
     </div>

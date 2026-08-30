@@ -905,6 +905,7 @@ export default function PainelPage() {
                   atendimentos={atendimentos}
                   beneficios={beneficios}
                   agenda={agenda}
+                  usuarioLogado={usuarioLogado}
                   onNavegarTab={setActiveTab}
                   onAbrirModalNovoAtendimento={() => setModalNovoAtendimento(true)}
                   onAbrirModalNovaFamilia={() => setModalNovaFamilia(true)}
@@ -1012,6 +1013,7 @@ export default function PainelPage() {
                   participantes={participantes}
                   encaminhamentos={encaminhamentos}
                   configuracao={configuracao}
+                  usuarioLogado={usuarioLogado}
                 />
               )}
 

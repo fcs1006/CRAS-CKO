@@ -1,4 +1,4 @@
-import { Usuario, Atendimento } from '@/types'
+import { Usuario, Atendimento, Encaminhamento } from '@/types'
 
 export type PerfilAcesso = 'admin' | 'tecnico' | 'recepcao' | 'scfv' | 'usuario'
 
@@ -44,14 +44,40 @@ export function isPsicologo(u?: Usuario | null): boolean {
   if (!u) return false
   const cargo = (u.cargo || '').toLowerCase()
   const conselho = (u.conselho || '').toLowerCase()
-  return cargo.includes('psicól') || cargo.includes('psicolog') || conselho.includes('crp')
+  const perfil = (u.perfil || '').toLowerCase()
+  if (conselho.includes('crp')) return true
+  if (perfil === 'psicologo' || perfil === 'psicólogo') return true
+  return cargo.includes('psicól') || cargo.includes('psicolog')
 }
 
 export function isAssistenteSocial(u?: Usuario | null): boolean {
   if (!u) return false
   const cargo = (u.cargo || '').toLowerCase()
   const conselho = (u.conselho || '').toLowerCase()
-  return cargo.includes('assistente social') || cargo.includes('social') || conselho.includes('cress')
+  const perfil = (u.perfil || '').toLowerCase()
+
+  // Se o conselho profissional tiver CRESS, é Assistente Social
+  if (conselho.includes('cress')) return true
+  if (perfil === 'assistente_social' || perfil === 'assistente social') return true
+
+  // Verificação estrita: deve conter 'assistente social', excluindo funções de nível médio/operacional
+  const isTermoAssistenteSocial = cargo.includes('assistente social') || cargo.includes('assistente-social')
+  const isFuncaoNaoSuperior = (
+    cargo.includes('orientad') || 
+    cargo.includes('educad') || 
+    cargo.includes('visitad') || 
+    cargo.includes('entrevistad') || 
+    cargo.includes('digitad') || 
+    cargo.includes('apoio') || 
+    cargo.includes('agente') ||
+    cargo.includes('recep')
+  )
+
+  if (isTermoAssistenteSocial && !isFuncaoNaoSuperior) {
+    return true
+  }
+
+  return false
 }
 
 export function isTecnicoSuperior(u?: Usuario | null): boolean {
@@ -173,6 +199,28 @@ export function verificarAcessoRelatoAtendimento(
 
 // --- PERMISSÕES ESTRUTURADAS DE AÇÕES (EDITAR / EXCLUIR / IMPRIMIR) ---
 
+export function podeEditarAtendimento(u?: Usuario | null, atendimento?: Partial<Atendimento>): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  if (perfil === 'admin') return true
+
+  // Se o usuário logado for o técnico que registrou ou co-participou
+  const nomeLogado = (u.nome || u.usuario || '').trim().toUpperCase()
+  const tecAtendimento = (atendimento?.tecnico || '').trim().toUpperCase()
+  const coTecs = (atendimento?.profissionais_participantes || '').trim().toUpperCase()
+
+  const isAutorOuParticipante = Boolean(nomeLogado && (tecAtendimento.includes(nomeLogado) || coTecs.includes(nomeLogado)))
+  if (isAutorOuParticipante) return true
+
+  // Se for Técnico Superior (Assistente Social / Psicólogo) e o atendimento for público ou da equipe técnica, pode editar
+  if (isTecnicoSuperior(u)) {
+    const resSigilo = verificarAcessoRelatoAtendimento(atendimento || {}, u)
+    return resSigilo.podeVer
+  }
+
+  return false
+}
+
 export function podeExcluirAtendimento(u?: Usuario | null, atendimento?: Partial<Atendimento>): boolean {
   if (!u) return false
   const perfil = getPerfilUsuario(u)
@@ -191,6 +239,24 @@ export function podeExcluirFamilia(u?: Usuario | null): boolean {
   return perfil === 'admin' || isTecnicoSuperior(u)
 }
 
+export function podeEmitirEncaminhamento(u?: Usuario | null): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  return perfil === 'admin' || isTecnicoSuperior(u)
+}
+
+export function podeVerDetalheEncaminhamento(u?: Usuario | null, enc?: Partial<Encaminhamento>): boolean {
+  if (!u) return false
+  const perfil = getPerfilUsuario(u)
+  if (perfil === 'admin' || isTecnicoSuperior(u)) return true
+
+  const nomeLogado = (u.nome || u.usuario || '').trim().toUpperCase()
+  const tec = (enc?.tecnico || '').trim().toUpperCase()
+  if (nomeLogado && tec.includes(nomeLogado)) return true
+
+  return false
+}
+
 export function podeExcluirEncaminhamento(u?: Usuario | null): boolean {
   if (!u) return false
   const perfil = getPerfilUsuario(u)
@@ -200,10 +266,16 @@ export function podeExcluirEncaminhamento(u?: Usuario | null): boolean {
 export function podeEditarEncaminhamento(u?: Usuario | null, encaminhamento?: any): boolean {
   if (!u) return false
   const perfil = getPerfilUsuario(u)
-  if (perfil === 'admin' || isTecnicoSuperior(u)) return true
+  if (perfil === 'admin') return true
+
   const nomeLogado = (u.nome || u.usuario || '').trim().toUpperCase()
   const tec = (encaminhamento?.tecnico || '').trim().toUpperCase()
-  return Boolean(nomeLogado && tec.includes(nomeLogado))
+  const isEmissor = Boolean(nomeLogado && tec.includes(nomeLogado))
+
+  if (isEmissor) return true
+  if (isTecnicoSuperior(u)) return true
+
+  return false
 }
 
 export function podeExcluirGrupoScfv(u?: Usuario | null): boolean {

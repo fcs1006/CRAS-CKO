@@ -1,12 +1,12 @@
-'use client'
-
-import { Familia, Atendimento, BeneficioConcedido, AgendaItem } from '@/types'
+import { Familia, Atendimento, BeneficioConcedido, AgendaItem, Usuario } from '@/types'
+import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo } from '@/utils/permissoes'
 
 interface DashboardViewProps {
   familias: Familia[]
   atendimentos: Atendimento[]
   beneficios: BeneficioConcedido[]
   agenda?: AgendaItem[]
+  usuarioLogado?: Usuario | null
   onNavegarTab: (tab: string) => void
   onAbrirModalNovoAtendimento: () => void
   onAbrirModalNovaFamilia: () => void
@@ -35,6 +35,7 @@ export function DashboardView({
   atendimentos = [],
   beneficios = [],
   agenda = [],
+  usuarioLogado,
   onNavegarTab,
   onAbrirModalNovoAtendimento,
   onAbrirModalNovaFamilia
@@ -279,10 +280,18 @@ export function DashboardView({
                     </div>
 
                     {/* Relato / Síntese Técnica */}
-                    <p className="text-[11px] text-gray-700 leading-relaxed uppercase line-clamp-2 bg-white/80 p-2 rounded-lg border border-gray-100">
-                      <i className="fa-solid fa-quote-left text-gray-300 mr-1.5 text-[10px]"></i>
-                      {atend.relato || 'Sem descrição informada.'}
-                    </p>
+                    {(() => {
+                      const resSig = verificarAcessoRelatoAtendimento(atend, usuarioLogado)
+                      const relatoLimpo = resSig.podeVer ? (extrairRelatoLimpo(atend.relato) || 'Sem descrição informada.') : resSig.mensagemOculta
+                      return (
+                        <p className={`text-[11px] leading-relaxed uppercase line-clamp-2 p-2 rounded-lg border ${
+                          resSig.podeVer ? 'bg-white/80 border-gray-100 text-gray-700' : 'bg-amber-50/90 border-amber-200 text-amber-950 font-bold'
+                        }`}>
+                          <i className={`mr-1.5 text-[10px] ${resSig.podeVer ? 'fa-solid fa-quote-left text-gray-300' : 'fa-solid fa-lock text-amber-700'}`}></i>
+                          {relatoLimpo}
+                        </p>
+                      )
+                    })()}
 
                     {/* Linha Inferior: Técnico Responsável e Badge Compartilhado */}
                     <div className="flex flex-wrap justify-between items-center text-[10px] text-gray-500 pt-1">
