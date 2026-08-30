@@ -48,13 +48,27 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
   const [mostrarCboResp, setMostrarCboResp] = useState(false)
 
   // 2. Endereço e Território
-  const [logradouro, setLogradouro] = useState(familia.logradouro ? familia.logradouro.toUpperCase() : '')
+  const initialLogradouro = (familia.logradouro ? familia.logradouro.toUpperCase() : '')
+    .replace(/^RUA\s+FAZENDA\s+/i, 'FAZENDA ')
+    .replace(/^RUA\s+FAZ\.\s+/i, 'FAZENDA ')
+    .replace(/^RUA\s+FAZ\s+/i, 'FAZENDA ')
+    .replace(/^RUA\s+ASSENTAMENTO\s+/i, 'ASSENTAMENTO ')
+    .replace(/^RUA\s+CH[AÁ]CARA\s+/i, 'CHÁCARA ')
+    .replace(/^RUA\s+S[IÍ]TIO\s+/i, 'SÍTIO ')
+    .replace(/^RUA\s+POVOADO\s+/i, 'POVOADO ')
+    .replace(/^RUA\s+GLEBA\s+/i, 'GLEBA ')
+    .replace(/^RUA\s+COMUNIDADE\s+/i, 'COMUNIDADE ')
+
+  const endCompletoEdit = (initialLogradouro + ' ' + (familia.bairro || '')).toUpperCase()
+  const isRuralEdit = ['RURAL', 'FAZENDA', 'FAZ ', 'FAZ.', 'ASSENTAMENTO', 'POVOADO', 'CHÁCARA', 'CHACARA', 'SÍTIO', 'SITIO', 'GLEBA', 'COMUNIDADE', 'VEREDA', 'BURITI', 'LAGOA', 'SERRA', 'MORRO', 'CÓRREGO', 'CORREGO', 'BREJO', 'ILHA', 'CURRAL QUEIMADO', 'MANDACARU', 'MATÕES', 'MATOES'].some(kw => endCompletoEdit.includes(kw))
+
+  const [logradouro, setLogradouro] = useState(initialLogradouro)
   const [numero, setNumero] = useState(familia.numero ? familia.numero.toUpperCase() : '')
   const [complemento, setComplemento] = useState(familia.complemento ? familia.complemento.toUpperCase() : '')
   const [bairro, setBairro] = useState(familia.bairro ? familia.bairro.toUpperCase() : '')
   const [cep, setCep] = useState(familia.cep || '')
   const [pontoReferencia, setPontoReferencia] = useState(familia.ponto_referencia ? familia.ponto_referencia.toUpperCase() : '')
-  const [zonaTerritorio, setZonaTerritorio] = useState<'Urbana' | 'Rural' | 'Área de Risco' | 'Quilombola' | 'Indígena' | 'Ribeirinha' | 'Assentamento'>((familia.zona_territorio as any) || 'Urbana')
+  const [zonaTerritorio, setZonaTerritorio] = useState<'Urbana' | 'Rural' | 'Área de Risco' | 'Quilombola' | 'Indígena' | 'Ribeirinha' | 'Assentamento'>((familia.zona_territorio as any) || (isRuralEdit ? 'Rural' : 'Urbana'))
 
   // 3. Condições Habitacionais
   const [moradiaTipo, setMoradiaTipo] = useState(familia.moradia_tipo || 'Própria')
