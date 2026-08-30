@@ -22,8 +22,8 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   const [responsavel, setResponsavel] = useState('')
   const initialResponsavelRef = useRef('')
   const [nomeMae, setNomeMae] = useState('')
-  const [sexoResp, setSexoResp] = useState<'Feminino' | 'Masculino' | 'Outro'>('Feminino')
-  const [racaCorResp, setRacaCorResp] = useState<'Parda' | 'Branca' | 'Preta' | 'Amarela' | 'Indígena' | 'Não declarada'>('Parda')
+  const [sexoResp, setSexoResp] = useState<'Feminino' | 'Masculino' | 'Outro' | ''>('')
+  const [racaCorResp, setRacaCorResp] = useState<'Parda' | 'Branca' | 'Preta' | 'Amarela' | 'Indígena' | 'Não declarada' | ''>('')
 
   const [cpf, setCpf] = useState('')
   const [rg, setRg] = useState('')
@@ -34,7 +34,7 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   const [responsavelRenda, setResponsavelRenda] = useState('')
   const [telefone, setTelefone] = useState('')
   const [outroContato, setOutroContato] = useState('')
-  const [responsavelProgSocial, setResponsavelProgSocial] = useState('Nenhum')
+  const [responsavelProgSocial, setResponsavelProgSocial] = useState('')
   const [outroProgSocialText, setOutroProgSocialText] = useState('')
 
   // CBO Autocomplete para Responsável
@@ -48,16 +48,16 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
   const [bairro, setBairro] = useState('')
   const [cep, setCep] = useState('')
   const [pontoReferencia, setPontoReferencia] = useState('')
-  const [zonaTerritorio, setZonaTerritorio] = useState<'Urbana' | 'Rural' | 'Área de Risco' | 'Quilombola' | 'Indígena' | 'Ribeirinha' | 'Assentamento'>('Urbana')
+  const [zonaTerritorio, setZonaTerritorio] = useState<'Urbana' | 'Rural' | 'Área de Risco' | 'Quilombola' | 'Indígena' | 'Ribeirinha' | 'Assentamento' | ''>('')
 
   // 3. Condições Habitacionais
-  const [moradiaTipo, setMoradiaTipo] = useState('Própria')
-  const [tipoConstrucao, setTipoConstrucao] = useState('Alvenaria com Revestimento')
-  const [moradiaAgua, setMoradiaAgua] = useState('Rede Pública / Canalizada')
-  const [moradiaSanear, setMoradiaSanear] = useState('Rede Pública / Fossa Séptica')
-  const [moradiaLixo, setMoradiaLixo] = useState('Coleta Pública Regular')
-  const [moradiaEnergia, setMoradiaEnergia] = useState('Rede Elétrica com Medidor Próprio')
-  const [moradiaComodos, setMoradiaComodos] = useState<number | string>(4)
+  const [moradiaTipo, setMoradiaTipo] = useState('')
+  const [tipoConstrucao, setTipoConstrucao] = useState('')
+  const [moradiaAgua, setMoradiaAgua] = useState('')
+  const [moradiaSanear, setMoradiaSanear] = useState('')
+  const [moradiaLixo, setMoradiaLixo] = useState('')
+  const [moradiaEnergia, setMoradiaEnergia] = useState('')
+  const [moradiaComodos, setMoradiaComodos] = useState<number | string>('')
   const [acessibilidade, setAcessibilidade] = useState(false)
 
   // Controle de Navegação em Etapas / Blocos (Wizard)
@@ -549,6 +549,22 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
       alert('Por favor, informe o Nome Completo da Mãe do Responsável.')
       return
     }
+    if (!sexoResp) {
+      alert('Por favor, selecione o Sexo / Gênero do Responsável (Bloco 1).')
+      return
+    }
+    if (!racaCorResp) {
+      alert('Por favor, selecione a Cor / Raça (IBGE) do Responsável (Bloco 1).')
+      return
+    }
+    if (!responsavelProgSocial) {
+      alert('Por favor, selecione o Benefício / Programa do Governo (Bloco 1).')
+      return
+    }
+    if (!zonaTerritorio) {
+      alert('Por favor, selecione a Zona / Território SUAS (Bloco 2).')
+      return
+    }
 
     if (!pontoReferencia.trim()) {
       alert('Por favor, informe o Ponto de Referência do Endereço.')
@@ -927,12 +943,16 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Sexo */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Sexo / Gênero</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Sexo / Gênero <span className="text-red-600 font-bold">*</span>
+                </label>
                 <select
+                  required
                   value={sexoResp}
                   onChange={e => setSexoResp(e.target.value as any)}
                   className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
                 >
+                  <option value="">SELECIONE O SEXO / GÊNERO *</option>
                   <option value="Feminino">FEMININO</option>
                   <option value="Masculino">MASCULINO</option>
                   <option value="Outro">OUTRO</option>
@@ -941,12 +961,16 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
 
               {/* Cor / Raça */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Cor / Raça (IBGE)</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Cor / Raça (IBGE) <span className="text-red-600 font-bold">*</span>
+                </label>
                 <select
+                  required
                   value={racaCorResp}
                   onChange={e => setRacaCorResp(e.target.value as any)}
                   className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
                 >
+                  <option value="">SELECIONE A COR / RAÇA *</option>
                   <option value="Parda">PARDA</option>
                   <option value="Branca">BRANCA</option>
                   <option value="Preta">PRETA</option>
@@ -1102,6 +1126,7 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                   onChange={e => setResponsavelProgSocial(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-semibold"
                 >
+                  <option value="">SELECIONE O BENEFÍCIO / PROGRAMA *</option>
                   <option value="Nenhum">NENHUM</option>
                   <option value="Bolsa Família">BOLSA FAMÍLIA</option>
                   <option value="BPC (Benefício de Prestação Continuada)">BPC (BENEFÍCIO DE PRESTAÇÃO CONTINUADA)</option>
@@ -1126,10 +1151,12 @@ export function ModalNovaFamilia({ familiasExistentes, usuarios = [], onClose, o
                     Zona / Território SUAS <span className="text-red-600 font-bold">*</span>
                   </label>
                   <select
+                    required
                     value={zonaTerritorio}
                     onChange={e => setZonaTerritorio(e.target.value as any)}
                     className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-900"
                   >
+                    <option value="">SELECIONE A ZONA / TERRITÓRIO *</option>
                     <option value="Urbana">URBANA</option>
                     <option value="Rural">RURAL</option>
                     <option value="Área de Risco">ÁREA DE RISCO</option>
