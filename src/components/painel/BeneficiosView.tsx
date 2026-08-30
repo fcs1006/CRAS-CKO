@@ -259,23 +259,35 @@ export function BeneficiosView({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {almoxarifado.map(item => (
-            <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">{item.tipo}</p>
-                <h4 className="text-2xl font-black text-gray-900 mt-1 font-mono">
-                  {item.saldo} <span className="text-xs font-normal text-gray-500">{item.unidade}</span>
-                </h4>
-              </div>
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${
-                item.saldo <= 0 ? 'bg-red-50 text-red-600' : 'bg-teal-50 text-teal-700'
-              }`}>
-                <i className="fa-solid fa-box"></i>
-              </div>
+        {almoxarifado.length === 0 ? (
+          <div className="bg-white p-6 rounded-2xl border border-dashed border-teal-200 text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center mx-auto text-lg border border-teal-100 shadow-inner">
+              <i className="fa-solid fa-boxes-packing"></i>
             </div>
-          ))}
-        </div>
+            <h4 className="text-xs font-bold text-gray-800 uppercase">Nenhum item em estoque no Almoxarifado</h4>
+            <p className="text-[11px] text-gray-500 max-w-md mx-auto">
+              Cadastre os itens de provisão do CRAS (Cestas Básicas, Enxovais de Bebê, Cobertores, etc.) clicando no botão acima <strong className="text-teal-800">"GERENCIAR / CADASTRAR ESTOQUE"</strong>.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {almoxarifado.map(item => (
+              <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">{item.tipo}</p>
+                  <h4 className="text-2xl font-black text-gray-900 mt-1 font-mono">
+                    {item.saldo} <span className="text-xs font-normal text-gray-500">{item.unidade}</span>
+                  </h4>
+                </div>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${
+                  item.saldo <= 0 ? 'bg-red-50 text-red-600' : 'bg-teal-50 text-teal-700'
+                }`}>
+                  <i className="fa-solid fa-box"></i>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Histórico de Concessões */}

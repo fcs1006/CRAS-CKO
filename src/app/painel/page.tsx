@@ -185,7 +185,7 @@ export default function PainelPage() {
         fetch('/api/familias'),
         fetch('/api/atendimentos'),
         fetch('/api/beneficios'),
-        supabase.from('almoxarifado').select('*'),
+        fetch('/api/almoxarifado'),
         fetch('/api/scfv'),
         fetch('/api/scfv/participantes'),
         fetch('/api/encaminhamentos'),
@@ -214,7 +214,10 @@ export default function PainelPage() {
         if (benJson.ok && benJson.data) setBeneficios(benJson.data as BeneficioConcedido[])
       }
 
-      if (almRes.data && almRes.data.length > 0) setAlmoxarifado(almRes.data as AlmoxarifadoItem[])
+      if (almRes.ok && almRes.headers.get('content-type')?.includes('application/json')) {
+        const almJson = await almRes.json()
+        if (almJson.ok && almJson.data) setAlmoxarifado(almJson.data as AlmoxarifadoItem[])
+      }
 
       if (grpRes.ok && grpRes.headers.get('content-type')?.includes('application/json')) {
         const grpJson = await grpRes.json()
