@@ -17,7 +17,7 @@ import {
   Configuracao
 } from '@/types'
 import { parseResponseJson } from '@/utils/safeFetch'
-import { extrairSigiloAtendimento } from '@/utils/permissoes'
+import { extrairSigiloAtendimento, isOrientadorSocial, podeAcessarModulo, getPerfilUsuario } from '@/utils/permissoes'
 
 // Importação das Sub-Vistas Modulares
 import { DashboardView } from '@/components/painel/DashboardView'
@@ -107,6 +107,9 @@ export default function PainelPage() {
     try {
       const parsed = JSON.parse(rawUser)
       setUsuarioLogado(parsed)
+      if (isOrientadorSocial(parsed)) {
+        setActiveTab('scfv')
+      }
     } catch (e) {
       router.push('/')
       return
@@ -788,7 +791,10 @@ export default function PainelPage() {
     router.push('/')
   }
 
-  const menuItems = [
+  const ehOrientador = isOrientadorSocial(usuarioLogado)
+  const perfil = getPerfilUsuario(usuarioLogado)
+
+  const todosMenuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-chart-line' },
     { id: 'families', label: 'Prontuário SUAS', icon: 'fa-solid fa-address-book' },
     { id: 'appointments', label: 'Atendimentos', icon: 'fa-solid fa-file-signature' },
@@ -800,6 +806,17 @@ export default function PainelPage() {
     { id: 'users', label: 'Gestão Técnicos', icon: 'fa-solid fa-users-gear' },
     { id: 'settings', label: 'Configurações', icon: 'fa-solid fa-gears' }
   ]
+
+  // Pirâmide de Acesso: O Orientador Social tem acesso APENAS e EXCLUSIVAMENTE ao módulo "Oficinas & SCFV"
+  const menuItems = ehOrientador
+    ? [{ id: 'scfv', label: 'Oficinas & SCFV', icon: 'fa-solid fa-people-group' }]
+    : todosMenuItems.filter(item => {
+        if (perfil === 'admin') return true
+        if (item.id === 'users' || item.id === 'settings') return false
+        return true
+      })
+
+  const currentTab = ehOrientador ? 'scfv' : (podeAcessarModulo(activeTab, usuarioLogado) ? activeTab : 'dashboard')
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans print:h-auto print:w-full print:bg-white print:overflow-visible print:block">
@@ -830,7 +847,7 @@ export default function PainelPage() {
           {/* Nav Items */}
           <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-220px)] pr-1">
             {menuItems.map(item => {
-              const isActive = activeTab === item.id
+              const isActive = currentTab === item.id
               return (
                 <button
                   key={item.id}
@@ -905,7 +922,7 @@ export default function PainelPage() {
             </div>
           ) : (
             <>
-              {activeTab === 'dashboard' && (
+              {currentTab === 'dashboard' && (
                 <DashboardView
                   familias={familias}
                   atendimentos={atendimentos}
@@ -919,7 +936,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'families' && (
+              {currentTab === 'families' && (
                 <FamiliasView
                   familias={familias}
                   usuarioLogado={usuarioLogado}
@@ -930,7 +947,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'appointments' && (
+              {currentTab === 'appointments' && (
                 <AtendimentosView
                   atendimentos={atendimentos}
                   agenda={agenda}
@@ -949,7 +966,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'benefits' && (
+              {currentTab === 'benefits' && (
                 <BeneficiosView
                   beneficios={beneficios}
                   almoxarifado={almoxarifado}
@@ -972,7 +989,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'scfv' && (
+              {currentTab === 'scfv' && (
                 <ScfvView
                   grupos={grupos}
                   participantes={participantes}
@@ -994,7 +1011,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'referrals' && (
+              {currentTab === 'referrals' && (
                 <EncaminhamentosView
                   encaminhamentos={encaminhamentos}
                   familias={familias}
@@ -1007,11 +1024,11 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'map' && (
+              {currentTab === 'map' && (
                 <GeomapeamentoView familias={familias} />
               )}
 
-              {activeTab === 'rma' && (
+              {currentTab === 'rma' && (
                 <RmaView
                   familias={familias}
                   atendimentos={atendimentos}
@@ -1024,7 +1041,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'users' && (
+              {currentTab === 'users' && (
                 <UsuariosView
                   usuarios={usuarios}
                   usuarioLogado={usuarioLogado}
@@ -1036,7 +1053,7 @@ export default function PainelPage() {
                 />
               )}
 
-              {activeTab === 'settings' && (
+              {currentTab === 'settings' && (
                 <ConfiguracoesView
                   configuracao={configuracao}
                   onSalvarConfiguracao={handleSalvarConfiguracao}

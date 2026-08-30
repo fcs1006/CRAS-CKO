@@ -91,6 +91,42 @@ export function isTecnicoSuperior(u?: Usuario | null): boolean {
   return isPsicologo(u) || isAssistenteSocial(u)
 }
 
+export function isOrientadorSocial(u?: Usuario | null): boolean {
+  if (!u) return false
+  const perfil = (u.perfil || '').toLowerCase().trim()
+  const cargo = (u.cargo || '').toLowerCase().trim()
+
+  // Coordenador / Diretor / Admin tem acesso total
+  if (perfil === 'admin' || cargo.includes('coordenad') || cargo.includes('diretor')) return false
+
+  // Técnicos de nível superior (Assistente Social / Psicólogo) não são orientadores exclusivos
+  if (isPsicologo(u) || isAssistenteSocial(u)) return false
+
+  return (
+    perfil === 'scfv' ||
+    perfil === 'orientador' ||
+    perfil === 'orientador_social' ||
+    perfil === 'educador' ||
+    cargo.includes('orientador') ||
+    cargo.includes('educador') ||
+    cargo.includes('oficineiro') ||
+    cargo.includes('facilitador') ||
+    cargo.includes('monitor')
+  )
+}
+
+export function podeAcessarModulo(moduloId: string, u?: Usuario | null): boolean {
+  if (!u) return false
+  // Pirâmide de Acesso: O Orientador Social tem acesso EXCLUSIVO ao módulo Oficinas & SCFV
+  if (isOrientadorSocial(u)) {
+    return moduloId === 'scfv'
+  }
+  const perfil = getPerfilUsuario(u)
+  if (perfil === 'admin') return true
+  if (moduloId === 'users' || moduloId === 'settings') return false
+  return true
+}
+
 export function extrairSigiloAtendimento(atendimento: Partial<Atendimento>): string {
   if (atendimento.sigilo && atendimento.sigilo.trim()) {
     return atendimento.sigilo.toLowerCase().trim()
