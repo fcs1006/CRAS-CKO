@@ -8,7 +8,13 @@
     "nodejs_compat_populate_process_env"
   ],
   "keep_vars": true,
-
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "banco-cidadaos-cko",
+      "database_id": "54fc80c4-f8da-4462-8521-34e6bffceee0"
+    }
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"

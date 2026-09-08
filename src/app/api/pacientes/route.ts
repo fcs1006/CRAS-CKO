@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
+import { buscarCidadaosD1 } from '@/lib/d1Client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,6 +9,35 @@ export async function GET(request: NextRequest) {
 
     if (!query || query.length < 2) {
       return NextResponse.json({ ok: true, data: [] })
+    }
+
+    // 1. Consulta prioritária no Cloudflare D1 (Base Única Municipal)
+    try {
+      const d1Results = await buscarCidadaosD1(query, 15)
+      if (d1Results && d1Results.length > 0) {
+        const dataMapeadaD1 = d1Results.map(p => ({
+          id: p.id,
+          nome: p.nome,
+          cpf: p.cpf || p.cns,
+          nis: p.nis || null,
+          nome_mae: p.nome_mae || null,
+          raca_cor: p.raca_cor || 'Parda',
+          escolaridade: p.escolaridade || null,
+          ocupacao: p.ocupacao || null,
+          rg: p.rg || null,
+          data_nascimento: p.data_nascimento || null,
+          logradouro: p.logradouro || null,
+          numero: p.numero || 'S/N',
+          bairro: p.bairro || 'CENTRO',
+          telefone: p.telefone || null,
+          cep: p.cep || '77305-000',
+          zona_territorio: p.zona_territorio || 'Urbana',
+          sexo: p.sexo || 'Não informado'
+        }))
+        return NextResponse.json({ ok: true, data: dataMapeadaD1, source: 'cloudflare-d1' })
+      }
+    } catch (d1Err) {
+      console.warn('[D1_SEARCH_FALLBACK]: Falha ou D1 não provisionado ainda, consultando fallback:', d1Err)
     }
 
     const cleanDigits = query.replace(/\D/g, '')
