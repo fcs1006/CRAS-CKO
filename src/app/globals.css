@@ -1,0 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ==========================================================================
+   DESIGN SYSTEM & ESTILIZAÇÃO - SISTEMA CRAS (SUAS DIGITAL)
+   ========================================================================== */
+
+:root {
+    --primary-grad: linear-gradient(135deg, #134e5e 0%, #2b7a78 100%);
+    --primary: #134e5e;
+    --primary-light: #2b7a78;
+    --primary-dark: #0b2e37;
+    --secondary: #9bc53d;
+    --bg-light: #f4f7f6;
+    --bg-card: #ffffff;
+    --text-main: #2b3a42;
+    --text-muted: #6b7c85;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-light);
+    color: var(--text-main);
+    min-height: 100vh;
+}
+
+/* --- ESTILOS DO CARTÃO DE LOGIN (PAGE.TSX) --- */
+.login-card {
+    background: rgba(23, 37, 42, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(46, 196, 184, 0.3);
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+}
+
+.login-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #def2f1;
+    margin-bottom: 6px;
+}
+
+.login-input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(46, 196, 184, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.login-input:focus {
+    border-color: #2ec4b6;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 8px rgba(46, 196, 184, 0.3);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2ec4b6 0%, #2b7a78 100%);
+    color: #ffffff;
+    font-weight: 700;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+/* ==========================================================================
+   CONFIGURAÇÃO DE IMPRESSÃO OFICIAL (RELATÓRIOS E DOCUMENTOS - A4)
+   ========================================================================== */
+@media print {
+    /* 1. Ocultar completamente da árvore de layout todos os elementos com print:hidden, tags de layout e navegação */
+    aside,
+    nav,
+    header,
+    footer,
+    .no-print,
+    .print\:hidden,
+    .print\:hidden *,
+    body:has(.print-document-area) main > *:not(:has(.print-document-area)),
+    body:has(.print-document-area) > *:not(:has(.print-document-area)) {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 2. Reset do HTML e Body para impressão */
+    html,
+    body {
+        background-color: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* 3. Resetar contêineres de scroll e wrappers */
+    main,
+    div {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    /* 4. Posicionar o documento impresso no topo da folha A4 física */
+    .print-document-area,
+    .print-document-area *,
+    .print-document-modal,
+    .print-document-modal * {
+        visibility: visible !important;
+    }
+
+    .print-document-area,
+    .print-document-modal {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* 5. Rodapé Institucional Fixo no Final Absoluto de TODAS as Páginas */
+    .print-fixed-footer {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 4px 0 0 0 !important;
+        background: white !important;
+        border-top: 1px solid #000000 !important;
+        text-align: center !important;
+        z-index: 99999 !important;
+    }
+
+    /* 6. Desativar transformações e filtros que criam containing blocks durante a impressão */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 8mm 10mm 16mm 10mm;
+    }
+}
+
+
+

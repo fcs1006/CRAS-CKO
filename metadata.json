@@ -1,0 +1,6 @@
+{
+  "name": "SUAS Digital - Sistema CRAS",
+  "description": "Sistema de Gestão e Acompanhamento Familiar do Centro de Referência da Assistência Social (CRAS / SUAS)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
