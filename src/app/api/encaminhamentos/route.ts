@@ -138,9 +138,21 @@ export async function PUT(request: NextRequest) {
             status = COALESCE(?, status),
             resposta = COALESCE(?, resposta),
             destino = COALESCE(?, destino),
-            motivo = COALESCE(?, motivo)
+            motivo = COALESCE(?, motivo),
+            beneficiario = COALESCE(?, beneficiario),
+            tipo_rma = COALESCE(?, tipo_rma),
+            data_envio = COALESCE(?, data_envio)
           WHERE id = ?
-        `).bind(updates.status || null, updates.resposta || null, updates.destino || null, updates.motivo || null, id).run()
+        `).bind(
+          updates.status || null,
+          updates.resposta || null,
+          updates.destino || null,
+          updates.motivo || null,
+          updates.beneficiario ? updates.beneficiario.trim().toUpperCase() : null,
+          updates.tipo_rma || null,
+          updates.data_envio || null,
+          id
+        ).run()
 
         if (updates.resposta || updates.status) {
           const encRow = await db.prepare('SELECT * FROM encaminhamentos WHERE id = ?').bind(id).first<any>()

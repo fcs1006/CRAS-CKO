@@ -19,12 +19,13 @@ export function ModalNovoEncaminhamento({
 }: ModalNovoEncaminhamentoProps) {
   const [salvando, setSalvando] = useState(false)
   const [familiaId, setFamiliaId] = useState('')
+  const [beneficiario, setBeneficiario] = useState('')
   const [tipoRma, setTipoRma] = useState<string>('')
   const [destino, setDestino] = useState('')
   const [motivo, setMotivo] = useState('')
   const [dataEnvio, setDataEnvio] = useState(new Date().toISOString().split('T')[0])
 
-  // Busca e Autocomplete de Família / Prontuário
+  // Busca e Autocomplete de Família / Prontuário / Pessoa
   const [buscaFamilia, setBuscaFamilia] = useState('')
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false)
   const containerBuscaRef = useRef<HTMLDivElement>(null)
@@ -58,8 +59,23 @@ export function ModalNovoEncaminhamento({
     return bateResp || bateProntuario || bateCpf || bateBairro || bateMembro
   }).slice(0, 15)
 
-  function selecionarFamilia(f: Familia) {
+  function selecionarFamilia(f: Familia, membroSugeridoNome?: string) {
     setFamiliaId(f.id)
+    if (membroSugeridoNome) {
+      setBeneficiario(membroSugeridoNome)
+    } else {
+      const termo = buscaFamilia.toLowerCase().trim()
+      const cpfLimpo = termo.replace(/\D/g, '')
+      const membroCorrespondente = (f.membros || []).find(m =>
+        (termo.length > 2 && (m.nome || '').toLowerCase().includes(termo)) ||
+        (cpfLimpo.length > 3 && (m.cpf || '').includes(cpfLimpo))
+      )
+      if (membroCorrespondente) {
+        setBeneficiario(membroCorrespondente.nome)
+      } else {
+        setBeneficiario(f.responsavel || '')
+      }
+    }
     setBuscaFamilia('')
     setMostrarSugestoes(false)
   }
@@ -81,20 +97,19 @@ export function ModalNovoEncaminhamento({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!familiaId) return alert('Por favor, busque e selecione a Família / Beneficiário.')
+    if (!familiaId) return alert('Por favor, busque e selecione a Família / Prontuário.')
+    if (!beneficiario.trim()) return alert('Por favor, selecione quem é a pessoa encaminhada / beneficiário(a).')
     if (!tipoRma) return alert('Por favor, selecione a categoria do encaminhamento no RMA.')
-    if (!destino) return alert('Por favor, selecione ou informe o serviço de destino.')
+    if (!destino.trim()) return alert('Por favor, selecione ou informe o serviço de destino.')
     if (!dataEnvio) return alert('Por favor, preencha a data de emissão.')
     if (!motivo.trim()) return alert('Por favor, preencha o motivo e justificativa técnica do encaminhamento.')
 
     setSalvando(true)
 
-    const fam = familias.find(f => f.id === familiaId)
-
     try {
       const novo: Partial<Encaminhamento> = {
         familia_id: familiaId,
-        beneficiario: fam?.responsavel || 'Beneficiário',
+        beneficiario: beneficiario.trim().toUpperCase(),
         tipo_rma: (tipoRma as any) || 'outro',
         destino: destino.trim().toUpperCase(),
         motivo: motivo.trim().toUpperCase(),
@@ -132,10 +147,10 @@ export function ModalNovoEncaminhamento({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          {/* Busca / Autocomplete da Família */}
+          {/* Busca / Autocomplete da Família / Prontuário */}
           <div ref={containerBuscaRef} className="relative">
             <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center justify-between">
-              <span>Família / Beneficiário(a) <span className="text-red-600 font-bold">*</span></span>
+              <span>Família / Prontuário SUAS <span className="text-red-600 font-bold">*</span></span>
               {familiaSelecionada && (
                 <span className="text-[10px] text-gray-500 font-normal">
                   Prontuário Nº {familiaSelecionada.cod_familiar}
@@ -146,17 +161,29 @@ export function ModalNovoEncaminhamento({
             {familiaSelecionada ? (
               <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl flex flex-wrap justify-between items-center gap-3">
                 <div className="space-y-1">
-                  <strong className="text-sm font-extrabold text-teal-950 uppercase block">
-                    {familiaSelecionada.responsavel}
-                  </strong>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <strong className="text-sm font-extrabold text-teal-950 uppercase">
+                      {familiaSelecionada.responsavel}
+                    </strong>
+                    {familiaSelecionada.paif_ativo ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 uppercase">
+                        <i className="fa-solid fa-circle-check mr-1 text-emerald-700"></i> PAIF Ativo
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-700 border border-gray-300 uppercase">
+                        Sem Acompanhamento PAIF
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-teal-900 font-medium">
-                    CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'} • Prontuário: {familiaSelecionada.cod_familiar} • Bairro: {familiaSelecionada.bairro || '—'}
+                    CPF: {familiaSelecionada.cpf_responsavel ? maskCPF(familiaSelecionada.cpf_responsavel) : '—'} • Prontuário nº {familiaSelecionada.cod_familiar} • Bairro: {familiaSelecionada.bairro || '—'} ({familiaSelecionada.zona_territorio || 'Urbana'})
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setFamiliaId('')
+                    setBeneficiario('')
                     setBuscaFamilia('')
                     setMostrarSugestoes(true)
                   }}
@@ -177,7 +204,7 @@ export function ModalNovoEncaminhamento({
                       setMostrarSugestoes(true)
                     }}
                     onFocus={() => setMostrarSugestoes(true)}
-                    placeholder="DIGITE O NOME DO BENEFICIÁRIO, CPF OU PRONTUÁRIO..."
+                    placeholder="DIGITE O NOME DO RESPONSÁVEL, INTEGRANTE, CPF OU Nº DO PRONTUÁRIO..."
                     className="w-full pl-9 pr-3 py-2.5 border-2 border-teal-700/30 focus:border-teal-700 rounded-xl text-xs uppercase font-semibold bg-white shadow-xs focus:outline-none"
                   />
                 </div>
@@ -189,29 +216,83 @@ export function ModalNovoEncaminhamento({
                         Nenhuma família encontrada para "{buscaFamilia}".
                       </div>
                     ) : (
-                      sugestoesFamilias.map(f => (
-                        <div
-                          key={f.id}
-                          onClick={() => selecionarFamilia(f)}
-                          className="p-3 hover:bg-teal-50/70 transition cursor-pointer flex justify-between items-center gap-2"
-                        >
-                          <div>
-                            <strong className="text-gray-900 uppercase font-bold text-xs block">
-                              {f.responsavel}
-                            </strong>
-                            <p className="text-[11px] text-gray-600 font-medium mt-0.5">
-                              Prontuário: <span className="font-mono text-teal-900 font-bold">{f.cod_familiar}</span> • CPF: {f.cpf_responsavel ? maskCPF(f.cpf_responsavel) : '—'} • {f.bairro || 'Zona Urbana'}
-                            </p>
+                      sugestoesFamilias.map(f => {
+                        const termo = buscaFamilia.toLowerCase().trim()
+                        const membrosCorrespondentes = termo.length > 2
+                          ? (f.membros || []).filter(m => (m.nome || '').toLowerCase().includes(termo))
+                          : []
+
+                        return (
+                          <div
+                            key={f.id}
+                            onClick={() => selecionarFamilia(f, membrosCorrespondentes.length === 1 ? membrosCorrespondentes[0].nome : undefined)}
+                            className="p-3 hover:bg-teal-50/70 transition cursor-pointer flex justify-between items-center gap-2"
+                          >
+                            <div>
+                              <strong className="text-gray-900 uppercase font-bold text-xs block">
+                                {f.responsavel}
+                              </strong>
+                              <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                                Prontuário: <span className="font-mono text-teal-900 font-bold">{f.cod_familiar}</span> • CPF: {f.cpf_responsavel ? maskCPF(f.cpf_responsavel) : '—'} • {f.bairro || 'Zona Urbana'}
+                              </p>
+                              {membrosCorrespondentes.length > 0 && (
+                                <p className="text-[10px] text-teal-700 font-semibold mt-1 flex items-center gap-1">
+                                  <i className="fa-solid fa-user text-[9px]"></i>
+                                  Membro correspondente: {membrosCorrespondentes.map(m => `${m.nome} (${m.parentesco || 'Membro'})`).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-bold text-teal-800 bg-teal-100/60 px-2.5 py-1 rounded-md shrink-0">
+                              Selecionar
+                            </span>
                           </div>
-                          <span className="text-[11px] font-bold text-teal-800 bg-teal-100/60 px-2.5 py-1 rounded-md shrink-0">
-                            Selecionar
-                          </span>
-                        </div>
-                      ))
+                        )
+                      })
                     )}
                   </div>
                 )}
               </div>
+            )}
+          </div>
+
+          {/* Seleção da Pessoa Encaminhada (Individualização SUAS) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center justify-between">
+              <span>Pessoa Encaminhada / Beneficiário(a) <span className="text-red-600 font-bold">*</span></span>
+              {familiaSelecionada && (
+                <span className="text-[10px] text-gray-500 font-normal">
+                  {1 + (familiaSelecionada.membros?.length || 0)} integrante(s) no prontuário
+                </span>
+              )}
+            </label>
+            {familiaSelecionada ? (
+              <select
+                value={beneficiario}
+                onChange={e => setBeneficiario(e.target.value)}
+                required
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-bold text-teal-950 truncate focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-700"
+              >
+                <option value="">SELECIONE QUEM ESTÁ SENDO ENCAMINHADO(A) *</option>
+                <option value={familiaSelecionada.responsavel}>
+                  {familiaSelecionada.responsavel} (Responsável Familiar)
+                </option>
+                {familiaSelecionada.membros && familiaSelecionada.membros
+                  .filter(m => m.nome.trim().toUpperCase() !== familiaSelecionada.responsavel.trim().toUpperCase())
+                  .map(m => (
+                    <option key={m.id || m.nome} value={m.nome}>
+                      {m.nome} ({m.parentesco || 'Membro Familiar'}{m.cpf ? ` — CPF ${maskCPF(m.cpf)}` : ''})
+                    </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                required
+                disabled
+                value={beneficiario}
+                placeholder="SELECIONE A FAMÍLIA / PRONTUÁRIO ACIMA"
+                className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-medium bg-gray-50 text-gray-400 cursor-not-allowed"
+              />
             )}
           </div>
 

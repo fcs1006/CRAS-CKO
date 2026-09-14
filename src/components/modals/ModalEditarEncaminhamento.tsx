@@ -1,26 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Encaminhamento } from '@/types'
+import { useState } from 'react'
+import { Encaminhamento, Familia } from '@/types'
+import { maskCPF } from '@/utils/masks'
 
 interface ModalEditarEncaminhamentoProps {
   encaminhamento: Encaminhamento
+  familias?: Familia[]
   onClose: () => void
   onSalvar: (id: string, updates: Partial<Encaminhamento>) => Promise<void>
 }
 
 export function ModalEditarEncaminhamento({
   encaminhamento,
+  familias = [],
   onClose,
   onSalvar
 }: ModalEditarEncaminhamentoProps) {
   const [salvando, setSalvando] = useState(false)
+  const [beneficiario, setBeneficiario] = useState(encaminhamento.beneficiario || '')
   const [tipoRma, setTipoRma] = useState<string>(encaminhamento.tipo_rma || 'outro')
   const [destino, setDestino] = useState(encaminhamento.destino || '')
   const [motivo, setMotivo] = useState(encaminhamento.motivo || '')
   const [dataEnvio, setDataEnvio] = useState(encaminhamento.data_envio || '')
   const [status, setStatus] = useState<string>(encaminhamento.status || 'Pendente')
   const [resposta, setResposta] = useState(encaminhamento.resposta || '')
+
+  const familiaCorrespondente = familias.find(f => f.id === encaminhamento.familia_id || f.cod_familiar === encaminhamento.familia_id)
 
   function handleTipoRmaChange(tipo: string) {
     setTipoRma(tipo)
@@ -37,6 +43,7 @@ export function ModalEditarEncaminhamento({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!beneficiario.trim()) return alert('Informe a pessoa encaminhada.')
     if (!destino.trim()) return alert('Informe o serviço de destino.')
     if (!dataEnvio) return alert('Informe a data de emissão.')
     if (!motivo.trim()) return alert('Informe o motivo do encaminhamento.')
@@ -44,6 +51,7 @@ export function ModalEditarEncaminhamento({
     setSalvando(true)
     try {
       await onSalvar(encaminhamento.id, {
+        beneficiario: beneficiario.trim().toUpperCase(),
         tipo_rma: tipoRma as any,
         destino: destino.trim().toUpperCase(),
         motivo: motivo.trim().toUpperCase(),
@@ -70,7 +78,10 @@ export function ModalEditarEncaminhamento({
               <i className="fa-solid fa-pen-to-square text-rose-400"></i> Editar Encaminhamento Intersetorial
             </h3>
             <p className="text-[11px] text-rose-200 mt-0.5">
-              Beneficiário: <strong className="text-white uppercase">{encaminhamento.beneficiario}</strong>
+              Pessoa Encaminhada: <strong className="text-white uppercase">{beneficiario || encaminhamento.beneficiario}</strong>
+              {familiaCorrespondente && (
+                <span> • Prontuário SUAS nº {familiaCorrespondente.cod_familiar}</span>
+              )}
             </p>
           </div>
           <button 
@@ -84,6 +95,47 @@ export function ModalEditarEncaminhamento({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           
+          {/* Pessoa Encaminhada / Beneficiário(a) */}
+          <div>
+            <label className="block text-xs font-bold text-gray-800 mb-1 uppercase flex items-center justify-between">
+              <span>Pessoa Encaminhada / Beneficiário(a) <span className="text-red-600 font-bold">*</span></span>
+              {familiaCorrespondente && (
+                <span className="text-[10px] text-gray-500 font-normal">
+                  Família: {familiaCorrespondente.responsavel} (Pront. #{familiaCorrespondente.cod_familiar})
+                </span>
+              )}
+            </label>
+            {familiaCorrespondente ? (
+              <select
+                value={beneficiario}
+                onChange={e => setBeneficiario(e.target.value)}
+                required
+                className="w-full px-3 py-2 border rounded-lg text-xs bg-white uppercase font-extrabold text-rose-950 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700"
+              >
+                <option value="">SELECIONE A PESSOA ENCAMINHADA *</option>
+                <option value={familiaCorrespondente.responsavel}>
+                  {familiaCorrespondente.responsavel} (Responsável Familiar)
+                </option>
+                {familiaCorrespondente.membros && familiaCorrespondente.membros
+                  .filter(m => m.nome.trim().toUpperCase() !== familiaCorrespondente.responsavel.trim().toUpperCase())
+                  .map(m => (
+                    <option key={m.id || m.nome} value={m.nome}>
+                      {m.nome} ({m.parentesco || 'Membro Familiar'}{m.cpf ? ` — CPF ${maskCPF(m.cpf)}` : ''})
+                    </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={beneficiario}
+                onChange={e => setBeneficiario(e.target.value.toUpperCase())}
+                placeholder="NOME DA PESSOA ENCAMINHADA"
+                required
+                className="w-full px-3 py-2 border rounded-lg text-xs font-bold uppercase focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700"
+              />
+            )}
+          </div>
+
           {/* Categorização no RMA (Bloco 2) */}
           <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
             <label className="block text-xs font-bold text-rose-950 uppercase">

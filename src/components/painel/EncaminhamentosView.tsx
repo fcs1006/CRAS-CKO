@@ -35,6 +35,18 @@ export function ConteudoGuiaEncaminhamento({
   const nomeBeneficiario = (enc.beneficiario || fam?.responsavel || 'BENEFICIÁRIO(A)').toUpperCase()
   const dataFormatada = (enc.data_envio || '').split('-').reverse().join('/')
   const podeVerMotivo = podeVerDetalheEncaminhamento(usuarioLogado, enc)
+
+  const isResponsavel = Boolean(fam?.responsavel && fam.responsavel.trim().toUpperCase() === nomeBeneficiario)
+  const membroEncontrado = fam?.membros?.find(m => m.nome.trim().toUpperCase() === nomeBeneficiario)
+  const parentescoBeneficiario = isResponsavel
+    ? 'Responsável Familiar'
+    : (membroEncontrado?.parentesco || 'Membro Familiar')
+  const cpfBeneficiario = (membroEncontrado && membroEncontrado.cpf)
+    ? maskCPF(membroEncontrado.cpf)
+    : (isResponsavel && fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—')
+  const nisBeneficiario = (membroEncontrado && membroEncontrado.nis)
+    ? membroEncontrado.nis
+    : (isResponsavel && fam?.nis_responsavel ? fam.nis_responsavel : '—')
   
   let dataExtensaFormatada = ''
   if (enc.data_envio) {
@@ -63,18 +75,38 @@ export function ConteudoGuiaEncaminhamento({
         </div>
       }
     >
-      {/* 1. Identificação do Usuário / Família */}
+      {/* 1. Identificação da Pessoa Encaminhada e Referência Familiar */}
       <div className="space-y-1">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
-          1. Identificação do(a) Usuário(a) / Responsável Familiar
+          1. Identificação da Pessoa Encaminhada & Referência Familiar
         </h4>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-1 text-[10px]">
-          <div className="col-span-2"><strong className="font-extrabold">Nome:</strong> {nomeBeneficiario}</div>
-          <div><strong className="font-extrabold">CPF:</strong> {fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—'}</div>
-          <div><strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}</div>
-          <div><strong className="font-extrabold">Telefone / Contato:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}</div>
-          <div><strong className="font-extrabold">Território:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}</div>
-          <div className="col-span-3"><strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}, nº {fam?.numero || 'S/N'} — Bairro: {fam?.bairro || ''}</div>
+          <div className="col-span-2">
+            <strong className="font-extrabold">Pessoa Encaminhada:</strong> {nomeBeneficiario} ({parentescoBeneficiario.toUpperCase()})
+          </div>
+          <div>
+            <strong className="font-extrabold">CPF:</strong> {cpfBeneficiario}
+          </div>
+          {!isResponsavel && fam && (
+            <div className="col-span-2">
+              <strong className="font-extrabold">Responsável Familiar:</strong> {(fam.responsavel || '—').toUpperCase()} {fam.cpf_responsavel ? `(CPF: ${maskCPF(fam.cpf_responsavel)})` : ''}
+            </div>
+          )}
+          <div>
+            <strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}
+          </div>
+          <div>
+            <strong className="font-extrabold">NIS:</strong> {nisBeneficiario}
+          </div>
+          <div>
+            <strong className="font-extrabold">Telefone / Contato:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}
+          </div>
+          <div>
+            <strong className="font-extrabold">Território:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}
+          </div>
+          <div className="col-span-3">
+            <strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}, nº {fam?.numero || 'S/N'} — Bairro: {fam?.bairro || ''}
+          </div>
         </div>
       </div>
 
@@ -288,7 +320,25 @@ export function EncaminhamentosView({
                         </div>
                       </td>
                       <td className="py-3.5 px-4 font-bold text-gray-900 uppercase align-top break-words [overflow-wrap:anywhere]">
-                        {enc.beneficiario}
+                        <span className="font-extrabold text-gray-950 block">{enc.beneficiario}</span>
+                        {(() => {
+                          const fam = familias.find(f => f.id === enc.familia_id || f.cod_familiar === enc.familia_id)
+                          if (!fam) return null
+                          const ehDiferente = Boolean(fam.responsavel && fam.responsavel.trim().toUpperCase() !== (enc.beneficiario || '').trim().toUpperCase())
+                          return (
+                            <div className="mt-0.5 space-y-0.5 text-[10px] text-gray-500 font-normal">
+                              {ehDiferente && (
+                                <p className="truncate text-teal-800 font-medium">
+                                  <i className="fa-solid fa-people-roof text-[9px] mr-1"></i>
+                                  Família: <span className="font-bold">{fam.responsavel}</span>
+                                </p>
+                              )}
+                              <p className="font-mono text-gray-600">
+                                Pront. #{fam.cod_familiar}
+                              </p>
+                            </div>
+                          )
+                        })()}
                       </td>
                       <td className="py-3.5 px-4 font-extrabold text-rose-700 uppercase align-top break-words [overflow-wrap:anywhere]">
                         <div className="flex items-center gap-1.5">
@@ -405,6 +455,7 @@ export function EncaminhamentosView({
       {encaminhamentoParaEditar && (
         <ModalEditarEncaminhamento
           encaminhamento={encaminhamentoParaEditar}
+          familias={familias}
           onClose={() => setEncaminhamentoParaEditar(null)}
           onSalvar={async (id, updates) => {
             if (onEditarEncaminhamento) {
