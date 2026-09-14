@@ -3,6 +3,7 @@ import { getSupabaseServer } from '@/lib/supabaseServer'
 import { signSessionToken } from '@/lib/authSession'
 import { checkRateLimit, resetRateLimit } from '@/lib/rateLimit'
 import { registrarLogAuditoria } from '@/lib/auditLogger'
+import { autenticarUsuarioD1 } from '@/lib/d1Client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,17 +39,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseServer()
-    const { data, error } = await supabase.rpc('fazer_login', {
-      p_usuario: usuarioLimpo,
-      p_senha: String(senha).trim()
-    })
+    let authResult: any = null
 
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    // 1. Tentativa prioritária e ultra-rápida no Cloudflare D1
+    try {
+      const d1Auth = await autenticarUsuarioD1(usuarioLimpo, String(senha).trim())
+      if (d1Auth) {
+        authResult = d1Auth
+      }
+    } catch (d1Err) {
+      console.warn('[D1_AUTH_FALLBACK]:', d1Err)
     }
 
-    if (!data?.ok) {
+    // 2. Fallback para Supabase se o D1 não tiver resolvido
+    if (!authResult) {
+      try {
+        const supabase = getSupabaseServer()
+        const { data, error } = await supabase.rpc('fazer_login', {
+          p_usuario: usuarioLimpo,
+          p_senha: String(senha).trim()
+        })
+
+        if (!error && data) {
+          authResult = data
+        }
+      } catch (sbErr) {
+        console.warn('[SUPABASE_AUTH_FALLBACK_ERR]:', sbErr)
+      }
+    }
+
+    if (!authResult || !authResult.ok) {
       await registrarLogAuditoria({
         acao: 'LOGIN_FALHA',
         usuario_nome: usuarioLimpo,
@@ -59,12 +79,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          error: data?.error || 'Usuário ou senha incorretos.',
+          error: authResult?.error || 'Usuário ou senha incorretos.',
           tentativasRestantes: rateCheck.remaining
         },
         { status: 401 }
       )
     }
+
+    const data = authResult
+
 
     // Login com sucesso: reseta limitador de taxa
     resetRateLimit(rateLimitKey)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
-import { buscarCidadaosD1 } from '@/lib/d1Client'
+import { buscarCidadaosD1, salvarCidadaoD1 } from '@/lib/d1Client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,119 +40,124 @@ export async function GET(request: NextRequest) {
       console.warn('[D1_SEARCH_FALLBACK]: Falha ou D1 não provisionado ainda, consultando fallback:', d1Err)
     }
 
-    const cleanDigits = query.replace(/\D/g, '')
-    const supabaseServer = getSupabaseServer()
+    // 2. Fallback resiliente no Supabase (em try/catch para evitar erro 500 caso offline/DNS)
+    try {
+      const cleanDigits = query.replace(/\D/g, '')
+      const supabaseServer = getSupabaseServer()
 
-    // Construir filtro flexível pelas colunas reais da tabela (nome, cpf_cns, endereco, bairro)
-    let filterOr = `nome.ilike.%${query}%,cpf_cns.ilike.%${query}%,bairro.ilike.%${query}%`
-    if (cleanDigits.length >= 3) {
-      filterOr += `,cpf_cns.ilike.%${cleanDigits}%`
-    }
-
-    const { data: rawData, error } = await supabaseServer
-      .from('pacientes')
-      .select('*')
-      .or(filterOr)
-      .limit(15)
-
-    if (error) {
-      console.error('Erro na consulta de pacientes:', error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-    }
-
-    // Buscar enriquecimento em familias e membros_familia
-    const cpfs = (rawData || []).map(p => (p.cpf_cns || '').replace(/\D/g, '')).filter(c => c.length >= 11)
-    const nomes = (rawData || [])
-      .map(p => (p.nome || '').trim().toUpperCase().replace(/["'(),%]/g, ''))
-      .filter(n => n.length >= 3)
-
-    let famMap = new Map<string, any>()
-    let memMap = new Map<string, any>()
-
-    if (cpfs.length > 0 || nomes.length > 0) {
-      const famFilters: string[] = []
-      const memFilters: string[] = []
-
-      if (cpfs.length > 0) {
-        famFilters.push(`cpf_responsavel.in.(${cpfs.join(',')})`)
-        memFilters.push(`cpf.in.(${cpfs.join(',')})`)
-      }
-      if (nomes.length > 0) {
-        famFilters.push(`responsavel.in.(${nomes.map(n => `"${n}"`).join(',')})`)
-        memFilters.push(`nome.in.(${nomes.map(n => `"${n}"`).join(',')})`)
+      let filterOr = `nome.ilike.%${query}%,cpf_cns.ilike.%${query}%,bairro.ilike.%${query}%`
+      if (cleanDigits.length >= 3) {
+        filterOr += `,cpf_cns.ilike.%${cleanDigits}%`
       }
 
-      const [resFam, resMem] = await Promise.all([
-        supabaseServer
-          .from('familias')
-          .select('responsavel, cpf_responsavel, nome_mae_responsavel, raca_cor_responsavel, escolaridade_responsavel, ocupacao_responsavel, nis_responsavel, zona_territorio, numero, logradouro, bairro, telefone')
-          .or(famFilters.join(',')),
-        supabaseServer
-          .from('membros_familia')
-          .select('nome, cpf, raca_cor, escolaridade, ocupacao, nis, rg, possui_deficiencia, tipo_deficiencia')
-          .or(memFilters.join(','))
-      ])
+      const { data: rawData, error } = await supabaseServer
+        .from('pacientes')
+        .select('*')
+        .or(filterOr)
+        .limit(15)
 
-      if (resFam.data) {
-        for (const f of resFam.data) {
-          const cpfClean = (f.cpf_responsavel || '').replace(/\D/g, '')
-          const nomeClean = (f.responsavel || '').trim().toUpperCase()
-          if (cpfClean) famMap.set(cpfClean, f)
-          if (nomeClean) famMap.set(nomeClean, f)
+      if (error) {
+        console.warn('Falha na consulta remota de pacientes (Supabase):', error.message)
+        return NextResponse.json({ ok: true, data: [] })
+      }
+
+      // Buscar enriquecimento em familias e membros_familia
+      const cpfs = (rawData || []).map(p => (p.cpf_cns || '').replace(/\D/g, '')).filter(c => c.length >= 11)
+      const nomes = (rawData || [])
+        .map(p => (p.nome || '').trim().toUpperCase().replace(/["'(),%]/g, ''))
+        .filter(n => n.length >= 3)
+
+      let famMap = new Map<string, any>()
+      let memMap = new Map<string, any>()
+
+      if (cpfs.length > 0 || nomes.length > 0) {
+        const famFilters: string[] = []
+        const memFilters: string[] = []
+
+        if (cpfs.length > 0) {
+          famFilters.push(`cpf_responsavel.in.(${cpfs.join(',')})`)
+          memFilters.push(`cpf.in.(${cpfs.join(',')})`)
+        }
+        if (nomes.length > 0) {
+          famFilters.push(`responsavel.in.(${nomes.map(n => `"${n}"`).join(',')})`)
+          memFilters.push(`nome.in.(${nomes.map(n => `"${n}"`).join(',')})`)
+        }
+
+        const [resFam, resMem] = await Promise.all([
+          supabaseServer
+            .from('familias')
+            .select('responsavel, cpf_responsavel, nome_mae_responsavel, raca_cor_responsavel, escolaridade_responsavel, ocupacao_responsavel, nis_responsavel, zona_territorio, numero, logradouro, bairro, telefone')
+            .or(famFilters.join(',')),
+          supabaseServer
+            .from('membros_familia')
+            .select('nome, cpf, raca_cor, escolaridade, ocupacao, nis, rg, possui_deficiencia, tipo_deficiencia')
+            .or(memFilters.join(','))
+        ])
+
+        if (resFam.data) {
+          for (const f of resFam.data) {
+            const cpfClean = (f.cpf_responsavel || '').replace(/\D/g, '')
+            const nomeClean = (f.responsavel || '').trim().toUpperCase()
+            if (cpfClean) famMap.set(cpfClean, f)
+            if (nomeClean) famMap.set(nomeClean, f)
+          }
+        }
+
+        if (resMem.data) {
+          for (const m of resMem.data) {
+            const cpfClean = (m.cpf || '').replace(/\D/g, '')
+            const nomeClean = (m.nome || '').trim().toUpperCase()
+            if (cpfClean) memMap.set(cpfClean, m)
+            if (nomeClean) memMap.set(nomeClean, m)
+          }
         }
       }
 
-      if (resMem.data) {
-        for (const m of resMem.data) {
-          const cpfClean = (m.cpf || '').replace(/\D/g, '')
-          const nomeClean = (m.nome || '').trim().toUpperCase()
-          if (cpfClean) memMap.set(cpfClean, m)
-          if (nomeClean) memMap.set(nomeClean, m)
+      // Mapear campos reais com enriquecimento completo
+      const dataMapeada = (rawData || []).map(p => {
+        const pCpf = (p.cpf_cns || '').replace(/\D/g, '')
+        const pNome = (p.nome || '').trim().toUpperCase()
+
+        const famInfo = (pCpf && famMap.get(pCpf)) || famMap.get(pNome) || {}
+        const memInfo = (pCpf && memMap.get(pCpf)) || memMap.get(pNome) || {}
+
+        let sexoFormatado = p.sexo
+        if (typeof sexoFormatado === 'string') {
+          const s = sexoFormatado.trim().toUpperCase()
+          if (s === 'M' || s.startsWith('MASC')) sexoFormatado = 'Masculino'
+          else if (s === 'F' || s.startsWith('FEM')) sexoFormatado = 'Feminino'
+          else if (s === 'O' || s.startsWith('OUTR')) sexoFormatado = 'Outro'
         }
-      }
+
+        const rawNis = famInfo.nis_responsavel || memInfo.nis || p.nis || ''
+        const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
+
+        return {
+          id: p.id,
+          nome: p.nome,
+          cpf: p.cpf_cns,
+          nis: nisClean || null,
+          nome_mae: famInfo.nome_mae_responsavel || p.nome_mae || null,
+          raca_cor: famInfo.raca_cor_responsavel || memInfo.raca_cor || p.raca_cor || 'Parda',
+          escolaridade: famInfo.escolaridade_responsavel || memInfo.escolaridade || p.escolaridade || null,
+          ocupacao: famInfo.ocupacao_responsavel || memInfo.ocupacao || p.ocupacao || null,
+          rg: memInfo.rg || null,
+          data_nascimento: p.dt_nasc || null,
+          logradouro: famInfo.logradouro || p.endereco || null,
+          numero: famInfo.numero || 'S/N',
+          bairro: famInfo.bairro || p.bairro || 'CENTRO',
+          telefone: famInfo.telefone || p.telefone || null,
+          cep: p.cep || '77305-000',
+          zona_territorio: famInfo.zona_territorio || (p.bairro?.toUpperCase().includes('RURAL') ? 'Rural' : 'Urbana'),
+          sexo: sexoFormatado
+        }
+      })
+
+      return NextResponse.json({ ok: true, data: dataMapeada })
+    } catch (supErr: any) {
+      console.warn('[SUPABASE_SEARCH_FALLBACK_ERR]:', supErr?.message || supErr)
+      return NextResponse.json({ ok: true, data: [] })
     }
-
-    // Mapear campos reais com enriquecimento completo
-    const dataMapeada = (rawData || []).map(p => {
-      const pCpf = (p.cpf_cns || '').replace(/\D/g, '')
-      const pNome = (p.nome || '').trim().toUpperCase()
-
-      const famInfo = (pCpf && famMap.get(pCpf)) || famMap.get(pNome) || {}
-      const memInfo = (pCpf && memMap.get(pCpf)) || memMap.get(pNome) || {}
-
-      let sexoFormatado = p.sexo
-      if (typeof sexoFormatado === 'string') {
-        const s = sexoFormatado.trim().toUpperCase()
-        if (s === 'M' || s.startsWith('MASC')) sexoFormatado = 'Masculino'
-        else if (s === 'F' || s.startsWith('FEM')) sexoFormatado = 'Feminino'
-        else if (s === 'O' || s.startsWith('OUTR')) sexoFormatado = 'Outro'
-      }
-
-      const rawNis = famInfo.nis_responsavel || memInfo.nis || p.nis || ''
-      const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
-
-      return {
-        id: p.id,
-        nome: p.nome,
-        cpf: p.cpf_cns,
-        nis: nisClean || null,
-        nome_mae: famInfo.nome_mae_responsavel || p.nome_mae || null,
-        raca_cor: famInfo.raca_cor_responsavel || memInfo.raca_cor || p.raca_cor || 'Parda',
-        escolaridade: famInfo.escolaridade_responsavel || memInfo.escolaridade || p.escolaridade || null,
-        ocupacao: famInfo.ocupacao_responsavel || memInfo.ocupacao || p.ocupacao || null,
-        rg: memInfo.rg || null,
-        data_nascimento: p.dt_nasc || null,
-        logradouro: famInfo.logradouro || p.endereco || null,
-        numero: famInfo.numero || 'S/N',
-        bairro: famInfo.bairro || p.bairro || 'CENTRO',
-        telefone: famInfo.telefone || p.telefone || null,
-        cep: p.cep || '77305-000',
-        zona_territorio: famInfo.zona_territorio || (p.bairro?.toUpperCase().includes('RURAL') ? 'Rural' : 'Urbana'),
-        sexo: sexoFormatado
-      }
-    })
-
-    return NextResponse.json({ ok: true, data: dataMapeada })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
@@ -167,60 +172,74 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Nome do paciente é obrigatório.' }, { status: 400 })
     }
 
-    const supabaseServer = getSupabaseServer()
     const cleanCpf = cpf ? cpf.replace(/\D/g, '') : null
 
-    // Buscar por ID, CPF ou Nome exato para saber se é atualização ou novo cadastro
-    let existingId: string | null = id || null
-
-    if (!existingId && cleanCpf && cleanCpf.length >= 11) {
-      const { data: foundByCpf } = await supabaseServer
-        .from('pacientes')
-        .select('id')
-        .eq('cpf_cns', cleanCpf)
-        .maybeSingle()
-      if (foundByCpf) existingId = foundByCpf.id
+    // 1. Salvar prioritariamente no Cloudflare D1 (Base Única Municipal)
+    try {
+      await salvarCidadaoD1({
+        id: id || undefined,
+        nome: nome.trim(),
+        cpf: cleanCpf,
+        rg,
+        data_nascimento,
+        logradouro,
+        bairro,
+        cep,
+        telefone,
+        sexo
+      })
+    } catch (d1Err) {
+      console.warn('[D1_SAVE_WARN]: Erro ao gravar no D1:', d1Err)
     }
 
-    if (!existingId) {
-      const { data: foundByName } = await supabaseServer
-        .from('pacientes')
-        .select('id')
-        .ilike('nome', nome.trim())
-        .maybeSingle()
-      if (foundByName) existingId = foundByName.id
-    }
+    // 2. Sincronizar com Supabase em segundo plano de forma não-bloqueante
+    (async () => {
+      try {
+        const supabaseServer = getSupabaseServer()
+        let existingId: string | null = id || null
 
-    const payload: any = {}
-    if (nome) payload.nome = nome.trim().toUpperCase()
-    if (cleanCpf) payload.cpf_cns = cleanCpf
-    if (data_nascimento) payload.dt_nasc = data_nascimento
-    if (logradouro) payload.endereco = logradouro.trim().toUpperCase()
-    if (bairro) payload.bairro = bairro.trim().toUpperCase()
-    if (cep) payload.cep = cep.replace(/\D/g, '')
-    if (telefone) payload.telefone = telefone
-    if (sexo) payload.sexo = sexo
+        if (!existingId && cleanCpf && cleanCpf.length >= 11) {
+          const { data: foundByCpf } = await supabaseServer
+            .from('pacientes')
+            .select('id')
+            .eq('cpf_cns', cleanCpf)
+            .maybeSingle()
+          if (foundByCpf) existingId = foundByCpf.id
+        }
 
-    if (existingId) {
-      const { error } = await supabaseServer
-        .from('pacientes')
-        .update(payload)
-        .eq('id', existingId)
+        if (!existingId) {
+          const { data: foundByName } = await supabaseServer
+            .from('pacientes')
+            .select('id')
+            .ilike('nome', nome.trim())
+            .maybeSingle()
+          if (foundByName) existingId = foundByName.id
+        }
 
-      if (error) {
-        console.error('Erro ao atualizar paciente na base:', error)
-        return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+        const payload: any = {}
+        if (nome) payload.nome = nome.trim().toUpperCase()
+        if (cleanCpf) payload.cpf_cns = cleanCpf
+        if (data_nascimento) payload.dt_nasc = data_nascimento
+        if (logradouro) payload.endereco = logradouro.trim().toUpperCase()
+        if (bairro) payload.bairro = bairro.trim().toUpperCase()
+        if (cep) payload.cep = cep.replace(/\D/g, '')
+        if (telefone) payload.telefone = telefone
+        if (sexo) payload.sexo = sexo
+
+        if (existingId) {
+          await supabaseServer
+            .from('pacientes')
+            .update(payload)
+            .eq('id', existingId)
+        } else {
+          await supabaseServer
+            .from('pacientes')
+            .insert([payload])
+        }
+      } catch (supErr: any) {
+        console.warn('[SUPABASE_PACIENTE_SYNC_WARN]:', supErr?.message || supErr)
       }
-    } else {
-      const { error } = await supabaseServer
-        .from('pacientes')
-        .insert([payload])
-
-      if (error) {
-        console.error('Erro ao inserir paciente na base:', error)
-        return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-      }
-    }
+    })().catch(() => {})
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {

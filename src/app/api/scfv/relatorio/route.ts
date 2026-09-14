@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
+import { getD1Database } from '@/lib/d1Client'
 
 function parseRelatoAtendimento(relatoTexto: string, providenciasTexto?: string, tecnicoTexto?: string, dataAtendimento?: string) {
   let objetivo = ''
@@ -85,23 +86,37 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const grupoId = searchParams.get('grupo_id')
 
-    const supabase = getSupabaseServer()
-    
-    // 1. Buscar na tabela relatorios_scfv
-    let query = supabase.from('relatorios_scfv').select('*').order('data_encontro', { ascending: false })
-    if (grupoId) {
-      query = query.eq('grupo_id', grupoId)
+    let atendimentos: any[] = []
+
+    // 1. Consulta prioritária no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        const atdRes = await db.prepare(`
+          SELECT * FROM historico_atendimentos
+          WHERE tipo LIKE '%SCFV%' AND relato LIKE '%RELATÓRIO DE ENCONTRO SCFV%'
+          ORDER BY criado_em DESC
+          LIMIT 100
+        `).all<any>()
+        atendimentos = atdRes.results || []
+      }
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_RELATORIO_ERR]:', d1Err)
     }
 
-    const { data: relatoriosDirect } = await query
-
-    // 2. Buscar no historico_atendimentos SOMENTE os relatórios técnicos de encontros salvos
-    const { data: atendimentos } = await supabase
-      .from('historico_atendimentos')
-      .select('*')
-      .ilike('tipo', '%SCFV%')
-      .ilike('relato', '%RELATÓRIO DE ENCONTRO SCFV%')
-      .order('criado_em', { ascending: false })
+    // 2. Consulta de fallback no Supabase
+    if (atendimentos.length === 0) {
+      try {
+        const supabase = getSupabaseServer()
+        const resAtd = await supabase
+          .from('historico_atendimentos')
+          .select('*')
+          .ilike('tipo', '%SCFV%')
+          .ilike('relato', '%RELATÓRIO DE ENCONTRO SCFV%')
+          .order('criado_em', { ascending: false })
+        atendimentos = resAtd.data || []
+      } catch (e) {}
+    }
 
     const atendimentosMap = new Map<string, any>()
     if (Array.isArray(atendimentos)) {
@@ -122,34 +137,8 @@ export async function GET(request: NextRequest) {
     }
 
     const relatoriosCompletos: any[] = []
-    const datasProcessadas = new Set<string>()
-
-    if (Array.isArray(relatoriosDirect)) {
-      relatoriosDirect.forEach((r: any) => {
-        const d = r.data_encontro?.split('T')[0]?.split(' ')[0]
-        if (!d) return
-        datasProcessadas.add(d)
-
-        const fallback = atendimentosMap.get(d) || {}
-        relatoriosCompletos.push({
-          id: r.id || fallback.id,
-          grupo_id: r.grupo_id || grupoId || 'geral',
-          data_encontro: d,
-          objetivo_encontro: r.objetivo_encontro || fallback.objetivo_encontro || '',
-          atividade_realizada: r.atividade_realizada || fallback.atividade_realizada || '',
-          detalhamento: r.detalhamento || fallback.detalhamento || '',
-          relato: r.relato || fallback.relato || '',
-          providencias: r.providencias || fallback.providencias || '',
-          profissionais_participantes: r.profissionais_participantes || fallback.profissionais_participantes || '',
-          tecnico: r.tecnico || fallback.tecnico || 'TÉCNICO RESPONSÁVEL'
-        })
-      })
-    }
-
-    atendimentosMap.forEach((val, key) => {
-      if (!datasProcessadas.has(key)) {
-        relatoriosCompletos.push(val)
-      }
+    atendimentosMap.forEach((val) => {
+      relatoriosCompletos.push(val)
     })
 
     return NextResponse.json({ ok: true, data: relatoriosCompletos })
@@ -179,32 +168,6 @@ export async function POST(request: NextRequest) {
     }
 
     const apenasData = data_encontro.split('T')[0].split(' ')[0].trim()
-    const supabase = getSupabaseServer()
-
-    const payload = {
-      grupo_id,
-      data_encontro: apenasData,
-      objetivo_encontro: objetivo_encontro || null,
-      atividade_realizada: atividade_realizada || null,
-      detalhamento: detalhamento || null,
-      relato: relato || null,
-      providencias: providencias || null,
-      profissionais_participantes: profissionais_participantes || null,
-      tecnico: tecnico || 'TÉCNICO RESPONSÁVEL'
-    }
-
-    let { data: relSalvo, error: relErr } = await supabase
-      .from('relatorios_scfv')
-      .upsert(payload, { onConflict: 'grupo_id,data_encontro' })
-      .select()
-      .single()
-
-    if (relErr) {
-      await supabase.from('relatorios_scfv').delete().eq('grupo_id', grupo_id).eq('data_encontro', apenasData)
-      const retry = await supabase.from('relatorios_scfv').insert(payload).select().single()
-      relSalvo = retry.data
-    }
-
     const dataPartes = apenasData.split('-')
     const dataBr = dataPartes.length === 3 ? `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]}` : apenasData
 
@@ -217,72 +180,88 @@ export async function POST(request: NextRequest) {
       profissionais_participantes ? `PROFISSIONAIS PARTICIPANTES: ${profissionais_participantes}` : ''
     ].filter(Boolean).join('\n')
 
+    // 1. Salvar no Cloudflare D1
     try {
-      const { data: partList } = await supabase
-        .from('participantes_scfv')
-        .select('*')
-        .eq('grupo_id', grupo_id)
+      const db = await getD1Database()
+      if (db) {
+        const partList = await db.prepare('SELECT familia_id, nome FROM participantes_scfv WHERE grupo_id = ?').bind(grupo_id).all<any>()
+        const list = partList.results || []
 
-      const { data: todasFamilias } = await supabase
-        .from('familias')
-        .select('id, responsavel, membros')
+        if (list.length > 0) {
+          for (const p of list) {
+            let famId = p.familia_id
+            if (!famId) {
+              const famRow = await db.prepare('SELECT id FROM familias WHERE UPPER(responsavel) = ? LIMIT 1').bind((p.nome || '').trim().toUpperCase()).first<any>()
+              if (famRow) famId = famRow.id
+            }
 
-      const registrosHistorico: any[] = []
-
-      if (Array.isArray(partList) && partList.length > 0) {
-        for (const p of partList) {
-          let famId = p.familia_id
-
-          if (!famId && todasFamilias) {
-            const nomeP = (p.nome || '').trim().toUpperCase()
-            const famEncontrada = todasFamilias.find(f => {
-              if (f.responsavel && f.responsavel.trim().toUpperCase() === nomeP) return true
-              if (Array.isArray(f.membros)) {
-                return f.membros.some((m: any) => m.nome && m.nome.trim().toUpperCase() === nomeP)
-              }
-              return false
-            })
-            if (famEncontrada) famId = famEncontrada.id
+            if (famId) {
+              const histId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `atd_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`
+              await db.prepare(`
+                INSERT INTO historico_atendimentos (
+                  id, familia_id, data, hora, usuario_visitado, local,
+                  compartilhada, tecnico, relato, providencias, sigilo, tipo, criado_em
+                ) VALUES (?, ?, ?, ?, ?, 'CRAS', 'Não', ?, ?, ?, 'publico', 'SCFV / Convivência', datetime('now'))
+              `).bind(
+                histId,
+                famId,
+                apenasData,
+                new Date().toTimeString().split(' ')[0],
+                (p.nome || 'PARTICIPANTE').toUpperCase(),
+                tecnico || 'TÉCNICO RESPONSÁVEL',
+                `${partesRelato}\n\n[SIGILO:publico]`,
+                providencias || 'Acompanhamento continuado em grupo de convivência.'
+              ).run()
+            }
           }
-
-          if (famId) {
-            registrosHistorico.push({
-              familia_id: famId,
-              usuario_visitado: (p.nome || '').toUpperCase(),
-              tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
-              tipo: 'SCFV / Convivência',
-              local: 'CRAS',
-              relato: `${partesRelato}\n\n[SIGILO:publico]`,
-              providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
-              sigilo: 'publico',
-              data: apenasData
-            })
+        } else {
+          // Gravar para primeira família encontrada
+          const firstFam = await db.prepare('SELECT id FROM familias LIMIT 1').first<any>()
+          if (firstFam) {
+            const histId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `atd_${Date.now()}`
+            await db.prepare(`
+              INSERT INTO historico_atendimentos (
+                id, familia_id, data, hora, usuario_visitado, local,
+                compartilhada, tecnico, relato, providencias, sigilo, tipo, criado_em
+              ) VALUES (?, ?, ?, ?, ?, 'CRAS', 'Não', ?, ?, ?, 'publico', 'SCFV / Convivência', datetime('now'))
+            `).bind(
+              histId,
+              firstFam.id,
+              apenasData,
+              new Date().toTimeString().split(' ')[0],
+              `COLETIVO SCFV - ${grupo_nome || 'GRUPO'}`,
+              tecnico || 'TÉCNICO RESPONSÁVEL',
+              `${partesRelato}\n\n[SIGILO:publico]`,
+              providencias || 'Acompanhamento continuado em grupo de convivência.'
+            ).run()
           }
         }
       }
-
-      if (registrosHistorico.length === 0 && todasFamilias && todasFamilias.length > 0) {
-        registrosHistorico.push({
-          familia_id: todasFamilias[0].id,
-          usuario_visitado: `COLETIVO SCFV - ${grupo_nome || 'GRUPO'}`,
-          tecnico: tecnico || 'TÉCNICO RESPONSÁVEL',
-          tipo: 'SCFV / Convivência',
-          local: 'CRAS',
-          relato: `${partesRelato}\n\n[SIGILO:publico]`,
-          providencias: providencias || 'Acompanhamento continuado em grupo de convivência.',
-          sigilo: 'publico',
-          data: apenasData
-        })
-      }
-
-      if (registrosHistorico.length > 0) {
-        await supabase.from('historico_atendimentos').insert(registrosHistorico)
-      }
-    } catch (e) {
-      console.warn('Aviso ao inserir no historico_atendimentos:', e)
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_REL_POST_ERR]:', d1Err)
     }
 
-    return NextResponse.json({ ok: true, data: relSalvo || payload })
+    // 2. Salvar no Supabase de forma resiliente
+    try {
+      const supabase = getSupabaseServer()
+      const payload = {
+        grupo_id,
+        data_encontro: apenasData,
+        objetivo_encontro: objetivo_encontro || null,
+        atividade_realizada: atividade_realizada || null,
+        detalhamento: detalhamento || null,
+        relato: relato || null,
+        providencias: providencias || null,
+        profissionais_participantes: profissionais_participantes || null,
+        tecnico: tecnico || 'TÉCNICO RESPONSÁVEL'
+      }
+      await supabase.from('relatorios_scfv').delete().eq('grupo_id', grupo_id).eq('data_encontro', apenasData)
+      await supabase.from('relatorios_scfv').insert(payload)
+    } catch (sbErr) {
+      console.warn('[SUPABASE_SCFV_REL_FALLBACK]:', sbErr)
+    }
+
+    return NextResponse.json({ ok: true, data: { grupo_id, data_encontro: apenasData } })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
@@ -291,7 +270,6 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const grupoId = searchParams.get('grupo_id')
     const dataEncontro = searchParams.get('data_encontro')
 
     if (!dataEncontro) {
@@ -299,42 +277,27 @@ export async function DELETE(request: NextRequest) {
     }
 
     const apenasData = dataEncontro.split('T')[0].split(' ')[0].trim()
-    const supabase = getSupabaseServer()
 
-    // 1. Deletar relatórios do grupo/data da tabela relatorios_scfv
-    if (grupoId) {
-      await supabase
-        .from('relatorios_scfv')
-        .delete()
-        .eq('grupo_id', grupoId)
-        .eq('data_encontro', apenasData)
-    } else {
-      await supabase
-        .from('relatorios_scfv')
-        .delete()
-        .eq('data_encontro', apenasData)
+    // 1. Excluir no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        await db.prepare("DELETE FROM historico_atendimentos WHERE tipo LIKE '%SCFV%' AND data = ?").bind(apenasData).run()
+        await db.prepare("DELETE FROM frequencia_scfv WHERE data = ?").bind(apenasData).run()
+      }
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_REL_DELETE_ERR]:', d1Err)
     }
 
-    // 2. Deletar registros de frequência da mesma data
-    if (grupoId) {
-      await supabase
-        .from('frequencia_scfv')
-        .delete()
-        .eq('grupo_id', grupoId)
-        .eq('data', apenasData)
-    } else {
-      await supabase
-        .from('frequencia_scfv')
-        .delete()
-        .eq('data', apenasData)
+    // 2. Excluir no Supabase
+    try {
+      const supabase = getSupabaseServer()
+      await supabase.from('relatorios_scfv').delete().eq('data_encontro', apenasData)
+      await supabase.from('frequencia_scfv').delete().eq('data', apenasData)
+      await supabase.from('historico_atendimentos').delete().ilike('tipo', '%SCFV%').eq('data', apenasData)
+    } catch (sbErr) {
+      console.warn('[SUPABASE_SCFV_REL_DELETE_FALLBACK]:', sbErr)
     }
-
-    // 3. Deletar registros sincronizados no historico_atendimentos
-    await supabase
-      .from('historico_atendimentos')
-      .delete()
-      .ilike('tipo', '%SCFV%')
-      .eq('data', apenasData)
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {

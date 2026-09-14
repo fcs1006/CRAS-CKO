@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import {
@@ -98,6 +98,15 @@ export default function PainelPage() {
   const [relatorioModalState, setRelatorioModalState] = useState<{ grupo: GrupoSCFV; dataEncontroInicial?: string; apenasVisualizacao?: boolean } | null>(null)
   const [grupoParaRelatorioGeral, setGrupoParaRelatorioGeral] = useState<GrupoSCFV | null>(null)
   const [modalNovoEncaminhamento, setModalNovoEncaminhamento] = useState(false)
+  const [notificacao, setNotificacao] = useState<{ tipo: 'sucesso' | 'erro'; mensagem: string } | null>(null)
+  const isFetchingRef = useRef(false)
+
+  function exibirNotificacao(mensagem: string, tipo: 'sucesso' | 'erro' = 'sucesso') {
+    setNotificacao({ tipo, mensagem })
+    setTimeout(() => {
+      setNotificacao(null)
+    }, 4500)
+  }
 
   // Carregar sessão do usuário e carregar dados
   useEffect(() => {
@@ -149,29 +158,26 @@ export default function PainelPage() {
 
     carregarTodosOsDados()
 
-    // 1. Canal Supabase Realtime para sincronização em tempo real entre múltiplos usuários
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_atendimentos' }, () => carregarTodosOsDados())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'familias' }, () => carregarTodosOsDados())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'beneficios' }, () => carregarTodosOsDados())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'encaminhamentos' }, () => carregarTodosOsDados())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'relatorios_scfv' }, () => carregarTodosOsDados())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'frequencia_scfv' }, () => carregarTodosOsDados())
-      .subscribe()
-
-    // 2. Polling rápido de segurança a cada 4 segundos (garante reatividade sem precisar recarregar F5)
+    // 1. Sincronização periódica estável em segundo plano (a cada 30 segundos, sem floodar requisições)
     const syncInterval = setInterval(() => {
       carregarTodosOsDados()
-    }, 4000)
+    }, 30000)
+
+    // 2. Sincronização automática quando o usuário volta para a aba do sistema
+    const handleWindowFocus = () => {
+      carregarTodosOsDados()
+    }
+    window.addEventListener('focus', handleWindowFocus)
 
     return () => {
-      supabase.removeChannel(channel)
       clearInterval(syncInterval)
+      window.removeEventListener('focus', handleWindowFocus)
     }
   }, [])
 
   async function carregarTodosOsDados() {
+    if (isFetchingRef.current) return
+    isFetchingRef.current = true
     try {
       const [
         famRes,
@@ -250,8 +256,9 @@ export default function PainelPage() {
         if (usrJson.ok && usrJson.data) setUsuarios(usrJson.data as Usuario[])
       }
     } catch (err) {
-      console.error('Erro ao carregar dados do Supabase:', err)
+      console.error('Erro ao carregar dados:', err)
     } finally {
+      isFetchingRef.current = false
       setCarregandoDados(false)
     }
   }
@@ -266,13 +273,18 @@ export default function PainelPage() {
 
     const json = await parseResponseJson(res, 'Erro ao cadastrar família')
     if (!res.ok || !json.ok) {
+      exibirNotificacao(json.error || 'Erro ao cadastrar família.', 'erro')
       throw new Error(json.error || 'Erro ao cadastrar família.')
     }
 
-    if (json.data) {
-      setFamilias(prev => [json.data, ...prev])
-    }
-    carregarTodosOsDados()
+    const novaFamilia: Familia = {
+      ...(json.data || familiaData),
+      membros: membrosData
+    } as Familia
+
+    setFamilias(prev => [novaFamilia, ...prev])
+    setTotalFamiliasContagem(prev => (prev || 0) + 1)
+    exibirNotificacao(`Prontuário da família de ${novaFamilia.responsavel} cadastrado com sucesso!`)
   }
 
   async function handleEditarFamilia(id: string, familiaData: Partial<Familia>, membrosData: MembroFamilia[]) {
@@ -284,32 +296,39 @@ export default function PainelPage() {
 
     const json = await parseResponseJson(res, 'Erro ao alterar prontuário da família')
     if (!res.ok || !json.ok) {
+      exibirNotificacao(json.error || 'Erro ao alterar prontuário da família.', 'erro')
       throw new Error(json.error || 'Erro ao alterar prontuário da família.')
     }
 
-    if (json.data) {
-      setFamilias(prev => prev.map(f => f.id === id ? json.data : f))
-    }
-    carregarTodosOsDados()
+    const famAtualizada: Familia = {
+      ...(json.data || familiaData),
+      id,
+      membros: membrosData
+    } as Familia
+
+    setFamilias(prev => prev.map(f => f.id === id ? famAtualizada : f))
+    exibirNotificacao(`Prontuário da família de ${famAtualizada.responsavel} atualizado com sucesso!`)
   }
 
   async function handleExcluirFamilia(id: string) {
     if (!confirm('Tem certeza que deseja excluir esta família e todo o histórico?')) return
     
     setFamilias(prev => prev.filter(f => f.id !== id))
+    setTotalFamiliasContagem(prev => Math.max(0, (prev || 1) - 1))
     
     const res = await fetch(`/api/familias?id=${id}`, { method: 'DELETE' })
     const json = await parseResponseJson(res, 'Erro ao excluir família')
     if (!res.ok || !json.ok) {
-      alert('Erro ao excluir família: ' + (json.error || 'Erro ao processar exclusão.'))
+      exibirNotificacao('Erro ao excluir família: ' + (json.error || 'Erro ao processar exclusão.'), 'erro')
       carregarTodosOsDados()
       return
     }
-    carregarTodosOsDados()
+    exibirNotificacao('Prontuário familiar excluído com sucesso.')
   }
 
   async function handleTogglePaif(familiaId: string, paifAtual: boolean) {
     setFamilias(prev => prev.map(f => f.id === familiaId ? { ...f, paif_ativo: !paifAtual } : f))
+    exibirNotificacao(`Acompanhamento PAIF ${!paifAtual ? 'ativado' : 'desativado'} com sucesso.`)
     try {
       await fetch('/api/familias', {
         method: 'PATCH',
@@ -319,7 +338,6 @@ export default function PainelPage() {
     } catch (err) {
       console.error('Erro ao atualizar status PAIF:', err)
     }
-    carregarTodosOsDados()
   }
 
   async function handleSalvarAtendimento(atendimentoData: Partial<Atendimento> & { agenda_id?: string }) {
@@ -359,7 +377,7 @@ export default function PainelPage() {
       setAgenda(prev => prev.map(a => a.id === agendaId ? { ...a, status: 'Realizado' } : a))
     }
 
-    carregarTodosOsDados()
+    exibirNotificacao('Atendimento registrado com sucesso!')
   }
 
   async function handleEditarAtendimento(id: string, atendimentoData: Partial<Atendimento>) {
@@ -380,7 +398,7 @@ export default function PainelPage() {
 
     const json = await parseResponseJson(res, 'Erro ao editar atendimento')
     if (!res.ok || !json.ok) {
-      alert('Erro ao editar atendimento: ' + (json.error || 'Tente novamente.'))
+      exibirNotificacao(json.error || 'Erro ao editar atendimento.', 'erro')
       carregarTodosOsDados()
       return
     }
@@ -393,7 +411,7 @@ export default function PainelPage() {
       setAtendimentos(prev => prev.map(a => a.id === id ? novodado : a))
     }
 
-    carregarTodosOsDados()
+    exibirNotificacao('Atendimento atualizado com sucesso!')
   }
 
   async function handleExcluirAtendimento(id: string) {
@@ -404,12 +422,12 @@ export default function PainelPage() {
     const res = await fetch(`/api/atendimentos?id=${id}`, { method: 'DELETE' })
     const json = await parseResponseJson(res, 'Erro ao excluir atendimento')
     if (!res.ok || !json.ok) {
-      alert('Erro ao excluir atendimento: ' + (json.error || 'Tente novamente.'))
+      exibirNotificacao(json.error || 'Erro ao excluir atendimento.', 'erro')
       carregarTodosOsDados()
       return
     }
 
-    carregarTodosOsDados()
+    exibirNotificacao('Atendimento excluído com sucesso.')
   }
 
   async function handleSalvarAgendamento(agendamentoData: any) {
@@ -484,9 +502,13 @@ export default function PainelPage() {
     })
     const json = await parseResponseJson(res, 'Erro ao conceder benefício')
     if (!res.ok || !json.ok) {
+      exibirNotificacao(json.error || 'Erro ao conceder benefício.', 'erro')
       throw new Error(json.error || 'Erro ao conceder benefício.')
     }
-    await carregarTodosOsDados()
+    if (json.data) {
+      setBeneficios(prev => [json.data, ...prev])
+    }
+    exibirNotificacao('Benefício eventual concedido com sucesso!')
   }
 
   async function handleEditarBeneficio(id: string, updates: Partial<BeneficioConcedido>) {
@@ -499,14 +521,14 @@ export default function PainelPage() {
     })
     const json = await parseResponseJson(res, 'Erro ao atualizar benefício')
     if (!res.ok || !json.ok) {
-      alert('Erro ao atualizar benefício: ' + (json.error || 'Tente novamente.'))
+      exibirNotificacao(json.error || 'Erro ao atualizar benefício.', 'erro')
       carregarTodosOsDados()
       return
     }
     if (json.data) {
       setBeneficios(prev => prev.map(b => b.id === id ? json.data : b))
     }
-    carregarTodosOsDados()
+    exibirNotificacao('Benefício atualizado com sucesso!')
   }
 
   async function handleExcluirBeneficio(id: string) {
@@ -517,11 +539,11 @@ export default function PainelPage() {
     })
     const json = await parseResponseJson(res, 'Erro ao excluir benefício')
     if (!res.ok || !json.ok) {
-      alert('Erro ao excluir benefício: ' + (json.error || 'Tente novamente.'))
+      exibirNotificacao(json.error || 'Erro ao excluir benefício.', 'erro')
       carregarTodosOsDados()
       return
     }
-    carregarTodosOsDados()
+    exibirNotificacao('Benefício excluído com sucesso.')
   }
 
   async function handleSalvarGrupo(grupoData: Partial<GrupoSCFV>) {
@@ -1028,7 +1050,10 @@ export default function PainelPage() {
               )}
 
               {activeTab === 'map' && (
-                <GeomapeamentoView familias={familias} />
+                <GeomapeamentoView 
+                  familias={familias} 
+                  onAbrirModalVerFamilia={fam => setModalVerFamilia(fam)}
+                />
               )}
 
               {activeTab === 'rma' && (
@@ -1216,6 +1241,25 @@ export default function PainelPage() {
           onClose={() => setModalNovoEncaminhamento(false)}
           onSalvar={handleSalvarEncaminhamento}
         />
+      )}
+
+      {/* Toast de Notificação Imediata do Sistema (SUAS Digital) */}
+      {notificacao && (
+        <div className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl border text-xs sm:text-sm font-semibold transition-all duration-300 ${
+          notificacao.tipo === 'sucesso' 
+            ? 'bg-teal-900 text-teal-50 border-teal-500 shadow-teal-950/40' 
+            : 'bg-red-900 text-red-50 border-red-500 shadow-red-950/40'
+        }`}>
+          <i className={`fa-solid ${notificacao.tipo === 'sucesso' ? 'fa-circle-check text-teal-400 text-base' : 'fa-triangle-exclamation text-red-400 text-base'}`}></i>
+          <span className="leading-snug">{notificacao.mensagem}</span>
+          <button
+            type="button"
+            onClick={() => setNotificacao(null)}
+            className="ml-2 text-teal-300 hover:text-white transition p-1"
+          >
+            <i className="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
       )}
     </div>
   )

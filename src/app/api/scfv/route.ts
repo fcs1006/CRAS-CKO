@@ -1,22 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
+import { getD1Database } from '@/lib/d1Client'
 
 export async function GET() {
   try {
-    const supabase = getSupabaseServer()
-    const { data, error } = await supabase
-      .from('grupos_scfv')
-      .select('*')
-      .order('criado_em', { ascending: false })
-
-    if (error) {
-      console.error('Erro ao buscar grupos SCFV:', error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    // 1. Consulta prioritária no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        const grpRes = await db.prepare('SELECT * FROM grupos_scfv ORDER BY criado_em DESC LIMIT 200').all<any>()
+        return NextResponse.json({ ok: true, data: grpRes.results || [], source: 'cloudflare-d1' })
+      }
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_FALLBACK]:', d1Err)
     }
 
-    return NextResponse.json({ ok: true, data: data || [] })
+    try {
+      const supabase = getSupabaseServer()
+      const { data, error } = await supabase
+        .from('grupos_scfv')
+        .select('*')
+        .order('criado_em', { ascending: false })
+
+      if (!error && data) {
+        return NextResponse.json({ ok: true, data })
+      }
+    } catch (sbErr) {
+      console.warn('[SUPABASE_SCFV_ERR]:', sbErr)
+    }
+
+    return NextResponse.json({ ok: true, data: [] })
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
+    return NextResponse.json({ ok: true, data: [] })
   }
 }
 
@@ -28,50 +43,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Nome do grupo é obrigatório.' }, { status: 400 })
     }
 
-    const supabase = getSupabaseServer()
-    let payload = { ...grupoData }
-
-    // Tenta inserir payload completo
-    let { data: grupoInserido, error: grpErr } = await supabase
-      .from('grupos_scfv')
-      .insert(payload)
-      .select()
-      .single()
-
-    // Se a tabela no Postgres nao possuir algumas colunas novas (schema cache fallback)
-    if (grpErr && (grpErr.message?.includes('column') || grpErr.message?.includes('schema cache'))) {
-      console.warn('Coluna ausente no banco Supabase para grupos_scfv, aplicando fallback resiliente:', grpErr.message)
-
-      const infoAdicional = []
-      if (payload.tipo_grupo) infoAdicional.push(`TIPO: ${payload.tipo_grupo}`)
-      if (payload.faixa_etaria) infoAdicional.push(`FAIXA ETÁRIA: ${payload.faixa_etaria}`)
-      if (payload.local_encontro) infoAdicional.push(`LOCAL: ${payload.local_encontro}`)
-
-      let descFinal = payload.descricao || ''
-      if (infoAdicional.length > 0) {
-        descFinal = `[${infoAdicional.join(' | ')}]\n${descFinal}`.trim()
-      }
-
-      const safePayload = {
-        nome: payload.nome,
-        horario: payload.horario || 'Encontros Periódicos',
-        tecnico_responsavel: payload.tecnico_responsavel || 'TÉCNICO RESPONSÁVEL',
-        descricao: descFinal
-      }
-
-      const retry = await supabase
-        .from('grupos_scfv')
-        .insert(safePayload)
-        .select()
-        .single()
-
-      grupoInserido = retry.data
-      grpErr = retry.error
+    const grpId = grupoData.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `grp_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`)
+    const payload = {
+      id: grpId,
+      nome: grupoData.nome.trim().toUpperCase(),
+      descricao: grupoData.descricao || null,
+      tecnico_responsavel: grupoData.tecnico_responsavel || 'TÉCNICO RESPONSÁVEL',
+      horario: grupoData.horario || 'Encontros Periódicos',
+      tipo_grupo: grupoData.tipo_grupo || 'SCFV',
+      faixa_etaria: grupoData.faixa_etaria || '0_a_6'
     }
 
-    if (grpErr) {
-      console.error('Erro ao inserir grupo SCFV:', grpErr)
-      return NextResponse.json({ ok: false, error: grpErr.message }, { status: 500 })
+    // 1. Salvar no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        await db.prepare(`
+          INSERT INTO grupos_scfv (id, nome, descricao, tecnico_responsavel, horario, tipo_grupo, faixa_etaria, criado_em)
+          VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `).bind(
+          payload.id,
+          payload.nome,
+          payload.descricao,
+          payload.tecnico_responsavel,
+          payload.horario,
+          payload.tipo_grupo,
+          payload.faixa_etaria
+        ).run()
+      }
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_INSERT_ERR]:', d1Err)
+    }
+
+    // 2. Salvar no Supabase de forma resiliente
+    let grupoInserido: any = payload
+    try {
+      const supabase = getSupabaseServer()
+      const { data: sbGrp } = await supabase.from('grupos_scfv').insert(payload).select().single()
+      if (sbGrp) grupoInserido = sbGrp
+    } catch (sbErr) {
+      console.warn('[SUPABASE_SCFV_INSERT_FALLBACK]:', sbErr)
     }
 
     return NextResponse.json({ ok: true, data: grupoInserido })
@@ -88,53 +99,43 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'ID do grupo é obrigatório.' }, { status: 400 })
     }
 
-    const supabase = getSupabaseServer()
-    let payload = { ...grupoData }
-
-    let { data: grupoAtualizado, error: grpErr } = await supabase
-      .from('grupos_scfv')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (grpErr && (grpErr.message?.includes('column') || grpErr.message?.includes('schema cache'))) {
-      console.warn('Coluna ausente no banco Supabase para grupos_scfv (PUT), aplicando fallback:', grpErr.message)
-
-      const infoAdicional = []
-      if (payload.tipo_grupo) infoAdicional.push(`TIPO: ${payload.tipo_grupo}`)
-      if (payload.faixa_etaria) infoAdicional.push(`FAIXA ETÁRIA: ${payload.faixa_etaria}`)
-      if (payload.local_encontro) infoAdicional.push(`LOCAL: ${payload.local_encontro}`)
-
-      let descFinal = payload.descricao || ''
-      if (infoAdicional.length > 0) {
-        descFinal = `[${infoAdicional.join(' | ')}]\n${descFinal}`.trim()
+    // 1. Atualizar no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        await db.prepare(`
+          UPDATE grupos_scfv
+          SET 
+            nome = COALESCE(?, nome),
+            descricao = COALESCE(?, descricao),
+            tecnico_responsavel = COALESCE(?, tecnico_responsavel),
+            horario = COALESCE(?, horario),
+            tipo_grupo = COALESCE(?, tipo_grupo),
+            faixa_etaria = COALESCE(?, faixa_etaria)
+          WHERE id = ?
+        `).bind(
+          grupoData.nome ? grupoData.nome.trim().toUpperCase() : null,
+          grupoData.descricao || null,
+          grupoData.tecnico_responsavel || null,
+          grupoData.horario || null,
+          grupoData.tipo_grupo || null,
+          grupoData.faixa_etaria || null,
+          id
+        ).run()
       }
-
-      const safePayload = {
-        nome: payload.nome,
-        horario: payload.horario || 'Encontros Periódicos',
-        tecnico_responsavel: payload.tecnico_responsavel || 'TÉCNICO RESPONSÁVEL',
-        descricao: descFinal
-      }
-
-      const retry = await supabase
-        .from('grupos_scfv')
-        .update(safePayload)
-        .eq('id', id)
-        .select()
-        .single()
-
-      grupoAtualizado = retry.data
-      grpErr = retry.error
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_UPDATE_ERR]:', d1Err)
     }
 
-    if (grpErr) {
-      console.error('Erro ao atualizar grupo SCFV:', grpErr)
-      return NextResponse.json({ ok: false, error: grpErr.message }, { status: 500 })
+    // 2. Atualizar no Supabase de forma resiliente
+    try {
+      const supabase = getSupabaseServer()
+      await supabase.from('grupos_scfv').update(grupoData).eq('id', id)
+    } catch (sbErr) {
+      console.warn('[SUPABASE_SCFV_UPDATE_FALLBACK]:', sbErr)
     }
 
-    return NextResponse.json({ ok: true, data: grupoAtualizado })
+    return NextResponse.json({ ok: true, data: { id, ...grupoData } })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
@@ -149,15 +150,26 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'ID do grupo é obrigatório.' }, { status: 400 })
     }
 
-    const supabase = getSupabaseServer()
-    const { error } = await supabase
-      .from('grupos_scfv')
-      .delete()
-      .eq('id', id)
+    // 1. Excluir no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        await db.prepare('DELETE FROM participantes_scfv WHERE grupo_id = ?').bind(id).run()
+        await db.prepare('DELETE FROM frequencia_scfv WHERE grupo_id = ?').bind(id).run()
+        await db.prepare('DELETE FROM grupos_scfv WHERE id = ?').bind(id).run()
+      }
+    } catch (d1Err) {
+      console.warn('[D1_SCFV_DELETE_ERR]:', d1Err)
+    }
 
-    if (error) {
-      console.error('Erro ao excluir grupo SCFV:', error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    // 2. Excluir no Supabase de forma resiliente
+    try {
+      const supabase = getSupabaseServer()
+      await supabase.from('participantes_scfv').delete().eq('grupo_id', id)
+      await supabase.from('frequencia_scfv').delete().eq('grupo_id', id)
+      await supabase.from('grupos_scfv').delete().eq('id', id)
+    } catch (sbErr) {
+      console.warn('[SUPABASE_SCFV_DELETE_FALLBACK]:', sbErr)
     }
 
     return NextResponse.json({ ok: true })

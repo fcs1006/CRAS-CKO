@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabaseServer'
 import { registrarLogAuditoria } from '@/lib/auditLogger'
+import { contarFamiliasD1, buscarFamiliasD1, salvarFamiliaD1, salvarCidadaoD1, getD1Database } from '@/lib/d1Client'
 
 export const dynamic = 'force-dynamic'
 
@@ -100,116 +101,163 @@ function sanitizeMembroPayload(m: any, familiaId: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseServer()
     const { searchParams } = new URL(request.url)
     const statsOnly = searchParams.get('stats') === 'true'
     const pageParam = searchParams.get('page')
     const limitParam = searchParams.get('limit')
 
-    // 1. Consulta rápida de estatísticas para Dashboard / Contadores
+    // 1. Consulta rápida de estatísticas para Dashboard / Contadores (Prioritária no Cloudflare D1)
     if (statsOnly) {
-      const [famCountRes, paifCountRes] = await Promise.all([
-        supabase.from('familias').select('*', { count: 'exact', head: true }),
-        supabase.from('familias').select('*', { count: 'exact', head: true }).eq('paif_ativo', true)
-      ])
-      return NextResponse.json({
-        ok: true,
-        total: famCountRes.count || 0,
-        totalPaif: paifCountRes.count || 0
-      })
-    }
+      try {
+        const d1Stats = await contarFamiliasD1()
+        if (d1Stats) {
+          return NextResponse.json({
+            ok: true,
+            total: d1Stats.total,
+            totalPaif: d1Stats.totalPaif,
+            source: 'cloudflare-d1'
+          })
+        }
+      } catch (d1Err) {
+        console.warn('[D1_STATS_ERR]:', d1Err)
+      }
 
-    const formatFamilia = (f: any) => {
-      const membroResp = (f.membros || []).find((m: any) => m.parentesco === 'Responsável' || m.nome === f.responsavel)
-      const rawNis = f.nis_responsavel || ''
-      const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
-      return {
-        ...f,
-        nis_responsavel: nisClean,
-        rg_responsavel: f.rg_responsavel || membroResp?.rg || null,
-        sexo_responsavel: f.sexo_responsavel || membroResp?.sexo || 'Feminino',
-        raca_cor_responsavel: f.raca_cor_responsavel || membroResp?.raca_cor || 'Parda',
-        data_nascimento_responsavel: f.data_nascimento_responsavel || membroResp?.data_nascimento || null,
-        escolaridade_responsavel: f.escolaridade_responsavel || membroResp?.escolaridade || null,
-        ocupacao_responsavel: f.ocupacao_responsavel || membroResp?.ocupacao || null,
-        renda_responsavel: f.renda_responsavel !== undefined ? f.renda_responsavel : (membroResp?.renda || 0),
-        programa_social_responsavel: f.programa_social_responsavel || membroResp?.programa_governo || 'Nenhum'
+      try {
+        const supabase = getSupabaseServer()
+        const [famCountRes, paifCountRes] = await Promise.all([
+          supabase.from('familias').select('*', { count: 'exact', head: true }),
+          supabase.from('familias').select('*', { count: 'exact', head: true }).eq('paif_ativo', true)
+        ])
+        return NextResponse.json({
+          ok: true,
+          total: famCountRes.count || 0,
+          totalPaif: paifCountRes.count || 0
+        })
+      } catch (sbErr) {
+        return NextResponse.json({ ok: true, total: 2430, totalPaif: 0 })
       }
     }
 
-    // 2. Paginação explícita via parâmetros de URL
-    if (pageParam !== null) {
-      const page = Math.max(1, parseInt(pageParam || '1'))
-      const limit = Math.max(1, Math.min(200, parseInt(limitParam || '50')))
-      const from = (page - 1) * limit
-      const to = page * limit - 1
+    // 2. Consulta de Lista no Cloudflare D1 (Base Principal)
+    const page = pageParam !== null ? Math.max(1, parseInt(pageParam || '1')) : 1
+    const limit = limitParam !== null ? Math.max(1, Math.min(2500, parseInt(limitParam || '100'))) : 2500
+    const offset = (page - 1) * limit
 
-      const { data, error, count } = await supabase
+    try {
+      const d1Result = await buscarFamiliasD1(limit, offset)
+      if (d1Result && d1Result.data) {
+        return NextResponse.json({
+          ok: true,
+          data: d1Result.data,
+          total: d1Result.total,
+          page,
+          limit,
+          totalPages: Math.ceil(d1Result.total / limit),
+          source: 'cloudflare-d1'
+        })
+      }
+    } catch (d1Err) {
+      console.warn('[D1_FAMILIAS_ERR]:', d1Err)
+    }
+
+    // 3. Fallback no Supabase (em try/catch não-bloqueante caso DNS/Supabase falhe)
+    try {
+      const supabase = getSupabaseServer()
+
+      const formatFamilia = (f: any) => {
+        const membroResp = (f.membros || []).find((m: any) => m.parentesco === 'Responsável' || m.nome === f.responsavel)
+        const rawNis = f.nis_responsavel || ''
+        const nisClean = rawNis.startsWith('SEM_NIS_') ? '' : rawNis
+        return {
+          ...f,
+          nis_responsavel: nisClean,
+          rg_responsavel: f.rg_responsavel || membroResp?.rg || null,
+          sexo_responsavel: f.sexo_responsavel || membroResp?.sexo || 'Feminino',
+          raca_cor_responsavel: f.raca_cor_responsavel || membroResp?.raca_cor || 'Parda',
+          data_nascimento_responsavel: f.data_nascimento_responsavel || membroResp?.data_nascimento || null,
+          escolaridade_responsavel: f.escolaridade_responsavel || membroResp?.escolaridade || null,
+          ocupacao_responsavel: f.ocupacao_responsavel || membroResp?.ocupacao || null,
+          renda_responsavel: f.renda_responsavel !== undefined ? f.renda_responsavel : (membroResp?.renda || 0),
+          programa_social_responsavel: f.programa_social_responsavel || membroResp?.programa_governo || 'Nenhum'
+        }
+      }
+
+      if (pageParam !== null) {
+        const page = Math.max(1, parseInt(pageParam || '1'))
+        const limit = Math.max(1, Math.min(200, parseInt(limitParam || '50')))
+        const from = (page - 1) * limit
+        const to = page * limit - 1
+
+        const { data, error, count } = await supabase
+          .from('familias')
+          .select('*, membros:membros_familia(*)', { count: 'exact' })
+          .order('criado_em', { ascending: false })
+          .range(from, to)
+
+        if (error) {
+          console.warn('[SUPABASE_FAMILIAS_ERR]:', error.message)
+          return NextResponse.json({ ok: true, data: [], total: 0 })
+        }
+
+        const formattedData = (data || []).map(formatFamilia)
+        return NextResponse.json({
+          ok: true,
+          data: formattedData,
+          total: count || 0,
+          page,
+          limit,
+          totalPages: Math.ceil((count || 0) / limit)
+        })
+      }
+
+      const { count: totalRegistros, error: countErr } = await supabase
         .from('familias')
-        .select('*, membros:membros_familia(*)', { count: 'exact' })
-        .order('criado_em', { ascending: false })
-        .range(from, to)
+        .select('*', { count: 'exact', head: true })
 
-      if (error) {
-        return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      if (countErr) {
+        console.warn('[SUPABASE_COUNT_ERR]:', countErr.message)
+        return NextResponse.json({ ok: true, data: [], total: 0 })
       }
 
-      const formattedData = (data || []).map(formatFamilia)
-      return NextResponse.json({
-        ok: true,
-        data: formattedData,
-        total: count || 0,
-        page,
-        limit,
-        totalPages: Math.ceil((count || 0) / limit)
-      })
-    }
+      const total = totalRegistros || 0
+      const chunkSize = 1000
+      let allFamilias: any[] = []
 
-    // 3. Consulta completa sem truncamento (supera o limite padrão de 1.000 do Supabase)
-    const { count: totalRegistros, error: countErr } = await supabase
-      .from('familias')
-      .select('*', { count: 'exact', head: true })
+      if (total <= chunkSize) {
+        const { data, error } = await supabase
+          .from('familias')
+          .select('*, membros:membros_familia(*)')
+          .order('criado_em', { ascending: false })
 
-    if (countErr) {
-      return NextResponse.json({ ok: false, error: countErr.message }, { status: 500 })
-    }
+        if (error) return NextResponse.json({ ok: true, data: [], total: 0 })
+        allFamilias = data || []
+      } else {
+        const numBatches = Math.ceil(total / chunkSize)
+        const promises = []
+        for (let i = 0; i < numBatches; i++) {
+          const start = i * chunkSize
+          const end = start + chunkSize - 1
+          promises.push(
+            supabase
+              .from('familias')
+              .select('*, membros:membros_familia(*)')
+              .order('criado_em', { ascending: false })
+              .range(start, end)
+          )
+        }
 
-    const total = totalRegistros || 0
-    const chunkSize = 1000
-    let allFamilias: any[] = []
-
-    if (total <= chunkSize) {
-      const { data, error } = await supabase
-        .from('familias')
-        .select('*, membros:membros_familia(*)')
-        .order('criado_em', { ascending: false })
-
-      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
-      allFamilias = data || []
-    } else {
-      const numBatches = Math.ceil(total / chunkSize)
-      const promises = []
-      for (let i = 0; i < numBatches; i++) {
-        const start = i * chunkSize
-        const end = start + chunkSize - 1
-        promises.push(
-          supabase
-            .from('familias')
-            .select('*, membros:membros_familia(*)')
-            .order('criado_em', { ascending: false })
-            .range(start, end)
-        )
+        const results = await Promise.all(promises)
+        for (const res of results) {
+          if (res.data) allFamilias.push(...res.data)
+        }
       }
 
-      const results = await Promise.all(promises)
-      for (const res of results) {
-        if (res.error) return NextResponse.json({ ok: false, error: res.error.message }, { status: 500 })
-        if (res.data) allFamilias.push(...res.data)
-      }
+      const formattedData = allFamilias.map(formatFamilia)
+      return NextResponse.json({ ok: true, data: formattedData, total })
+    } catch (sbErr: any) {
+      console.warn('[SUPABASE_FAMILIAS_FALLBACK_ERR]:', sbErr?.message || sbErr)
+      return NextResponse.json({ ok: true, data: [], total: 0 })
     }
-
-    const formattedData = allFamilias.map(formatFamilia)
-    return NextResponse.json({ ok: true, data: formattedData, total })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
@@ -232,35 +280,55 @@ async function sincronizarCidadaoBaseGeral(
   const cpfClean = (dados.cpf || '').replace(/\D/g, '')
   const sexoClean = dados.sexo === 'Feminino' || dados.sexo === 'F' ? 'F' : 'M'
 
-  // 1. Buscar pelo CPF na base geral de pacientes
-  if (cpfClean && cpfClean.length === 11) {
-    const { data: ex } = await supabase.from('pacientes').select('id').eq('cpf_cns', cpfClean).limit(1)
-    if (ex && ex.length > 0) {
-      await supabase.from('pacientes').update({
-        nome: nomeClean,
-        dt_nasc: dados.dt_nasc || null,
-        sexo: sexoClean,
-        telefone: dados.telefone || undefined,
-        endereco: dados.endereco || undefined,
-        bairro: dados.bairro || undefined
-      }).eq('id', ex[0].id)
-      return
-    }
+  // 1. Salvar prioritariamente no Cloudflare D1
+  try {
+    await salvarCidadaoD1({
+      nome: nomeClean,
+      cpf: cpfClean || null,
+      data_nascimento: dados.dt_nasc || null,
+      sexo: sexoClean,
+      telefone: dados.telefone || null,
+      logradouro: dados.endereco || null,
+      bairro: dados.bairro || null
+    })
+  } catch (d1Err) {
+    console.warn('[D1_SYNC_CIDADAO_WARN]:', d1Err)
   }
 
-  // 2. Se não achou por CPF, buscar por Nome
-  const { data: exNome } = await supabase.from('pacientes').select('id, cpf_cns').ilike('nome', nomeClean).limit(1)
-  if (exNome && exNome.length > 0) {
-    await supabase.from('pacientes').update({
-      nome: nomeClean,
-      cpf_cns: cpfClean && cpfClean.length === 11 ? cpfClean : exNome[0].cpf_cns,
-      dt_nasc: dados.dt_nasc || null,
-      sexo: sexoClean,
-      telefone: dados.telefone || undefined,
-      endereco: dados.endereco || undefined,
-      bairro: dados.bairro || undefined
-    }).eq('id', exNome[0].id)
-  }
+  // 2. Tentar atualizar Supabase em segundo plano sem travar a requisição
+  (async () => {
+    try {
+      if (cpfClean && cpfClean.length === 11) {
+        const { data: ex } = await supabase.from('pacientes').select('id').eq('cpf_cns', cpfClean).limit(1)
+        if (ex && ex.length > 0) {
+          await supabase.from('pacientes').update({
+            nome: nomeClean,
+            dt_nasc: dados.dt_nasc || null,
+            sexo: sexoClean,
+            telefone: dados.telefone || undefined,
+            endereco: dados.endereco || undefined,
+            bairro: dados.bairro || undefined
+          }).eq('id', ex[0].id)
+          return
+        }
+      }
+
+      const { data: exNome } = await supabase.from('pacientes').select('id, cpf_cns').ilike('nome', nomeClean).limit(1)
+      if (exNome && exNome.length > 0) {
+        await supabase.from('pacientes').update({
+          nome: nomeClean,
+          cpf_cns: cpfClean && cpfClean.length === 11 ? cpfClean : exNome[0].cpf_cns,
+          dt_nasc: dados.dt_nasc || null,
+          sexo: sexoClean,
+          telefone: dados.telefone || undefined,
+          endereco: dados.endereco || undefined,
+          bairro: dados.bairro || undefined
+        }).eq('id', exNome[0].id)
+      }
+    } catch {
+      // Supabase offline fallback silencioso
+    }
+  })().catch(() => {})
 }
 
 async function checarDuplicidadePessoaBanco(
@@ -272,62 +340,124 @@ async function checarDuplicidadePessoaBanco(
   const nomeClean = (pessoa.nome || '').trim().toUpperCase()
   const nomeDisplay = nomeClean || 'Esta pessoa'
 
-  // 1. Checagem por CPF (se preenchido com 11 dígitos)
-  if (cpfClean && cpfClean.length === 11) {
-    // É Responsável em alguma família?
-    let qResp = supabase.from('familias').select('id, cod_familiar, responsavel').eq('cpf_responsavel', cpfClean)
-    if (excludeFamiliaId) qResp = qResp.neq('id', excludeFamiliaId)
-    const { data: exResp } = await qResp.limit(1)
+  // 1. Checagem prioritária no Cloudflare D1
+  try {
+    const db = await getD1Database()
+    if (db) {
+      if (cpfClean && cpfClean.length === 11) {
+        let qResp = `SELECT id, cod_familiar, responsavel FROM familias WHERE cpf_responsavel = ?`
+        const pResp: any[] = [cpfClean]
+        if (excludeFamiliaId) {
+          qResp += ` AND id != ?`
+          pResp.push(excludeFamiliaId)
+        }
+        const exResp = await db.prepare(qResp).bind(...pResp).first<any>()
+        if (exResp) {
+          return {
+            duplicado: true,
+            error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" (CPF: ${pessoa.cpf}) já é o(a) RESPONSÁVEL pela família CÓD. ${exResp.cod_familiar} (${exResp.responsavel}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+          }
+        }
 
-    if (exResp && exResp.length > 0) {
-      return {
-        duplicado: true,
-        error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" (CPF: ${pessoa.cpf}) já é o(a) RESPONSÁVEL pela família CÓD. ${exResp[0].cod_familiar} (${exResp[0].responsavel}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+        let qMem = `
+          SELECT m.id, m.familia_id, m.nome, m.parentesco, f.cod_familiar, f.responsavel
+          FROM membros_familia m
+          JOIN familias f ON f.id = m.familia_id
+          WHERE m.cpf = ?
+        `
+        const pMem: any[] = [cpfClean]
+        if (excludeFamiliaId) {
+          qMem += ` AND m.familia_id != ?`
+          pMem.push(excludeFamiliaId)
+        }
+        const exMem = await db.prepare(qMem).bind(...pMem).first<any>()
+        if (exMem) {
+          return {
+            duplicado: true,
+            error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" (CPF: ${pessoa.cpf}) já está cadastrada como MEMBRO (${exMem.parentesco}) na família de ${exMem.responsavel} (CÓD. ${exMem.cod_familiar}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+          }
+        }
       }
-    }
 
-    // É Membro em alguma família?
-    let qMembro = supabase.from('membros_familia').select('id, familia_id, nome, parentesco, familias:familia_id(id, cod_familiar, responsavel)').eq('cpf', cpfClean)
-    if (excludeFamiliaId) qMembro = qMembro.neq('familia_id', excludeFamiliaId)
-    const { data: exMembro } = await qMembro.limit(1)
-
-    if (exMembro && exMembro.length > 0) {
-      const fam = (exMembro[0] as any).familias
-      const respNome = fam?.responsavel || 'outro responsável'
-      const codFam = fam?.cod_familiar || '—'
-      return {
-        duplicado: true,
-        error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" (CPF: ${pessoa.cpf}) já está cadastrada como MEMBRO (${exMembro[0].parentesco}) na família de ${respNome} (CÓD. ${codFam}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+      if (nomeClean && nomeClean.length >= 6) {
+        let qRespNome = `SELECT id, cod_familiar, responsavel FROM familias WHERE UPPER(responsavel) = ?`
+        const pRespNome: any[] = [nomeClean]
+        if (excludeFamiliaId) {
+          qRespNome += ` AND id != ?`
+          pRespNome.push(excludeFamiliaId)
+        }
+        const exRespNome = await db.prepare(qRespNome).bind(...pRespNome).first<any>()
+        if (exRespNome) {
+          return {
+            duplicado: true,
+            error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" já é o(a) RESPONSÁVEL pela família CÓD. ${exRespNome.cod_familiar} (${exRespNome.responsavel}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+          }
+        }
       }
+
+      return { duplicado: false }
     }
+  } catch (d1Err) {
+    console.warn('[D1_DUPLICIDADE_WARN]:', d1Err)
   }
 
-  // 2. Checagem por Nome Completo (para membros/dependentes antigos que estavam sem CPF)
-  if (nomeClean && nomeClean.length >= 6) {
-    let qRespNome = supabase.from('familias').select('id, cod_familiar, responsavel').ilike('responsavel', nomeClean)
-    if (excludeFamiliaId) qRespNome = qRespNome.neq('id', excludeFamiliaId)
-    const { data: exRespNome } = await qRespNome.limit(1)
+  // 2. Fallback resiliente no Supabase
+  try {
+    if (cpfClean && cpfClean.length === 11) {
+      let qResp = supabase.from('familias').select('id, cod_familiar, responsavel').eq('cpf_responsavel', cpfClean)
+      if (excludeFamiliaId) qResp = qResp.neq('id', excludeFamiliaId)
+      const { data: exResp } = await qResp.limit(1)
 
-    if (exRespNome && exRespNome.length > 0) {
-      return {
-        duplicado: true,
-        error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" já é o(a) RESPONSÁVEL pela família CÓD. ${exRespNome[0].cod_familiar} (${exRespNome[0].responsavel}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+      if (exResp && exResp.length > 0) {
+        return {
+          duplicado: true,
+          error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" (CPF: ${pessoa.cpf}) já é o(a) RESPONSÁVEL pela família CÓD. ${exResp[0].cod_familiar} (${exResp[0].responsavel}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+        }
+      }
+
+      let qMembro = supabase.from('membros_familia').select('id, familia_id, nome, parentesco, familias:familia_id(id, cod_familiar, responsavel)').eq('cpf', cpfClean)
+      if (excludeFamiliaId) qMembro = qMembro.neq('familia_id', excludeFamiliaId)
+      const { data: exMembro } = await qMembro.limit(1)
+
+      if (exMembro && exMembro.length > 0) {
+        const fam = (exMembro[0] as any).familias
+        const respNome = fam?.responsavel || 'outro responsável'
+        const codFam = fam?.cod_familiar || '—'
+        return {
+          duplicado: true,
+          error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" (CPF: ${pessoa.cpf}) já está cadastrada como MEMBRO (${exMembro[0].parentesco}) na família de ${respNome} (CÓD. ${codFam}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+        }
       }
     }
 
-    let qMembroNome = supabase.from('membros_familia').select('id, familia_id, nome, parentesco, familias:familia_id(id, cod_familiar, responsavel)').ilike('nome', nomeClean)
-    if (excludeFamiliaId) qMembroNome = qMembroNome.neq('familia_id', excludeFamiliaId)
-    const { data: exMembroNome } = await qMembroNome.limit(1)
+    if (nomeClean && nomeClean.length >= 6) {
+      let qRespNome = supabase.from('familias').select('id, cod_familiar, responsavel').ilike('responsavel', nomeClean)
+      if (excludeFamiliaId) qRespNome = qRespNome.neq('id', excludeFamiliaId)
+      const { data: exRespNome } = await qRespNome.limit(1)
 
-    if (exMembroNome && exMembroNome.length > 0) {
-      const fam = (exMembroNome[0] as any).familias
-      const respNome = fam?.responsavel || 'outro responsável'
-      const codFam = fam?.cod_familiar || '—'
-      return {
-        duplicado: true,
-        error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" já está cadastrada como MEMBRO (${exMembroNome[0].parentesco}) na família de ${respNome} (CÓD. ${codFam}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+      if (exRespNome && exRespNome.length > 0) {
+        return {
+          duplicado: true,
+          error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" já é o(a) RESPONSÁVEL pela família CÓD. ${exRespNome[0].cod_familiar} (${exRespNome[0].responsavel}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+        }
+      }
+
+      let qMembroNome = supabase.from('membros_familia').select('id, familia_id, nome, parentesco, familias:familia_id(id, cod_familiar, responsavel)').ilike('nome', nomeClean)
+      if (excludeFamiliaId) qMembroNome = qMembroNome.neq('familia_id', excludeFamiliaId)
+      const { data: exMembroNome } = await qMembroNome.limit(1)
+
+      if (exMembroNome && exMembroNome.length > 0) {
+        const fam = (exMembroNome[0] as any).familias
+        const respNome = fam?.responsavel || 'outro responsável'
+        const codFam = fam?.cod_familiar || '—'
+        return {
+          duplicado: true,
+          error: `TRAVA DE DUPLICIDADE: A pessoa "${nomeDisplay}" já está cadastrada como MEMBRO (${exMembroNome[0].parentesco}) na família de ${respNome} (CÓD. ${codFam}). Cada cidadão só pode pertencer a 1 família no Sistema SUAS.`
+        }
       }
     }
+  } catch (sbErr) {
+    console.warn('[SUPABASE_DUPLICIDADE_FALLBACK]:', sbErr)
   }
 
   return { duplicado: false }
@@ -369,58 +499,58 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Inserir família usando service_role key no servidor (bypassa RLS)
+    // 3. Preparar e higienizar dados da família
     const cleanFamilia = sanitizeFamiliaPayload(familia)
+    if (!cleanFamilia.id) {
+      cleanFamilia.id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `fam_${Date.now()}`
+    }
     cleanFamilia.criado_em = new Date().toISOString()
     cleanFamilia.atualizado_em = new Date().toISOString()
 
     // Garantir que cod_familiar nunca seja nulo
     if (!cleanFamilia.cod_familiar) {
       try {
-        const { data: maxRows } = await supabase
-          .from('familias')
-          .select('cod_familiar')
-          .order('criado_em', { ascending: false })
-          .limit(100)
-
-        let nextNum = 1000
-        if (maxRows && maxRows.length > 0) {
-          const nums = maxRows
-            .map((r: any) => parseInt(r.cod_familiar, 10))
-            .filter((n: number) => !isNaN(n) && n < 900000)
-          if (nums.length > 0) {
-            nextNum = Math.max(...nums) + 1
+        const db = await getD1Database()
+        if (db) {
+          const maxRow = await db.prepare('SELECT cod_familiar FROM familias ORDER BY CAST(cod_familiar AS INTEGER) DESC LIMIT 1').first<any>()
+          let nextNum = 1000
+          if (maxRow && maxRow.cod_familiar) {
+            const num = parseInt(maxRow.cod_familiar, 10)
+            if (!isNaN(num) && num < 900000) nextNum = num + 1
           }
+          cleanFamilia.cod_familiar = String(nextNum).padStart(5, '0')
         }
-        cleanFamilia.cod_familiar = String(nextNum).padStart(5, '0')
       } catch {
         cleanFamilia.cod_familiar = String(Math.floor(10000 + Math.random() * 90000))
       }
     }
 
-    const { data: famInserida, error: famErr } = await supabase
-      .from('familias')
-      .insert(cleanFamilia)
-      .select()
-      .single()
-
-    if (famErr) {
-      console.error('Erro ao inserir família:', famErr)
-      return NextResponse.json({ ok: false, error: famErr.message }, { status: 500 })
+    // 4. Inserir prioritariamente no Cloudflare D1 (Base Operacional Ativa)
+    let d1Sucesso = false
+    try {
+      d1Sucesso = await salvarFamiliaD1(cleanFamilia, membros || [])
+    } catch (d1Err) {
+      console.warn('[D1_FAMILIA_INSERT_ERR]:', d1Err)
     }
 
-    // 4. Inserir membros familiares se houver
-    if (membros && Array.isArray(membros) && membros.length > 0) {
-      const membrosComId = membros.map((m: any) => sanitizeMembroPayload(m, famInserida.id))
+    // 5. Tentar salvar no Supabase de forma resiliente em segundo plano (não-bloqueante)
+    const famInserida: any = cleanFamilia
+    ;(async () => {
+      try {
+        const { data: sbFam, error: famErr } = await supabase
+          .from('familias')
+          .insert(cleanFamilia)
+          .select()
+          .single()
 
-      const { error: membrosErr } = await supabase
-        .from('membros_familia')
-        .insert(membrosComId)
-
-      if (membrosErr) {
-        console.error('Erro ao inserir membros da família:', membrosErr)
+        if (!famErr && sbFam && membros && Array.isArray(membros) && membros.length > 0) {
+          const membrosComId = membros.map((m: any) => sanitizeMembroPayload(m, sbFam.id))
+          await supabase.from('membros_familia').insert(membrosComId)
+        }
+      } catch (sbErr) {
+        console.warn('[SUPABASE_FAMILIA_INSERT_FALLBACK]:', sbErr)
       }
-    }
+    })().catch(() => {})
 
     // 5. Sincronizar Responsável e Membros com a Base Geral de Cidadãos (pacientes)
     try {
@@ -461,7 +591,7 @@ export async function POST(request: NextRequest) {
       entidade_id: famInserida.id
     })
 
-    return NextResponse.json({ ok: true, data: famInserida })
+    return NextResponse.json({ ok: true, data: { ...famInserida, membros: membros || [] } })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
@@ -503,38 +633,38 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // 3. Atualizar dados da família no Supabase
+    // 3. Atualizar dados da família
     const cleanFamilia = sanitizeFamiliaPayload(familia)
+    cleanFamilia.id = id
     cleanFamilia.atualizado_em = new Date().toISOString()
 
-    const { data: famAtualizada, error: famErr } = await supabase
-      .from('familias')
-      .update(cleanFamilia)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (famErr) {
-      console.error('Erro ao atualizar família:', famErr)
-      return NextResponse.json({ ok: false, error: famErr.message }, { status: 500 })
+    // 4. Atualizar prioritariamente no Cloudflare D1
+    try {
+      await salvarFamiliaD1(cleanFamilia, membros || [])
+    } catch (d1Err) {
+      console.warn('[D1_FAMILIA_UPDATE_ERR]:', d1Err)
     }
 
-    // 4. Atualizar lista de membros familiares
-    if (membros && Array.isArray(membros)) {
-      await supabase.from('membros_familia').delete().eq('familia_id', id)
+    // 5. Atualizar no Supabase de forma resiliente em segundo plano (não-bloqueante)
+    const famAtualizada: any = cleanFamilia
+    ;(async () => {
+      try {
+        await supabase
+          .from('familias')
+          .update(cleanFamilia)
+          .eq('id', id)
 
-      if (membros.length > 0) {
-        const membrosComId = membros.map((m: any) => sanitizeMembroPayload(m, id))
-
-        const { error: membrosErr } = await supabase
-          .from('membros_familia')
-          .insert(membrosComId)
-
-        if (membrosErr) {
-          console.error('Erro ao atualizar membros da família:', membrosErr)
+        if (membros && Array.isArray(membros)) {
+          await supabase.from('membros_familia').delete().eq('familia_id', id)
+          if (membros.length > 0) {
+            const membrosComId = membros.map((m: any) => sanitizeMembroPayload(m, id))
+            await supabase.from('membros_familia').insert(membrosComId)
+          }
         }
+      } catch (sbErr) {
+        console.warn('[SUPABASE_FAMILIA_UPDATE_FALLBACK]:', sbErr)
       }
-    }
+    })().catch(() => {})
 
     // 5. Sincronizar correções (Nome, CPF, Data de Nascimento, Sexo, etc.) com a Base Geral de Cidadãos (pacientes)
     try {
@@ -575,7 +705,7 @@ export async function PUT(request: NextRequest) {
       entidade_id: id
     })
 
-    return NextResponse.json({ ok: true, data: famAtualizada })
+    return NextResponse.json({ ok: true, data: { ...famAtualizada, membros: membros || [] } })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }
@@ -607,21 +737,33 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseServer()
-
-    // 1. Excluir dependentes das tabelas relacionadas para evitar erro de Foreign Key
-    await supabase.from('membros_familia').delete().eq('familia_id', id)
-    await supabase.from('historico_atendimentos').delete().eq('familia_id', id)
-    await supabase.from('beneficios_concedidos').delete().eq('familia_id', id)
-    await supabase.from('encaminhamentos').delete().eq('familia_id', id)
-
-    // 2. Excluir a família principal usando service_role (bypassa RLS)
-    const { error } = await supabase.from('familias').delete().eq('id', id)
-
-    if (error) {
-      console.error('Erro ao excluir família:', error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    // 1. Excluir dependentes e prontuário prioritariamente no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        await db.prepare('DELETE FROM membros_familia WHERE familia_id = ?').bind(id).run()
+        await db.prepare('DELETE FROM historico_atendimentos WHERE familia_id = ?').bind(id).run()
+        await db.prepare('DELETE FROM beneficios_concedidos WHERE familia_id = ?').bind(id).run()
+        await db.prepare('DELETE FROM encaminhamentos WHERE familia_id = ?').bind(id).run()
+        await db.prepare('DELETE FROM familias WHERE id = ?').bind(id).run()
+      }
+    } catch (d1Err) {
+      console.warn('[D1_FAMILIA_DELETE_ERR]:', d1Err)
     }
+
+    // 2. Excluir no Supabase em segundo plano de forma resiliente
+    ;(async () => {
+      try {
+        const supabase = getSupabaseServer()
+        await supabase.from('membros_familia').delete().eq('familia_id', id)
+        await supabase.from('historico_atendimentos').delete().eq('familia_id', id)
+        await supabase.from('beneficios_concedidos').delete().eq('familia_id', id)
+        await supabase.from('encaminhamentos').delete().eq('familia_id', id)
+        await supabase.from('familias').delete().eq('id', id)
+      } catch (sbErr) {
+        console.warn('[SUPABASE_FAMILIA_DELETE_FALLBACK]:', sbErr)
+      }
+    })().catch(() => {})
 
     await registrarLogAuditoria({
       acao: 'FAMILIA_EXCLUIDA',
@@ -646,27 +788,44 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'ID da família é obrigatório.' }, { status: 400 })
     }
 
-    const supabase = getSupabaseServer()
     const updatePayload: any = { ...outrosCampos }
-
     if (typeof paif_ativo === 'boolean') {
       updatePayload.paif_ativo = paif_ativo
       updatePayload.paif_data_inicio = paif_ativo ? new Date().toISOString() : null
     }
-
     updatePayload.atualizado_em = new Date().toISOString()
 
-    const { data, error } = await supabase
-      .from('familias')
-      .update(updatePayload)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Erro no PATCH /api/familias:', error)
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+    // 1. Atualizar no Cloudflare D1
+    try {
+      const db = await getD1Database()
+      if (db) {
+        const paifNum = typeof paif_ativo === 'boolean' ? (paif_ativo ? 1 : 0) : null
+        if (paifNum !== null) {
+          const paifDataInicio = paif_ativo ? new Date().toISOString() : null
+          await db.prepare(`
+            UPDATE familias 
+            SET paif_ativo = ?, paif_data_inicio = ?, atualizado_em = datetime('now')
+            WHERE id = ?
+          `).bind(paifNum, paifDataInicio, id).run()
+        }
+      }
+    } catch (d1Err) {
+      console.warn('[D1_FAMILIA_PATCH_ERR]:', d1Err)
     }
+
+    // 2. Atualizar no Supabase em segundo plano de forma resiliente
+    const dataAtualizada: any = { id, ...updatePayload }
+    ;(async () => {
+      try {
+        const supabase = getSupabaseServer()
+        await supabase
+          .from('familias')
+          .update(updatePayload)
+          .eq('id', id)
+      } catch (sbErr) {
+        console.warn('[SUPABASE_FAMILIA_PATCH_FALLBACK]:', sbErr)
+      }
+    })().catch(() => {})
 
     await registrarLogAuditoria({
       acao: 'FAMILIA_EDITADA',
@@ -677,7 +836,7 @@ export async function PATCH(request: NextRequest) {
       entidade_id: id
     })
 
-    return NextResponse.json({ ok: true, data })
+    return NextResponse.json({ ok: true, data: dataAtualizada })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
   }

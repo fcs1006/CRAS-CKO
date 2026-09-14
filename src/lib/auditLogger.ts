@@ -14,6 +14,9 @@ export type AuditAcao =
   | 'PRONTUARIO_VISUALIZADO'
   | 'ATENDIMENTO_CRIADO'
   | 'ATENDIMENTO_VISUALIZADO'
+  | 'ATENDIMENTO_EXCLUIDO'
+  | 'BENEFICIO_CRIADO'
+  | 'ALMOXARIFADO_ALTERADO'
   | 'ENCAMINHAMENTO_CRIADO'
   | 'USUARIO_CRIADO'
   | 'USUARIO_EDITADO'
@@ -31,21 +34,26 @@ export interface AuditLogData {
   ip?: string
 }
 
-/**
- * Registra uma ação de auditoria no sistema
- */
 export async function registrarLogAuditoria(data: AuditLogData): Promise<void> {
   const logEntry = {
     ...data,
     criado_em: new Date().toISOString()
   }
 
-  // Tenta persistir no Supabase (se a tabela auditoria_logs existir)
+  // Log local imediato
+  console.log('[AUDIT_LOG]:', JSON.stringify(logEntry))
+
+  // Persistência em segundo plano no Supabase sem bloquear a resposta da requisição
   try {
     const supabase = getSupabaseServer()
-    await supabase.from('auditoria_logs').insert([logEntry])
+    void (async () => {
+      try {
+        await supabase.from('auditoria_logs').insert([logEntry])
+      } catch (err: any) {
+        console.warn('[AUDIT_LOG_FALLBACK]:', err?.message || err)
+      }
+    })()
   } catch (err) {
-    // Fallback gracioso para logs de console caso a tabela ainda não tenha sido criada
-    console.warn('[AUDIT_LOG_FALLBACK]:', JSON.stringify(logEntry))
+    console.warn('[AUDIT_LOG_FALLBACK]:', err)
   }
 }

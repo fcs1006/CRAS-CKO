@@ -26,6 +26,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
   const [responsavel, setResponsavel] = useState(familia.responsavel ? familia.responsavel.toUpperCase() : '')
   const initialResponsavelRef = useRef(familia.responsavel ? familia.responsavel.toUpperCase() : '')
   const [nomeMae, setNomeMae] = useState(familia.nome_mae_responsavel ? familia.nome_mae_responsavel.toUpperCase() : '')
+  const initialNomeMaeRef = useRef(familia.nome_mae_responsavel ? familia.nome_mae_responsavel.toUpperCase() : '')
+  const usuarioDigitouRespRef = useRef(false)
+  const usuarioDigitouMaeRef = useRef(false)
+  const usuarioDigitouMembroRef = useRef(false)
   const [sexoResp, setSexoResp] = useState<'Feminino' | 'Masculino' | 'Outro'>((familia.sexo_responsavel as any) || (membroResp?.sexo as any) || 'Feminino')
   const [racaCorResp, setRacaCorResp] = useState<'Parda' | 'Branca' | 'Preta' | 'Amarela' | 'Indígena' | 'Não declarada'>((familia.raca_cor_responsavel as any) || (membroResp?.raca_cor as any) || 'Parda')
 
@@ -113,7 +117,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
       return
     }
 
-    if (!nomeMae || nomeMae.trim().length < 3) {
+    if (!usuarioDigitouMaeRef.current || !nomeMae || nomeMae === initialNomeMaeRef.current || nomeMae.trim().length < 3) {
       setSugestoesMae([])
       setMostrarSugestoesMae(false)
       return
@@ -196,7 +200,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
       return
     }
 
-    if (!responsavel || responsavel === initialResponsavelRef.current || responsavel.trim().length < 3) {
+    if (!usuarioDigitouRespRef.current || !responsavel || responsavel === initialResponsavelRef.current || responsavel.trim().length < 3) {
       setSugestoesPacientes([])
       setMostrarSugestoes(false)
       return
@@ -236,7 +240,7 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
       return
     }
 
-    if (!novoMembroNome || novoMembroNome.trim().length < 3) {
+    if (!usuarioDigitouMembroRef.current || !novoMembroNome || novoMembroNome.trim().length < 3) {
       setSugestoesMembros([])
       setMostrarSugestoesMembros(false)
       return
@@ -835,7 +839,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                   type="text"
                   required
                   value={responsavel}
-                  onChange={e => setResponsavel(e.target.value.toUpperCase())}
+                  onChange={e => {
+                    usuarioDigitouRespRef.current = true
+                    setResponsavel(e.target.value.toUpperCase())
+                  }}
                   placeholder="DIGITE O NOME COMPLETO..."
                   className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-semibold"
                 />
@@ -869,7 +876,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                   type="text"
                   required
                   value={nomeMae}
-                  onChange={e => setNomeMae(e.target.value.toUpperCase())}
+                  onChange={e => {
+                    usuarioDigitouMaeRef.current = true
+                    setNomeMae(e.target.value.toUpperCase())
+                  }}
                   placeholder="DIGITE O NOME DA MÃE PARA BUSCAR..."
                   className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-medium"
                 />
@@ -1380,7 +1390,10 @@ export function ModalEditarFamilia({ familia, familiasExistentes, usuarios = [],
                     <input
                       type="text"
                       value={novoMembroNome}
-                      onChange={e => setNovoMembroNome(e.target.value.toUpperCase())}
+                      onChange={e => {
+                        usuarioDigitouMembroRef.current = true
+                        setNovoMembroNome(e.target.value.toUpperCase())
+                      }}
                       placeholder="NOME DO DEPENDENTE..."
                       className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-semibold bg-white"
                     />
