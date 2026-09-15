@@ -79,8 +79,17 @@ export function ModalRelatorioGeralGrupoScfv({
     const freq = frequencias.find(f => f.data === dataStr)
     const rel = relatorios.find(r => r.data_encontro === dataStr)
 
-    const registros = freq?.registros || []
-    const presentesArr = freq?.presentes || []
+    let registros: any[] = freq?.registros || []
+    if (typeof registros === 'string') {
+      try { registros = JSON.parse(registros) } catch (e) { registros = [] }
+    }
+    if (!Array.isArray(registros)) registros = []
+
+    let presentesArr: any[] = freq?.presentes || []
+    if (typeof presentesArr === 'string') {
+      try { presentesArr = JSON.parse(presentesArr) } catch (e) { presentesArr = [] }
+    }
+    if (!Array.isArray(presentesArr)) presentesArr = []
 
     let numPresentes = 0
     let numFaltasJustificadas = 0
@@ -122,8 +131,17 @@ export function ModalRelatorioGeralGrupoScfv({
 
     frequencias.forEach(f => {
       totalEncontros++
-      const registros = f.registros || []
-      const presentesArr = f.presentes || []
+      let registros: any[] = f.registros || []
+      if (typeof registros === 'string') {
+        try { registros = JSON.parse(registros) } catch (e) { registros = [] }
+      }
+      if (!Array.isArray(registros)) registros = []
+
+      let presentesArr: any[] = f.presentes || []
+      if (typeof presentesArr === 'string') {
+        try { presentesArr = JSON.parse(presentesArr) } catch (e) { presentesArr = [] }
+      }
+      if (!Array.isArray(presentesArr)) presentesArr = []
 
       const reg = registros.find(
         (r: any) =>

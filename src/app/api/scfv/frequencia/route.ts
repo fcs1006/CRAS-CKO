@@ -19,7 +19,22 @@ export async function GET(request: NextRequest) {
         }
         query += ' ORDER BY data DESC LIMIT 200'
         const freqRes = await db.prepare(query).bind(...params).all<any>()
-        return NextResponse.json({ ok: true, data: freqRes.results || [], source: 'cloudflare-d1' })
+        const results = (freqRes.results || []).map((row: any) => {
+          let reg = row.registros
+          if (typeof reg === 'string') {
+            try { reg = JSON.parse(reg) } catch (e) { reg = [] }
+          }
+          let pres = row.presentes
+          if (typeof pres === 'string') {
+            try { pres = JSON.parse(pres) } catch (e) { pres = [] }
+          }
+          return {
+            ...row,
+            registros: Array.isArray(reg) ? reg : [],
+            presentes: Array.isArray(pres) ? pres : []
+          }
+        })
+        return NextResponse.json({ ok: true, data: results, source: 'cloudflare-d1' })
       }
     } catch (d1Err) {
       console.warn('[D1_FREQ_FALLBACK]:', d1Err)
@@ -35,7 +50,22 @@ export async function GET(request: NextRequest) {
 
       const { data, error } = await query
       if (!error && data) {
-        return NextResponse.json({ ok: true, data })
+        const results = (data || []).map((row: any) => {
+          let reg = row.registros
+          if (typeof reg === 'string') {
+            try { reg = JSON.parse(reg) } catch (e) { reg = [] }
+          }
+          let pres = row.presentes
+          if (typeof pres === 'string') {
+            try { pres = JSON.parse(pres) } catch (e) { pres = [] }
+          }
+          return {
+            ...row,
+            registros: Array.isArray(reg) ? reg : [],
+            presentes: Array.isArray(pres) ? pres : []
+          }
+        })
+        return NextResponse.json({ ok: true, data: results })
       }
     } catch (sbErr) {
       console.warn('[SUPABASE_FREQ_ERR]:', sbErr)

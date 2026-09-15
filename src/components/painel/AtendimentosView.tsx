@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Atendimento, AgendaItem, Familia, Configuracao, Usuario } from '@/types'
-import { maskCPF } from '@/utils/masks'
+import { maskCPF, maskNIS, maskPhone } from '@/utils/masks'
 import { DocumentoOficialLayout } from '@/components/impressao/DocumentoOficialLayout'
 import { verificarAcessoRelatoAtendimento, extrairRelatoLimpo, extrairSigiloAtendimento, podeEditarAtendimento, podeExcluirAtendimento, isTecnicoSuperior, isPsicologo, isAssistenteSocial } from '@/utils/permissoes'
 import { PaginationControls } from '@/components/common/PaginationControls'
@@ -121,34 +121,32 @@ export function ConteudoDocumentoAtendimento({
   const infoPrincipal = extrairInfoTecnico(tecnicoPrincipal, usuarios)
   const infosCoTecnicos = coTecnicos.map(ct => extrairInfoTecnico(ct, usuarios))
 
-  // Buscar CPF do beneficiário / família
-  let cpfBeneficiario = ''
-  if (item.familia_id) {
-    const fam = familias.find(f => f.id === item.familia_id)
-    if (fam) {
-      cpfBeneficiario = fam.cpf_responsavel || ''
-      if (!cpfBeneficiario && fam.membros) {
-        const m = fam.membros.find(mb => mb.nome.trim().toLowerCase() === (item.usuario_visitado || '').trim().toLowerCase())
-        if (m) cpfBeneficiario = m.cpf || ''
-      }
-    }
-  }
-  if (!cpfBeneficiario && item.usuario_visitado) {
-    for (const fam of familias) {
-      if (fam.responsavel.trim().toLowerCase() === item.usuario_visitado.trim().toLowerCase()) {
-        cpfBeneficiario = fam.cpf_responsavel || ''
-        break
-      }
-      if (fam.membros) {
-        const m = fam.membros.find(mb => mb.nome.trim().toLowerCase() === item.usuario_visitado?.trim().toLowerCase())
-        if (m && m.cpf) {
-          cpfBeneficiario = m.cpf
-          break
-        }
-      }
-    }
-  }
+  // Localizar família associada
+  const fam = item.familia_id
+    ? familias.find(f => f.id === item.familia_id)
+    : familias.find(f =>
+        f.responsavel.trim().toUpperCase() === (item.responsavel_nome || item.usuario_visitado || '').trim().toUpperCase() ||
+        f.membros?.some(m => m.nome.trim().toUpperCase() === (item.usuario_visitado || '').trim().toUpperCase())
+      )
 
+  const nomeBeneficiario = (item.usuario_visitado || item.responsavel_nome || fam?.responsavel || 'BENEFICIÁRIO(A)').trim().toUpperCase()
+  const isResponsavel = Boolean(fam?.responsavel && fam.responsavel.trim().toUpperCase() === nomeBeneficiario)
+  const membroEncontrado = fam?.membros?.find(m => m.nome.trim().toUpperCase() === nomeBeneficiario)
+  const parentescoBeneficiario = isResponsavel
+    ? 'Responsável Familiar'
+    : (membroEncontrado?.parentesco || (fam ? 'Membro Familiar' : ''))
+
+  // CPF do beneficiário atendido: se for membro, busca o CPF do membro; se for o responsável, busca o CPF do RF
+  const cpfBeneficiario = (membroEncontrado && membroEncontrado.cpf)
+    ? maskCPF(membroEncontrado.cpf)
+    : (isResponsavel && fam?.cpf_responsavel ? maskCPF(fam.cpf_responsavel) : '—')
+
+  // NIS do beneficiário atendido
+  const nisBeneficiario = (membroEncontrado && membroEncontrado.nis)
+    ? maskNIS(membroEncontrado.nis)
+    : (isResponsavel && fam?.nis_responsavel ? maskNIS(fam.nis_responsavel) : '—')
+
+  const dataFormatada = item.data ? item.data.split('-').reverse().join('/') : '—'
   const dataExtenso = new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
@@ -156,6 +154,7 @@ export function ConteudoDocumentoAtendimento({
       configuracao={configuracao}
       tituloDocumento="REGISTRO OFICIAL DE"
       subtituloDocumento="ATENDIMENTO"
+      numeroProtocolo={fam?.cod_familiar}
       dataExtensa={dataExtenso}
       assinaturas={
         <div className={`pt-10 pb-2 ${isCompartilhada ? 'grid grid-cols-2 gap-8' : 'flex justify-center'} text-center uppercase text-[10px]`}>
@@ -182,29 +181,49 @@ export function ConteudoDocumentoAtendimento({
         </div>
       }
     >
-      {/* 1. Identificação do Usuário / Família e Atendimento */}
+      {/* 1. Identificação do(a) Beneficiário(a) e Dados do Atendimento */}
       <div className="space-y-1">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
-          1. Identificação do(a) Beneficiário(a) e Dados do Atendimento
+          1. Identificação do(a) Beneficiário(a) & Referência Familiar
         </h4>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-1 text-[10.5px]">
-          <div>
-            <strong className="font-extrabold">Pessoa / Família Atendida:</strong> {(item.usuario_visitado || item.responsavel_nome || 'NÃO INFORMADO').toUpperCase()}
+        <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-1 text-[10px]">
+          <div className="col-span-2">
+            <strong className="font-extrabold">Pessoa Atendida:</strong> {nomeBeneficiario} {parentescoBeneficiario ? `(${parentescoBeneficiario.toUpperCase()})` : ''}
           </div>
           <div>
-            <strong className="font-extrabold">CPF:</strong> {cpfBeneficiario ? maskCPF(cpfBeneficiario) : '—'}
+            <strong className="font-extrabold">CPF:</strong> {cpfBeneficiario}
+          </div>
+          {!isResponsavel && fam && (
+            <div className="col-span-2">
+              <strong className="font-extrabold">Responsável Familiar:</strong> {(fam.responsavel || '—').toUpperCase()} {fam.cpf_responsavel ? `(CPF: ${maskCPF(fam.cpf_responsavel)})` : ''}
+            </div>
+          )}
+          <div>
+            <strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}
           </div>
           <div>
+            <strong className="font-extrabold">NIS:</strong> {nisBeneficiario}
+          </div>
+          <div>
+            <strong className="font-extrabold">Telefone / Contato:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}
+          </div>
+          <div>
+            <strong className="font-extrabold">Território SUAS:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}
+          </div>
+          <div className="col-span-3">
+            <strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}{fam?.numero ? `, nº ${fam.numero}` : ''}{fam?.bairro || item.bairro ? ` — Bairro: ${fam?.bairro || item.bairro}` : ''}
+          </div>
+          <div className="col-span-2">
             <strong className="font-extrabold">Técnico(a) Responsável:</strong> {infoPrincipal.nome}
           </div>
           <div>
-            <strong className="font-extrabold">Data & Horário:</strong> {item.data ? item.data.split('-').reverse().join('/') : '—'} às {item.hora || '10:00'}
+            <strong className="font-extrabold">Data & Horário:</strong> {dataFormatada} às {item.hora || '10:00'}
           </div>
-          <div className="col-span-2">
+          <div className="col-span-3">
             <strong className="font-extrabold">Tipologia & Local:</strong> {item.tipo?.toUpperCase()} ({item.local || 'CRAS'}) {isCompartilhada ? ' • AÇÃO COMPARTILHADA' : ''}
             {isCompartilhada && infosCoTecnicos.length > 0 && (
-              <span className="block text-[10px] font-semibold text-black mt-0.5">
-                Co-participantes: {infosCoTecnicos.map(c => c.nome).join(', ')}
+              <span className="block text-[9.5px] font-semibold text-black mt-0.5">
+                Co-participantes: {infosCoTecnicos.map(c => `${c.nome} (${c.cargoConselho})`).join(', ')}
               </span>
             )}
           </div>
@@ -329,7 +348,7 @@ export function AtendimentosView({
     if (!motivoCancelamento.trim()) return alert('Por favor, informe o motivo do cancelamento.')
 
     if (onAtualizarStatusAgendamento) {
-      await onAtualizarStatusAgendamento(agendamentoParaCancelar, 'Cancelado', motivoCancelamento.trim())
+      await onAtualizarStatusAgendamento(agendamentoParaCancelar, 'Cancelado', motivoCancelamento.trim().toUpperCase())
     }
     setAgendamentoParaCancelar(null)
     setMotivoCancelamento('')
@@ -340,7 +359,7 @@ export function AtendimentosView({
     if (!motivoFalta.trim()) return alert('Por favor, informe o motivo da falta / não comparecimento.')
 
     if (onAtualizarStatusAgendamento) {
-      await onAtualizarStatusAgendamento(agendamentoParaFalta, 'Falta', motivoFalta.trim())
+      await onAtualizarStatusAgendamento(agendamentoParaFalta, 'Falta', motivoFalta.trim().toUpperCase())
     }
     setAgendamentoParaFalta(null)
     setMotivoFalta('')
@@ -786,7 +805,7 @@ export function AtendimentosView({
                   required
                   rows={4}
                   value={relatoEdicao}
-                  onChange={e => setRelatoEdicao(e.target.value.toUpperCase())}
+                  onChange={e => setRelatoEdicao(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-xs font-semibold uppercase leading-relaxed"
                 />
               </div>
@@ -799,7 +818,7 @@ export function AtendimentosView({
                   required
                   rows={3}
                   value={providenciasEdicao}
-                  onChange={e => setProvidenciasEdicao(e.target.value.toUpperCase())}
+                  onChange={e => setProvidenciasEdicao(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-xs font-semibold uppercase leading-relaxed"
                 />
               </div>
@@ -863,7 +882,7 @@ export function AtendimentosView({
                   required
                   rows={3}
                   value={motivoFalta}
-                  onChange={e => setMotivoFalta(e.target.value.toUpperCase())}
+                  onChange={e => setMotivoFalta(e.target.value)}
                   placeholder="EX: BENEFICIÁRIO NÃO ESTAVA EM CASA / NÃO COMPARECEU AO CRAS..."
                   className="w-full px-3 py-2 border rounded-lg text-xs font-semibold uppercase leading-relaxed focus:ring-2 focus:ring-amber-500/20 focus:border-amber-700"
                 />
@@ -920,7 +939,7 @@ export function AtendimentosView({
                   required
                   rows={3}
                   value={motivoCancelamento}
-                  onChange={e => setMotivoCancelamento(e.target.value.toUpperCase())}
+                  onChange={e => setMotivoCancelamento(e.target.value)}
                   placeholder="EX: FAMÍLIA SOLICITOU REMARCAÇÃO / TÉCNICO EM CAPACITAÇÃO..."
                   className="w-full px-3 py-2 border rounded-lg text-xs font-semibold uppercase leading-relaxed focus:ring-2 focus:ring-rose-500/20 focus:border-rose-700"
                 />
@@ -961,11 +980,36 @@ export function AtendimentosView({
             </div>
 
             <div className="p-6 space-y-4 text-xs overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <div>
-                  <span className="text-gray-500 uppercase text-[10px] font-bold block">Beneficiário / Família</span>
-                  <strong className="text-gray-900 uppercase text-xs">{atendimentoSelecionado.usuario_visitado || atendimentoSelecionado.responsavel_nome}</strong>
-                </div>
+              {(() => {
+                const famSel = atendimentoSelecionado.familia_id
+                  ? familias.find(f => f.id === atendimentoSelecionado.familia_id)
+                  : familias.find(f =>
+                      f.responsavel.trim().toUpperCase() === (atendimentoSelecionado.responsavel_nome || atendimentoSelecionado.usuario_visitado || '').trim().toUpperCase() ||
+                      f.membros?.some(m => m.nome.trim().toUpperCase() === (atendimentoSelecionado.usuario_visitado || '').trim().toUpperCase())
+                    )
+                const nomeBenef = (atendimentoSelecionado.usuario_visitado || atendimentoSelecionado.responsavel_nome || famSel?.responsavel || 'BENEFICIÁRIO(A)').trim().toUpperCase()
+                const isResp = Boolean(famSel?.responsavel && famSel.responsavel.trim().toUpperCase() === nomeBenef)
+                const membroEnc = famSel?.membros?.find(m => m.nome.trim().toUpperCase() === nomeBenef)
+                const parentesco = isResp ? 'Responsável Familiar' : (membroEnc?.parentesco || (famSel ? 'Membro Familiar' : ''))
+                const cpfBenef = (membroEnc && membroEnc.cpf) ? maskCPF(membroEnc.cpf) : (isResp && famSel?.cpf_responsavel ? maskCPF(famSel.cpf_responsavel) : '—')
+
+                return (
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <div>
+                      <span className="text-gray-500 uppercase text-[10px] font-bold block">Pessoa Atendida / Beneficiário(a)</span>
+                      <strong className="text-gray-900 uppercase text-xs block">
+                        {nomeBenef} {parentesco ? `(${parentesco.toUpperCase()})` : ''}
+                      </strong>
+                      <span className="text-[11px] text-gray-700 block mt-0.5">
+                        CPF: <strong className="text-gray-900 font-mono">{cpfBenef}</strong>
+                        {famSel?.cod_familiar ? ` • Prontuário nº ${famSel.cod_familiar}` : ''}
+                      </span>
+                      {!isResp && famSel && (
+                        <span className="text-[10px] text-gray-500 block mt-0.5">
+                          Resp. Familiar: {famSel.responsavel} {famSel.cpf_responsavel ? `(CPF: ${maskCPF(famSel.cpf_responsavel)})` : ''}
+                        </span>
+                      )}
+                    </div>
                 <div>
                   <span className="text-gray-500 uppercase text-[10px] font-bold block">Técnico Responsável</span>
                   <strong className="text-gray-900 uppercase text-xs block">
@@ -995,6 +1039,8 @@ export function AtendimentosView({
                   <strong className="text-teal-800 uppercase text-xs">{atendimentoSelecionado.tipo} ({atendimentoSelecionado.local || 'CRAS'})</strong>
                 </div>
               </div>
+            )
+          })()}
 
               {(() => {
                 const resSel = verificarAcessoRelatoAtendimento(atendimentoSelecionado, usuarioLogado)

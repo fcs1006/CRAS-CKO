@@ -131,8 +131,17 @@ export function ModalFrequenciaGrupoScfv({
       if (freqExistente.tecnico) {
         setTecnico(freqExistente.tecnico)
       }
-      const registrosArr: any[] = Array.isArray(freqExistente.registros) ? freqExistente.registros : []
-      const presentesArr: any[] = Array.isArray(freqExistente.presentes) ? freqExistente.presentes : []
+      let rawRegistros = freqExistente.registros
+      if (typeof rawRegistros === 'string') {
+        try { rawRegistros = JSON.parse(rawRegistros) } catch (e) { rawRegistros = [] }
+      }
+      const registrosArr: any[] = Array.isArray(rawRegistros) ? rawRegistros : []
+
+      let rawPresentes = freqExistente.presentes
+      if (typeof rawPresentes === 'string') {
+        try { rawPresentes = JSON.parse(rawPresentes) } catch (e) { rawPresentes = [] }
+      }
+      const presentesArr: any[] = Array.isArray(rawPresentes) ? rawPresentes : []
 
       participantes.forEach(p => {
         const regEncontrado = registrosArr.find(r => r.membro_id === p.membro_id || r.nome === p.nome)

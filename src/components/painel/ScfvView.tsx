@@ -19,8 +19,8 @@ interface ScfvViewProps {
 }
 
 export function ScfvView({
-  grupos,
-  participantes,
+  grupos = [],
+  participantes = [],
   usuarioLogado,
   onAbrirModalNovoGrupo,
   onAbrirModalAdicionarParticipante,
@@ -32,12 +32,12 @@ export function ScfvView({
   onAbrirModalRelatorioGeralGrupo
 }: ScfvViewProps) {
   const [grupoSelecionadoId, setGrupoSelecionadoId] = useState<string | null>(
-    grupos.length > 0 ? grupos[0].id : null
+    grupos && grupos.length > 0 ? grupos[0].id : null
   )
 
-  const grupoAtual = grupos.find(g => g.id === grupoSelecionadoId) || grupos[0] || null
+  const grupoAtual = (grupos || []).find(g => g.id === grupoSelecionadoId) || (grupos && grupos[0]) || null
   const participantesGrupo = useMemo(() => {
-    return participantes.filter(p => p.grupo_id === grupoAtual?.id)
+    return (participantes || []).filter(p => p.grupo_id === grupoAtual?.id)
   }, [participantes, grupoAtual?.id])
 
   const [buscaParticipante, setBuscaParticipante] = useState('')
@@ -148,14 +148,23 @@ export function ScfvView({
 
     const dataBr = formatarDataSemFuso(dStr)
 
-    const registros = freq?.registros || []
-    const presentesArr = freq?.presentes || []
+    let registros: any[] = freq?.registros || []
+    if (typeof registros === 'string') {
+      try { registros = JSON.parse(registros) } catch (e) { registros = [] }
+    }
+    if (!Array.isArray(registros)) registros = []
+
+    let presentesArr: any[] = freq?.presentes || []
+    if (typeof presentesArr === 'string') {
+      try { presentesArr = JSON.parse(presentesArr) } catch (e) { presentesArr = [] }
+    }
+    if (!Array.isArray(presentesArr)) presentesArr = []
 
     let qtdPresentes = 0
     let totalCadastrados = participantesGrupo.length
 
     if (registros.length > 0) {
-      qtdPresentes = registros.filter((r: any) => r.status === 'presente').length
+      qtdPresentes = registros.filter((r: any) => r && r.status === 'presente').length
     } else if (presentesArr.length > 0) {
       qtdPresentes = presentesArr.length
     }
@@ -497,7 +506,7 @@ export function ScfvView({
                             <tr key={p.id} className="hover:bg-indigo-50/30 transition">
                               <td className="py-2.5 px-3.5 font-bold text-gray-900 uppercase flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-900 flex items-center justify-center font-extrabold text-[10px] shrink-0 border border-indigo-200">
-                                  {p.nome.charAt(0)}
+                                  {(p.nome || '?').charAt(0)}
                                 </div>
                                 <span>{p.nome}</span>
                               </td>

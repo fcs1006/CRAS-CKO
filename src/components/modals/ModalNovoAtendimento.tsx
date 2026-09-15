@@ -382,7 +382,7 @@ export function ModalNovoAtendimento({
                   type="text"
                   required
                   value={usuarioVisitado}
-                  onChange={e => setUsuarioVisitado(e.target.value.toUpperCase())}
+                  onChange={e => setUsuarioVisitado(e.target.value)}
                   placeholder="SELECIONE A FAMÍLIA ACIMA"
                   className="w-full px-3 py-2 border rounded-lg text-xs uppercase font-medium bg-gray-50 text-gray-500"
                 />
@@ -567,7 +567,7 @@ export function ModalNovoAtendimento({
                 <input
                   type="text"
                   value={outrosProfissionaisTexto}
-                  onChange={e => setOutrosProfissionaisTexto(e.target.value.toUpperCase())}
+                  onChange={e => setOutrosProfissionaisTexto(e.target.value)}
                   placeholder="EX: ENFERMEIRA MARIA (POSTO DE SAÚDE), CONSELHEIRO PEDRO..."
                   className="w-full px-3 py-2 border rounded-lg text-xs uppercase bg-white"
                 />
@@ -617,7 +617,7 @@ export function ModalNovoAtendimento({
               required
               rows={4}
               value={relato}
-              onChange={e => setRelato(e.target.value.toUpperCase())}
+              onChange={e => setRelato(e.target.value)}
               placeholder="DESCREVA DE FORMA OBJETIVA A DEMANDA APRESENTADA, A ESCUTA QUALIFICADA E A INTERVENÇÃO REALIZADA..."
               className="w-full px-3 py-2 border rounded-lg text-xs uppercase leading-relaxed font-medium bg-white"
             />
@@ -632,7 +632,7 @@ export function ModalNovoAtendimento({
               required
               rows={2}
               value={providencias}
-              onChange={e => setProvidencias(e.target.value.toUpperCase())}
+              onChange={e => setProvidencias(e.target.value)}
               placeholder="ORIENTAÇÕES FORNECIDAS, INSERÇÃO EM GRUPO, AGENDAMENTO DE VISITA OU ENCAMINHAMENTOS..."
               className="w-full px-3 py-2 border rounded-lg text-xs uppercase leading-relaxed font-medium bg-white"
             />

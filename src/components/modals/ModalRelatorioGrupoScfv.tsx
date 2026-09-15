@@ -212,7 +212,12 @@ export function ModalRelatorioGrupoScfv({
     if (!dataEncontro) return alert('Por favor, selecione a Data do Encontro.')
 
     // Validar se a frequência/chamada já foi realizada para esta data
-    const registrosFreq = frequenciaEncontro?.registros || []
+    let registrosFreq: any[] = frequenciaEncontro?.registros || []
+    if (typeof registrosFreq === 'string') {
+      try { registrosFreq = JSON.parse(registrosFreq) } catch (e) { registrosFreq = [] }
+    }
+    if (!Array.isArray(registrosFreq)) registrosFreq = []
+
     if (!frequenciaEncontro || registrosFreq.length === 0) {
       return alert(`Só é possível salvar o Relatório do Encontro após lançar a frequência/chamada dos integrantes na data ${dataBr}! Por favor, utilize a opção "Lançar Frequência / Chamada" primeiro.`)
     }
@@ -293,8 +298,17 @@ export function ModalRelatorioGrupoScfv({
     let observacaoFrequencia = ''
 
     if (frequenciaEncontro) {
-      const registros = frequenciaEncontro.registros || []
-      const presentesArr = frequenciaEncontro.presentes || []
+      let registros: any[] = frequenciaEncontro.registros || []
+      if (typeof registros === 'string') {
+        try { registros = JSON.parse(registros) } catch (e) { registros = [] }
+      }
+      if (!Array.isArray(registros)) registros = []
+
+      let presentesArr: any[] = frequenciaEncontro.presentes || []
+      if (typeof presentesArr === 'string') {
+        try { presentesArr = JSON.parse(presentesArr) } catch (e) { presentesArr = [] }
+      }
+      if (!Array.isArray(presentesArr)) presentesArr = []
 
       const reg = registros.find(
         (r: any) =>
