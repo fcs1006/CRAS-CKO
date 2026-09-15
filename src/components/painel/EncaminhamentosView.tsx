@@ -75,23 +75,18 @@ export function ConteudoGuiaEncaminhamento({
         </div>
       }
     >
-      {/* 1. Identificação da Pessoa Encaminhada e Referência Familiar */}
+      {/* 1. Identificação da Pessoa Encaminhada */}
       <div className="space-y-1">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
-          1. Identificação da Pessoa Encaminhada & Referência Familiar
+          1. Identificação da Pessoa Encaminhada
         </h4>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-1 text-[10px]">
           <div className="col-span-2">
-            <strong className="font-extrabold">Pessoa Encaminhada:</strong> {nomeBeneficiario} ({parentescoBeneficiario.toUpperCase()})
+            <strong className="font-extrabold">Pessoa Encaminhada:</strong> {nomeBeneficiario}
           </div>
           <div>
             <strong className="font-extrabold">CPF:</strong> {cpfBeneficiario}
           </div>
-          {!isResponsavel && fam && (
-            <div className="col-span-2">
-              <strong className="font-extrabold">Responsável Familiar:</strong> {(fam.responsavel || '—').toUpperCase()} {fam.cpf_responsavel ? `(CPF: ${maskCPF(fam.cpf_responsavel)})` : ''}
-            </div>
-          )}
           <div>
             <strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}
           </div>
@@ -101,11 +96,8 @@ export function ConteudoGuiaEncaminhamento({
           <div>
             <strong className="font-extrabold">Telefone / Contato:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}
           </div>
-          <div>
-            <strong className="font-extrabold">Território:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}
-          </div>
           <div className="col-span-3">
-            <strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}, nº {fam?.numero || 'S/N'} — Bairro: {fam?.bairro || ''}
+            <strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}, nº {fam?.numero || 'S/N'} — Bairro: {fam?.bairro || ''} ({(fam?.zona_territorio || 'Urbana').toUpperCase()})
           </div>
         </div>
       </div>

@@ -181,23 +181,18 @@ export function ConteudoDocumentoAtendimento({
         </div>
       }
     >
-      {/* 1. Identificação do(a) Beneficiário(a) e Dados do Atendimento */}
+      {/* 1. Identificação da Pessoa Atendida e Dados do Atendimento */}
       <div className="space-y-1">
         <h4 className="text-[11px] font-black uppercase text-black border-b-[1.5px] border-black pb-0.5 tracking-wide">
-          1. Identificação do(a) Beneficiário(a) & Referência Familiar
+          1. Identificação da Pessoa Atendida e Dados do Atendimento
         </h4>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 pt-1 text-[10px]">
           <div className="col-span-2">
-            <strong className="font-extrabold">Pessoa Atendida:</strong> {nomeBeneficiario} {parentescoBeneficiario ? `(${parentescoBeneficiario.toUpperCase()})` : ''}
+            <strong className="font-extrabold">Pessoa Atendida:</strong> {nomeBeneficiario}
           </div>
           <div>
             <strong className="font-extrabold">CPF:</strong> {cpfBeneficiario}
           </div>
-          {!isResponsavel && fam && (
-            <div className="col-span-2">
-              <strong className="font-extrabold">Responsável Familiar:</strong> {(fam.responsavel || '—').toUpperCase()} {fam.cpf_responsavel ? `(CPF: ${maskCPF(fam.cpf_responsavel)})` : ''}
-            </div>
-          )}
           <div>
             <strong className="font-extrabold">Prontuário SUAS nº:</strong> {fam?.cod_familiar || '—'}
           </div>
@@ -207,11 +202,8 @@ export function ConteudoDocumentoAtendimento({
           <div>
             <strong className="font-extrabold">Telefone / Contato:</strong> {fam?.telefone ? maskPhone(fam.telefone) : '—'}
           </div>
-          <div>
-            <strong className="font-extrabold">Território SUAS:</strong> {(fam?.zona_territorio || 'Urbana').toUpperCase()}
-          </div>
           <div className="col-span-3">
-            <strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}{fam?.numero ? `, nº ${fam.numero}` : ''}{fam?.bairro || item.bairro ? ` — Bairro: ${fam?.bairro || item.bairro}` : ''}
+            <strong className="font-extrabold">Endereço:</strong> {fam?.logradouro || ''}{fam?.numero ? `, nº ${fam.numero}` : ''}{fam?.bairro || item.bairro ? ` — Bairro: ${fam?.bairro || item.bairro}` : ''} ({(fam?.zona_territorio || 'Urbana').toUpperCase()})
           </div>
           <div className="col-span-2">
             <strong className="font-extrabold">Técnico(a) Responsável:</strong> {infoPrincipal.nome}
@@ -998,17 +990,12 @@ export function AtendimentosView({
                     <div>
                       <span className="text-gray-500 uppercase text-[10px] font-bold block">Pessoa Atendida / Beneficiário(a)</span>
                       <strong className="text-gray-900 uppercase text-xs block">
-                        {nomeBenef} {parentesco ? `(${parentesco.toUpperCase()})` : ''}
+                        {nomeBenef}
                       </strong>
                       <span className="text-[11px] text-gray-700 block mt-0.5">
                         CPF: <strong className="text-gray-900 font-mono">{cpfBenef}</strong>
                         {famSel?.cod_familiar ? ` • Prontuário nº ${famSel.cod_familiar}` : ''}
                       </span>
-                      {!isResp && famSel && (
-                        <span className="text-[10px] text-gray-500 block mt-0.5">
-                          Resp. Familiar: {famSel.responsavel} {famSel.cpf_responsavel ? `(CPF: ${maskCPF(famSel.cpf_responsavel)})` : ''}
-                        </span>
-                      )}
                     </div>
                 <div>
                   <span className="text-gray-500 uppercase text-[10px] font-bold block">Técnico Responsável</span>
